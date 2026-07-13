@@ -1,0 +1,393 @@
+<script setup lang="ts">
+import { router, useForm } from '@inertiajs/vue3';
+import { ArrowLeft, ArrowRight, Check, Send } from '@lucide/vue';
+import { computed, ref } from 'vue';
+import FileUpload from '@/components/shipped/FileUpload.vue';
+import PublicShell from '@/components/shipped/PublicShell.vue';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Field, FieldError, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
+    Stepper,
+    StepperIndicator,
+    StepperItem,
+    StepperTitle,
+    StepperTrigger,
+} from '@/components/ui/stepper';
+import { Textarea } from '@/components/ui/textarea';
+import { index, store } from '@/routes/projects';
+
+const props = defineProps<{ categories: { id: number; name: string }[] }>();
+const step = ref(1);
+const form = useForm({
+    name: '',
+    tagline: '',
+    description: '',
+    category_id: String(props.categories[0]?.id ?? ''),
+    live_url: '',
+    github_url: '',
+    cover_image: null as File | null,
+});
+const progress = computed(() => (step.value / 3) * 100);
+
+function isValidUrl(value: string): boolean {
+    try {
+        new URL(value);
+
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+function validateCurrentStep(): boolean {
+    form.clearErrors();
+
+    if (step.value === 1) {
+        const errors: Record<string, string> = {};
+
+        if (!form.name.trim()) {
+            errors.name = 'Give the project a name.';
+        }
+
+        if (!form.tagline.trim()) {
+            errors.tagline = 'Write a one-line description.';
+        }
+
+        if (!form.description.trim()) {
+            errors.description = 'Tell the fuller story.';
+        }
+
+        if (Object.keys(errors).length) {
+            form.setError(errors);
+
+            return false;
+        }
+    }
+
+    if (step.value === 2) {
+        const errors: Record<string, string> = {};
+
+        if (!form.category_id) {
+            errors.category_id = 'Choose a category.';
+        }
+
+        if (form.live_url && !isValidUrl(form.live_url)) {
+            errors.live_url = 'Enter a complete URL, including https://.';
+        }
+
+        if (form.github_url && !isValidUrl(form.github_url)) {
+            errors.github_url = 'Enter a complete URL, including https://.';
+        }
+
+        if (Object.keys(errors).length) {
+            form.setError(errors);
+
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function continueComposer(): void {
+    if (!validateCurrentStep()) {
+        return;
+    }
+
+    if (step.value < 3) {
+        step.value += 1;
+
+        return;
+    }
+
+    form.post(store().url, {
+        forceFormData: true,
+        onError: (errors) => {
+            step.value = ['name', 'tagline', 'description'].some(
+                (field) => errors[field],
+            )
+                ? 1
+                : 2;
+        },
+    });
+}
+</script>
+
+<template>
+    <PublicShell title="Launch composer">
+        <section
+            class="page-enter mx-auto w-full max-w-[90rem] min-w-0 border-x border-b border-foreground"
+        >
+            <div
+                class="grid border-b border-foreground p-5 sm:grid-cols-[.45fr_1.55fr] sm:p-8"
+            >
+                <p class="technical-label text-primary">
+                    Launch composer / {{ String(step).padStart(2, '0') }} / 03
+                </p>
+                <div>
+                    <h1
+                        class="display-type mt-12 text-[clamp(3rem,7vw,7rem)] sm:mt-0"
+                    >
+                        Give it a shape.
+                    </h1>
+                    <p class="mt-6 max-w-2xl leading-7 text-muted-foreground">
+                        Start private. Build a launch record with enough
+                        substance to become public.
+                    </p>
+                </div>
+            </div>
+            <div class="border-b border-foreground p-5 sm:p-8">
+                <Stepper
+                    v-model="step"
+                    class="grid grid-cols-3 gap-px bg-foreground"
+                >
+                    <StepperItem
+                        v-for="item in 3"
+                        :key="item"
+                        v-slot="{ state }"
+                        :step="item"
+                        class="bg-background"
+                    >
+                        <StepperTrigger
+                            class="flex w-full justify-center gap-3 p-3 text-left disabled:opacity-100 sm:justify-start sm:p-4"
+                            ><StepperIndicator
+                                class="grid size-7 place-items-center border border-foreground text-xs"
+                                :class="
+                                    state === 'active' || state === 'completed'
+                                        ? 'bg-primary text-primary-foreground'
+                                        : ''
+                                "
+                                ><Check
+                                    v-if="state === 'completed'"
+                                    class="size-3"
+                                /><span v-else>{{
+                                    item
+                                }}</span></StepperIndicator
+                            ><StepperTitle
+                                class="technical-label hidden sm:block"
+                                >{{
+                                    ['Identity', 'Evidence', 'Review'][item - 1]
+                                }}</StepperTitle
+                            ></StepperTrigger
+                        >
+                    </StepperItem>
+                </Stepper>
+                <Progress
+                    class="mt-5"
+                    :model-value="progress"
+                    aria-label="Launch composer progress"
+                />
+            </div>
+            <form novalidate class="grid" @submit.prevent="continueComposer">
+                <div
+                    class="grid gap-px bg-foreground lg:grid-cols-[1.15fr_.85fr]"
+                >
+                    <div class="bg-background p-5 sm:p-8">
+                        <template v-if="step === 1">
+                            <p class="technical-label text-primary">
+                                01 / Identity
+                            </p>
+                            <div class="mt-8 grid gap-6">
+                                <Field
+                                    ><FieldLabel for="name"
+                                        >Project name</FieldLabel
+                                    ><Input
+                                        id="name"
+                                        v-model="form.name"
+                                        required
+                                        autofocus
+                                    /><FieldError v-if="form.errors.name">{{
+                                        form.errors.name
+                                    }}</FieldError></Field
+                                ><Field
+                                    ><FieldLabel for="tagline"
+                                        >One-line description</FieldLabel
+                                    ><Input
+                                        id="tagline"
+                                        v-model="form.tagline"
+                                        required
+                                    /><FieldError v-if="form.errors.tagline">{{
+                                        form.errors.tagline
+                                    }}</FieldError></Field
+                                ><Field
+                                    ><FieldLabel for="description"
+                                        >The fuller story</FieldLabel
+                                    ><Textarea
+                                        id="description"
+                                        v-model="form.description"
+                                        required
+                                    /><FieldError
+                                        v-if="form.errors.description"
+                                        >{{
+                                            form.errors.description
+                                        }}</FieldError
+                                    ></Field
+                                >
+                            </div>
+                        </template>
+                        <template v-else-if="step === 2">
+                            <p class="technical-label text-primary">
+                                02 / Evidence
+                            </p>
+                            <div class="mt-8 grid gap-6">
+                                <Field
+                                    ><FieldLabel for="category"
+                                        >Category</FieldLabel
+                                    ><Select v-model="form.category_id"
+                                        ><SelectTrigger
+                                            id="category"
+                                            class="h-10 w-full rounded-none border-foreground"
+                                            ><SelectValue /></SelectTrigger
+                                        ><SelectContent
+                                            ><SelectItem
+                                                v-for="category in categories"
+                                                :key="category.id"
+                                                :value="String(category.id)"
+                                                >{{ category.name }}</SelectItem
+                                            ></SelectContent
+                                        ></Select
+                                    ><FieldError
+                                        v-if="form.errors.category_id"
+                                        >{{
+                                            form.errors.category_id
+                                        }}</FieldError
+                                    ></Field
+                                ><Field
+                                    ><FieldLabel>Cover image</FieldLabel
+                                    ><FileUpload
+                                        v-model="form.cover_image"
+                                        :error="
+                                            form.errors.cover_image
+                                        " /></Field
+                                ><Field
+                                    ><FieldLabel for="live_url"
+                                        >Live URL</FieldLabel
+                                    ><Input
+                                        id="live_url"
+                                        v-model="form.live_url"
+                                        type="url"
+                                        placeholder="https://yourapp.com"
+                                    /><FieldError v-if="form.errors.live_url">{{
+                                        form.errors.live_url
+                                    }}</FieldError></Field
+                                ><Field
+                                    ><FieldLabel for="github_url"
+                                        >GitHub URL</FieldLabel
+                                    ><Input
+                                        id="github_url"
+                                        v-model="form.github_url"
+                                        type="url"
+                                        placeholder="https://github.com/you/project"
+                                    /><FieldError
+                                        v-if="form.errors.github_url"
+                                        >{{
+                                            form.errors.github_url
+                                        }}</FieldError
+                                    ></Field
+                                >
+                            </div>
+                        </template>
+                        <template v-else>
+                            <p class="technical-label text-primary">
+                                03 / Review
+                            </p>
+                            <h2 class="display-type mt-8 text-5xl">
+                                Ready to draft.
+                            </h2>
+                            <dl
+                                class="mt-10 grid gap-px bg-foreground sm:grid-cols-2"
+                            >
+                                <div class="bg-background p-4">
+                                    <dt
+                                        class="technical-label text-muted-foreground"
+                                    >
+                                        Project
+                                    </dt>
+                                    <dd class="mt-2">{{ form.name }}</dd>
+                                </div>
+                                <div class="bg-background p-4">
+                                    <dt
+                                        class="technical-label text-muted-foreground"
+                                    >
+                                        Launch state
+                                    </dt>
+                                    <dd class="mt-2">Private draft</dd>
+                                </div>
+                            </dl>
+                            <Alert class="mt-8 border-foreground"
+                                ><AlertTitle>What happens next</AlertTitle
+                                ><AlertDescription
+                                    >You will write and publish the first
+                                    release from your project
+                                    studio.</AlertDescription
+                                ></Alert
+                            >
+                        </template>
+                    </div>
+                    <aside class="bg-secondary p-5 sm:p-8">
+                        <p class="technical-label">Field notes</p>
+                        <p class="mt-8 max-w-sm text-sm leading-7">
+                            A launch stays private until it has a release story
+                            and you deliberately publish it. This first step
+                            simply creates the project record.
+                        </p>
+                        <p class="technical-label mt-12 text-primary">
+                            Required /
+                            {{
+                                step === 1
+                                    ? 'Name, line, story'
+                                    : step === 2
+                                      ? 'Category'
+                                      : 'Review'
+                            }}
+                        </p>
+                    </aside>
+                </div>
+                <div
+                    class="flex flex-col gap-4 border-t border-foreground p-5 sm:flex-row sm:items-center sm:justify-between sm:p-8"
+                >
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        class="w-full sm:w-auto"
+                        :disabled="step === 1"
+                        @click="step -= 1"
+                        ><ArrowLeft class="size-4" /> Back</Button
+                    >
+                    <div class="grid w-full gap-2 sm:flex sm:w-auto">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            class="w-full sm:w-auto"
+                            @click="router.visit(index().url)"
+                            >Save for later</Button
+                        ><Button
+                            type="submit"
+                            class="w-full sm:w-auto"
+                            :disabled="form.processing"
+                            >{{
+                                step === 3
+                                    ? 'Create private draft'
+                                    : 'Continue'
+                            }}<Send
+                                v-if="step === 3"
+                                class="size-4" /><ArrowRight
+                                v-else
+                                class="size-4"
+                        /></Button>
+                    </div>
+                </div>
+            </form>
+        </section>
+    </PublicShell>
+</template>
