@@ -71,6 +71,7 @@ const page = usePage();
                         ><Button
                             variant="ghost"
                             size="icon"
+                            class="self-center"
                             aria-label="Open navigation"
                             ><Menu class="size-5" /></Button
                     ></SheetTrigger>
