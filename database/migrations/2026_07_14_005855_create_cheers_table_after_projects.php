@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (! Schema::hasTable('projects')) {
+        if (Schema::hasTable('cheers')) {
             return;
         }
 
@@ -29,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('cheers');
+        // This forwards-only repair may skip creating an existing historical table.
     }
 };
