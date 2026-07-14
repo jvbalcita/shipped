@@ -80,7 +80,7 @@ const handleLogout = (): void => {
                             :href="page.props.auth.user ? create() : register()"
                             >Ship yours <ArrowUpRight class="size-3" /></Link
                     ></Button>
-                    <DropdownMenu v-if="page.props.auth.user">
+                    <DropdownMenu v-if="page.props.auth.user" :modal="false">
                         <DropdownMenuTrigger as-child>
                             <Button
                                 variant="ghost"
@@ -88,7 +88,7 @@ const handleLogout = (): void => {
                                 aria-label="Open account menu"
                             >
                                 <Avatar
-                                    class="size-7 rounded-none border border-foreground"
+                                    class="size-9 rounded-none border border-foreground"
                                 >
                                     <AvatarImage
                                         v-if="page.props.auth.user.avatar"
