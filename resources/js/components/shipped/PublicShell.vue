@@ -1,13 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import {
-    ArrowUpRight,
-    ChevronDown,
-    LogOut,
-    Menu,
-    Settings,
-    ShieldCheck,
-} from '@lucide/vue';
+import { ArrowUpRight, LogOut, Menu, Settings, ShieldCheck } from '@lucide/vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -91,7 +84,7 @@ const handleLogout = (): void => {
                         <DropdownMenuTrigger as-child>
                             <Button
                                 variant="ghost"
-                                class="h-auto border-y-0 px-3 text-left"
+                                class="my-2 size-9 p-0"
                                 aria-label="Open account menu"
                             >
                                 <Avatar
@@ -112,11 +105,6 @@ const handleLogout = (): void => {
                                         }}
                                     </AvatarFallback>
                                 </Avatar>
-                                <span
-                                    class="hidden max-w-32 truncate font-mono text-xs tracking-normal normal-case lg:inline"
-                                    >{{ page.props.auth.user.name }}</span
-                                >
-                                <ChevronDown class="size-3" />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
