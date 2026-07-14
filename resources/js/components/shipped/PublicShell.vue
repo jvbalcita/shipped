@@ -1,14 +1,29 @@
 <script setup lang="ts">
-import { Head, Link, usePage } from '@inertiajs/vue3';
-import { ArrowUpRight, Menu } from '@lucide/vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { ArrowUpRight, LogOut, Menu, Settings, ShieldCheck } from '@lucide/vue';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Toaster } from '@/components/ui/sonner';
-import { dashboard, discover, login, register } from '@/routes';
+import UserMenuContent from '@/components/UserMenuContent.vue';
+import { useInitials } from '@/composables/useInitials';
+import { dashboard, discover, login, logout, register } from '@/routes';
+import { edit as profileEdit } from '@/routes/profile';
 import { create } from '@/routes/projects';
+import { edit as securityEdit } from '@/routes/security';
 
 defineProps<{ title?: string }>();
 const page = usePage();
+const { getInitials } = useInitials();
+
+const handleLogout = (): void => {
+    router.flushAll();
+};
 </script>
 
 <template>
@@ -65,12 +80,47 @@ const page = usePage();
                             :href="page.props.auth.user ? create() : register()"
                             >Ship yours <ArrowUpRight class="size-3" /></Link
                     ></Button>
+                    <DropdownMenu v-if="page.props.auth.user" :modal="false">
+                        <DropdownMenuTrigger as-child>
+                            <Button
+                                variant="ghost"
+                                class="my-2 size-9 p-0"
+                                aria-label="Open account menu"
+                            >
+                                <Avatar
+                                    class="size-9 rounded-none border border-foreground"
+                                >
+                                    <AvatarImage
+                                        v-if="page.props.auth.user.avatar"
+                                        :src="page.props.auth.user.avatar"
+                                        :alt="page.props.auth.user.name"
+                                    />
+                                    <AvatarFallback
+                                        class="rounded-none bg-primary font-mono text-xs font-semibold text-primary-foreground"
+                                    >
+                                        {{
+                                            getInitials(
+                                                page.props.auth.user.name,
+                                            )
+                                        }}
+                                    </AvatarFallback>
+                                </Avatar>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                            align="end"
+                            class="w-64 border-foreground bg-background"
+                        >
+                            <UserMenuContent :user="page.props.auth.user" />
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </nav>
                 <Sheet>
                     <SheetTrigger as-child class="md:hidden"
                         ><Button
                             variant="ghost"
                             size="icon"
+                            class="self-center"
                             aria-label="Open navigation"
                             ><Menu class="size-5" /></Button
                     ></SheetTrigger>
@@ -78,8 +128,49 @@ const page = usePage();
                         side="right"
                         class="w-[min(20rem,calc(100vw-0.75rem))] border-l-foreground bg-background p-6"
                     >
+                        <div
+                            v-if="page.props.auth.user"
+                            class="mt-12 border border-foreground p-4"
+                        >
+                            <p class="technical-label text-primary">
+                                Signed in as
+                            </p>
+                            <div class="mt-4 flex items-center gap-3">
+                                <Avatar
+                                    class="size-10 rounded-none border border-foreground"
+                                >
+                                    <AvatarImage
+                                        v-if="page.props.auth.user.avatar"
+                                        :src="page.props.auth.user.avatar"
+                                        :alt="page.props.auth.user.name"
+                                    />
+                                    <AvatarFallback
+                                        class="rounded-none bg-primary font-mono text-sm font-semibold text-primary-foreground"
+                                    >
+                                        {{
+                                            getInitials(
+                                                page.props.auth.user.name,
+                                            )
+                                        }}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div class="min-w-0">
+                                    <p class="truncate font-semibold">
+                                        {{ page.props.auth.user.name }}
+                                    </p>
+                                    <p
+                                        class="truncate text-xs text-muted-foreground"
+                                    >
+                                        {{ page.props.auth.user.email }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                         <nav
-                            class="mt-12 grid gap-2"
+                            :class="[
+                                'grid gap-2',
+                                page.props.auth.user ? 'mt-6' : 'mt-12',
+                            ]"
                             aria-label="Mobile navigation"
                         >
                             <Button
@@ -97,6 +188,37 @@ const page = usePage();
                                 class="justify-start"
                                 ><Link :href="dashboard()">Studio</Link></Button
                             >
+                            <template v-if="page.props.auth.user">
+                                <Button
+                                    as-child
+                                    variant="ghost"
+                                    class="justify-start"
+                                    ><Link :href="profileEdit()"
+                                        ><Settings class="size-4" />Profile &
+                                        settings</Link
+                                    ></Button
+                                ><Button
+                                    as-child
+                                    variant="ghost"
+                                    class="justify-start"
+                                    ><Link :href="securityEdit()"
+                                        ><ShieldCheck
+                                            class="size-4"
+                                        />Security</Link
+                                    ></Button
+                                ><Button
+                                    as-child
+                                    variant="outline"
+                                    class="mt-4 justify-start"
+                                    ><Link
+                                        :href="logout.url()"
+                                        method="post"
+                                        as="button"
+                                        @click="handleLogout"
+                                        ><LogOut class="size-4" />Log out</Link
+                                    ></Button
+                                >
+                            </template>
                             <Button
                                 v-if="!page.props.auth.user"
                                 as-child

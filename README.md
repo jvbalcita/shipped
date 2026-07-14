@@ -1,7 +1,7 @@
 # Shipped
 
 [![Laravel 13](https://img.shields.io/badge/Laravel-13-FF2D20?logo=laravel&logoColor=white)](https://laravel.com)
-[![PHP 8.3+](https://img.shields.io/badge/PHP-8.3%2B-777BB4?logo=php&logoColor=white)](https://www.php.net)
+[![PHP 8.4.1+](https://img.shields.io/badge/PHP-8.4.1%2B-777BB4?logo=php&logoColor=white)](https://www.php.net)
 [![Inertia v3](https://img.shields.io/badge/Inertia-v3-9553E9?logo=inertia&logoColor=white)](https://inertiajs.com)
 [![Vue 3](https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs&logoColor=white)](https://vuejs.org)
 [![Tailwind CSS 4](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
@@ -21,7 +21,7 @@
 
 | Layer         | Choice                                                                       |
 | ------------- | ---------------------------------------------------------------------------- |
-| Backend       | Laravel 13, PHP 8.3+                                                         |
+| Backend       | Laravel 13, PHP 8.4.1+                                                       |
 | Frontend      | Inertia v3, Vue 3, TypeScript, Tailwind CSS 4                                |
 | UI primitives | shadcn-vue / Reka UI                                                         |
 | Auth          | Laravel Fortify, passkeys, two-factor authentication                         |
@@ -30,7 +30,7 @@
 
 ## Requirements
 
-- PHP 8.3 or newer
+- PHP 8.4.1 or newer
 - Composer 2
 - Node.js 22 or newer
 - SQLite for the fastest local start, or PostgreSQL/MySQL

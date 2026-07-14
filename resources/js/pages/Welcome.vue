@@ -11,20 +11,33 @@ const page = usePage();
 
 <template>
     <PublicShell title="A public home for launches">
-        <section class="page-enter border-b border-foreground">
+        <section class="page-enter landing-hero border-b border-foreground">
             <div
                 class="mx-auto grid w-full max-w-[90rem] border-x border-foreground lg:grid-cols-[1.1fr_.9fr]"
             >
-                <div class="flex min-h-[34rem] flex-col p-6 sm:p-10 lg:p-14">
-                    <p class="technical-label text-primary">
+                <div
+                    class="flex min-h-[31rem] flex-col p-6 sm:min-h-[34rem] sm:p-10 lg:min-h-[42rem] lg:p-14"
+                >
+                    <p
+                        class="landing-reveal landing-reveal-kicker technical-label text-primary"
+                    >
                         A public registry for independent launches
                     </p>
-                    <h1
-                        class="display-type mt-auto max-w-4xl text-[clamp(4.5rem,10vw,9rem)]"
+                    <div class="mt-auto">
+                        <p
+                            class="landing-reveal landing-reveal-status technical-label mb-5 text-muted-foreground"
+                        >
+                            Status / ready for the record
+                        </p>
+                        <h1
+                            class="landing-reveal landing-reveal-title display-type max-w-4xl text-[clamp(4.15rem,10vw,9rem)]"
+                        >
+                            Make it<br />public.
+                        </h1>
+                    </div>
+                    <div
+                        class="landing-reveal landing-reveal-actions mt-8 max-w-xl"
                     >
-                        Make it public.
-                    </h1>
-                    <div class="mt-8 max-w-xl">
                         <p class="text-base leading-7 sm:text-lg">
                             Shipped gives a finished product a permanent home:
                             the work, its release story, and the person who made
@@ -50,16 +63,28 @@ const page = usePage();
                     </div>
                 </div>
                 <figure
-                    class="grid min-h-[34rem] grid-rows-[1fr_auto] border-t border-foreground bg-secondary lg:border-t-0 lg:border-l"
+                    class="landing-record group grid min-h-[22rem] grid-rows-[1fr_auto] border-t border-foreground bg-secondary sm:min-h-[30rem] lg:min-h-[42rem] lg:border-t-0 lg:border-l"
                 >
-                    <img
-                        src="/images/shipped/hero-worktable.png"
-                        alt="A worktable prepared for a product launch"
-                        width="1792"
-                        height="1024"
-                        fetchpriority="high"
-                        class="media-reveal size-full min-h-0 object-cover contrast-125 grayscale"
-                    />
+                    <div class="relative min-h-0 overflow-hidden">
+                        <img
+                            src="/images/shipped/hero-worktable.png"
+                            alt="A worktable prepared for a product launch"
+                            width="1792"
+                            height="1024"
+                            fetchpriority="high"
+                            class="landing-record-image media-reveal size-full min-h-0 object-cover contrast-125 grayscale"
+                        />
+                        <div
+                            class="landing-record-stamp technical-label absolute top-5 left-5 border border-foreground bg-background px-3 py-2 text-primary sm:top-6 sm:left-6"
+                        >
+                            Filed / public
+                        </div>
+                        <p
+                            class="technical-label absolute right-0 bottom-0 bg-foreground px-4 py-3 text-background"
+                        >
+                            A durable URL
+                        </p>
+                    </div>
                     <figcaption
                         class="grid border-t border-foreground bg-background p-5 sm:grid-cols-[10rem_1fr]"
                     >
@@ -72,6 +97,20 @@ const page = usePage();
                     </figcaption>
                 </figure>
             </div>
+            <Link
+                :href="discover()"
+                class="landing-ticker mx-auto block w-full max-w-[90rem] overflow-hidden border-x border-foreground bg-foreground text-background focus-visible:outline-3 focus-visible:outline-offset-[-3px] focus-visible:outline-ring"
+                aria-label="Browse the live Shipped registry"
+            >
+                <span class="landing-ticker-track" aria-hidden="true">
+                    <span>Live registry</span><i>✦</i><span>Public work</span
+                    ><i>✦</i><span>Release stories</span><i>✦</i
+                    ><span>Independent launches</span><i>✦</i
+                    ><span>Live registry</span><i>✦</i><span>Public work</span
+                    ><i>✦</i><span>Release stories</span><i>✦</i
+                    ><span>Independent launches</span><i>✦</i>
+                </span>
+            </Link>
         </section>
         <section
             class="mx-auto w-full max-w-[90rem] border-x border-b border-foreground"
@@ -86,34 +125,70 @@ const page = usePage();
                     A launch deserves a record, not a disappearing link.
                 </h2>
             </div>
-            <dl
+            <ol
                 class="grid divide-y divide-foreground sm:grid-cols-3 sm:divide-x sm:divide-y-0"
             >
-                <div class="p-6 sm:p-8">
-                    <dt class="technical-label text-primary">Declare</dt>
-                    <dd class="mt-10 text-sm leading-6">
-                        Set the product’s identity, category, cover, and place
-                        to try it.
-                    </dd>
-                </div>
-                <div class="p-6 sm:p-8">
-                    <dt class="technical-label text-primary">Release</dt>
-                    <dd class="mt-10 text-sm leading-6">
-                        Write what changed and decide when the release becomes
-                        public.
-                    </dd>
-                </div>
-                <div class="p-6 sm:p-8">
-                    <dt class="technical-label text-primary">Discover</dt>
-                    <dd class="mt-10 text-sm leading-6">
-                        Give the community one durable place to find the work
-                        and cheer it on.
-                    </dd>
-                </div>
-            </dl>
+                <li>
+                    <Link
+                        :href="page.props.auth.user ? create() : register()"
+                        class="launch-step group"
+                    >
+                        <span class="technical-label text-primary"
+                            >01 / Record</span
+                        >
+                        <strong class="mt-10 font-display text-2xl uppercase"
+                            >Declare it</strong
+                        >
+                        <span class="mt-4 max-w-xs text-sm leading-6"
+                            >Set the product’s identity, category, cover, and
+                            place to try it.</span
+                        >
+                        <ArrowUpRight
+                            class="launch-step-arrow mt-auto size-5"
+                        />
+                    </Link>
+                </li>
+                <li>
+                    <Link
+                        :href="page.props.auth.user ? create() : register()"
+                        class="launch-step group"
+                    >
+                        <span class="technical-label text-primary"
+                            >02 / Release</span
+                        >
+                        <strong class="mt-10 font-display text-2xl uppercase"
+                            >Tell the story</strong
+                        >
+                        <span class="mt-4 max-w-xs text-sm leading-6"
+                            >Write what changed and decide when the release
+                            becomes public.</span
+                        >
+                        <ArrowUpRight
+                            class="launch-step-arrow mt-auto size-5"
+                        />
+                    </Link>
+                </li>
+                <li>
+                    <Link :href="discover()" class="launch-step group">
+                        <span class="technical-label text-primary"
+                            >03 / Discover</span
+                        >
+                        <strong class="mt-10 font-display text-2xl uppercase"
+                            >Send it out</strong
+                        >
+                        <span class="mt-4 max-w-xs text-sm leading-6"
+                            >Give the community one durable place to find the
+                            work and cheer it on.</span
+                        >
+                        <ArrowUpRight
+                            class="launch-step-arrow mt-auto size-5"
+                        />
+                    </Link>
+                </li>
+            </ol>
         </section>
         <section
-            class="mx-auto flex w-full max-w-[90rem] flex-col items-start gap-6 border-x border-b border-foreground p-6 sm:flex-row sm:items-center sm:justify-between sm:p-10"
+            class="landing-final-cta mx-auto flex w-full max-w-[90rem] flex-col items-start gap-6 border-x border-b border-foreground p-6 sm:flex-row sm:items-center sm:justify-between sm:p-10"
         >
             <p class="display-type text-4xl sm:text-6xl">Ready to ship?</p>
             <Button as-child size="lg" class="w-full sm:w-auto"
