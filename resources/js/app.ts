@@ -19,7 +19,6 @@ createInertiaApp({
                 return AuthLayout;
             case name.startsWith('settings/'):
                 return ShippedSettingsLayout;
-            case name === 'Dashboard':
             case name.startsWith('Projects/'):
             case name.startsWith('Discover/'):
             case name.startsWith('Creators/'):
@@ -30,7 +29,7 @@ createInertiaApp({
         }
     },
     progress: {
-        color: '#4B5563',
+        color: '#e61919',
     },
 });
 

@@ -38,6 +38,14 @@ class ProjectFactory extends Factory
         return $this->verified()->state(fn () => ['is_public' => true]);
     }
 
+    public function filed(): static
+    {
+        return $this->state(fn () => [
+            'filed_number' => ((int) Project::query()->max('filed_number') ?? 0) + 1,
+            'filed_at' => now(),
+        ]);
+    }
+
     public function unverified(): static
     {
         return $this->state(fn () => [

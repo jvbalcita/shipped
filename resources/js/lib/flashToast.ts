@@ -5,12 +5,17 @@ import type { FlashToast } from '@/types/ui';
 export function initializeFlashToast(): void {
     router.on('flash', (event) => {
         const flash = (event as CustomEvent).detail?.flash;
-        const data = flash?.toast as FlashToast | undefined;
+        const toastData = flash?.toast as FlashToast | undefined;
 
-        if (!data) {
-            return;
+        if (toastData) {
+            toast[toastData.type](toastData.message);
         }
 
-        toast[data.type](data.message);
+        // Surface the "filed" moment so the studio can play the stamp.
+        if (flash?.filed) {
+            window.dispatchEvent(
+                new CustomEvent('shipped:filed', { detail: flash.filed }),
+            );
+        }
     });
 }

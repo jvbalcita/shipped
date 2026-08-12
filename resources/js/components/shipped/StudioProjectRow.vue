@@ -10,6 +10,7 @@ interface StudioProject {
     tagline: string;
     is_public: boolean;
     releases_count: number;
+    filed_serial?: string | null;
     category: {
         name: string;
     } | null;
@@ -30,6 +31,12 @@ defineProps<{
             <p class="technical-label text-primary">
                 {{ project.is_public ? 'Public' : 'Private' }}
             </p>
+            <span
+                v-if="project.filed_serial"
+                class="technical-label tabular-nums text-muted-foreground"
+            >
+                {{ project.filed_serial }}
+            </span>
             <span
                 class="w-fit border border-foreground px-1.5 py-0.5 font-mono text-[9px] leading-3 tracking-[0.08em] uppercase"
             >

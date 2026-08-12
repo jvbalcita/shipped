@@ -4,6 +4,7 @@ import { ExternalLink, GitFork, Heart, ShieldCheck } from '@lucide/vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { defaultCoverUrl } from '@/lib/cover';
 import { show as creatorShow } from '@/routes/creators';
 import { store as cheer } from '@/routes/projects/cheers';
 import { show as releaseShow } from '@/routes/releases';
@@ -29,10 +30,13 @@ function cheerProject(project: any): void {
             >
                 <div class="min-w-0 p-5 sm:p-8">
                     <div class="flex flex-wrap items-center gap-3">
-                        <Badge
-                            variant="outline"
-                            class="rounded-none border-foreground font-mono text-[10px] tracking-[.08em] uppercase"
-                            >{{ project.category.name }}</Badge
+                        <Badge variant="outline">{{
+                            project.category.name
+                        }}</Badge>
+                        <span
+                            v-if="project.filed_serial"
+                            class="technical-label tabular-nums text-muted-foreground"
+                            >{{ project.filed_serial }}</span
                         >
                         <span
                             v-if="project.verification_status === 'verified'"
@@ -50,7 +54,7 @@ function cheerProject(project: any): void {
                         {{ project.tagline }}
                     </p>
                     <p
-                        class="mt-8 max-w-2xl leading-7 whitespace-pre-line text-muted-foreground"
+                        class="font-prose mt-8 max-w-2xl text-[1.0625rem] leading-7 whitespace-pre-line text-foreground"
                     >
                         {{ project.description }}
                     </p>
@@ -93,30 +97,19 @@ function cheerProject(project: any): void {
                     </p>
                 </div>
                 <div
-                    class="min-w-0 border-t border-foreground bg-secondary lg:border-t-0 lg:border-l"
+                    class="relative min-w-0 border-t border-foreground bg-secondary lg:border-t-0 lg:border-l"
                 >
                     <img
-                        v-if="project.cover_image_url"
-                        :src="project.cover_image_url"
+                        :src="project.cover_image_url ?? defaultCoverUrl(project)"
                         :alt="`${project.name} cover image`"
-                        class="media-reveal size-full min-h-80 object-cover grayscale"
+                        class="media-reveal size-full min-h-80 object-cover"
+                        :class="{ grayscale: !!project.cover_image_url }"
                     />
-                    <div
-                        v-else
-                        class="relative flex size-full min-h-80 flex-col justify-between bg-secondary p-8 text-left"
+                    <span
+                        v-if="!project.cover_image_url"
+                        class="technical-label absolute top-6 left-6 text-primary"
+                        >Cover pending</span
                     >
-                        <span class="technical-label self-start text-primary"
-                            >Cover pending</span
-                        >
-                        <span
-                            class="display-type launch-name my-auto w-full text-[clamp(2.25rem,4vw,4.5rem)]"
-                            >{{ project.name }}</span
-                        >
-                        <span
-                            class="absolute right-6 bottom-5 font-display text-6xl leading-none text-primary"
-                            >+</span
-                        >
-                    </div>
                 </div>
             </div>
             <div
@@ -156,7 +149,7 @@ function cheerProject(project: any): void {
                                 >
                             </h2>
                             <p
-                                class="mt-3 text-sm leading-7 whitespace-pre-line"
+                                class="font-prose mt-3 text-sm leading-7 whitespace-pre-line"
                             >
                                 {{ release.notes }}
                             </p>

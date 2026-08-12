@@ -3,6 +3,7 @@ import { Link } from '@inertiajs/vue3';
 import { ArrowUpRight, Heart, ShieldCheck } from '@lucide/vue';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Badge } from '@/components/ui/badge';
+import { defaultCoverUrl } from '@/lib/cover';
 import { show } from '@/routes/projects';
 
 defineProps<{ project: any }>();
@@ -15,36 +16,31 @@ defineProps<{ project: any }>();
     >
         <AspectRatio
             :ratio="16 / 10"
-            class="border-b border-foreground bg-secondary"
+            class="relative border-b border-foreground bg-secondary"
         >
+            <span
+                v-if="project.filed_serial"
+                class="technical-label absolute top-3 left-3 z-10 border border-foreground bg-background px-2 py-1 tabular-nums"
+                >{{ project.filed_serial }}</span
+            >
             <img
-                v-if="project.cover_image_url"
-                :src="project.cover_image_url"
+                :src="project.cover_image_url ?? defaultCoverUrl(project)"
                 :alt="`${project.name} cover image`"
                 loading="lazy"
                 width="960"
                 height="600"
-                class="size-full object-cover grayscale transition-[filter,transform] duration-300 ease-out group-hover:scale-[1.02] group-hover:grayscale-0"
+                class="size-full object-cover transition-[filter] duration-300 ease-out"
+                :class="{
+                    grayscale: !!project.cover_image_url,
+                    'group-hover:grayscale-0': !!project.cover_image_url,
+                }"
             />
-            <div
-                v-else
-                class="grid size-full place-items-center p-5 text-center"
-            >
-                <span
-                    class="display-type max-w-[12ch] text-3xl leading-[.84]"
-                    >{{ project.name }}</span
-                >
-            </div>
         </AspectRatio>
         <div class="grid gap-px bg-foreground">
             <div
                 class="flex items-center justify-between bg-background px-4 py-3"
             >
-                <Badge
-                    variant="outline"
-                    class="rounded-none border-foreground font-mono text-[10px] tracking-[.08em] uppercase"
-                    >{{ project.category.name }}</Badge
-                >
+                <Badge variant="outline">{{ project.category.name }}</Badge>
                 <span class="inline-flex items-center gap-1 text-xs"
                     ><Heart class="size-3" aria-hidden="true" />{{
                         project.cheers_count

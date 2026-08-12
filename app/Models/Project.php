@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Storage;
 
 class Project extends Model
@@ -18,7 +19,7 @@ class Project extends Model
 
     protected $fillable = ['category_id', 'connected_environment_id', 'name', 'slug', 'tagline', 'description', 'cover_image_path', 'live_url', 'github_url', 'is_public'];
 
-    protected $appends = ['cover_image_url'];
+    protected $appends = ['cover_image_url', 'filed_serial'];
 
     protected function casts(): array
     {
@@ -27,6 +28,7 @@ class Project extends Model
             'is_demo' => 'boolean',
             'verified_at' => 'datetime',
             'verification_checked_at' => 'datetime',
+            'filed_at' => 'datetime',
         ];
     }
 
@@ -115,6 +117,32 @@ class Project extends Model
         $this->forceFill(['is_public' => false])->save();
     }
 
+    /**
+     * Assign the next filed serial number when a project enters the registry.
+     * Race-safe against the unique index via a bounded retry loop that
+     * re-reads the maximum on each unique_violation (Postgres 23505).
+     */
+    public function assignFiledNumber(): void
+    {
+        if ($this->filed_number !== null) {
+            return;
+        }
+
+        for ($attempt = 1; $attempt <= 5; $attempt++) {
+            $next = (int) (Project::query()->max('filed_number') ?? 0) + 1;
+
+            try {
+                $this->forceFill(['filed_number' => $next, 'filed_at' => now()])->save();
+
+                return;
+            } catch (QueryException $e) {
+                if ($e->getCode() !== '23505' && ! str_contains((string) $e->getMessage(), '23505')) {
+                    throw $e;
+                }
+            }
+        }
+    }
+
     /** @return Attribute<string|null, never> */
     protected function coverImageUrl(): Attribute
     {
@@ -122,6 +150,16 @@ class Project extends Model
             get: fn (): ?string => $this->cover_image_path === null
                 ? null
                 : Storage::disk()->url($this->cover_image_path),
+        );
+    }
+
+    /** @return Attribute<string|null, never> */
+    protected function filedSerial(): Attribute
+    {
+        return Attribute::make(
+            get: fn (): ?string => $this->filed_number === null
+                ? null
+                : 'DISPATCH '.str_pad((string) $this->filed_number, 4, '0', STR_PAD_LEFT),
         );
     }
 }

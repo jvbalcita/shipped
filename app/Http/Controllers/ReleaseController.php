@@ -19,6 +19,9 @@ class ReleaseController extends Controller
 
         return Inertia::render('Releases/Show', [
             'release' => $release->load(['project.creator', 'project.category']),
+            'ogTitle' => $release->title.' — Shipped',
+            'ogDescription' => $project->tagline,
+            'ogImage' => route('og.project', ['creator' => $creator, 'project' => $project]),
         ]);
     }
 }
