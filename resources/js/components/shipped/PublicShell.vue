@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Toaster } from '@/components/ui/sonner';
+import CommandPalette from '@/components/shipped/CommandPalette.vue';
 import UserMenuContent from '@/components/UserMenuContent.vue';
 import { useInitials } from '@/composables/useInitials';
 import { dashboard, discover, login, logout, register } from '@/routes';
@@ -35,6 +36,7 @@ const handleLogout = (): void => {
     >
     <div class="flex min-h-dvh flex-col bg-background text-foreground">
         <Toaster />
+        <CommandPalette />
         <header
             class="sticky top-0 z-20 border-b border-foreground bg-background"
         >
@@ -249,8 +251,18 @@ const handleLogout = (): void => {
         </main>
         <footer class="border-t border-foreground">
             <div
-                class="mx-auto grid w-full max-w-[90rem] gap-px bg-foreground sm:grid-cols-3"
+                class="relative mx-auto grid w-full max-w-[90rem] gap-px bg-foreground sm:grid-cols-3"
             >
+                <span
+                    aria-hidden="true"
+                    class="technical-label pointer-events-none absolute -top-2 left-1 hidden bg-background px-1 text-muted-foreground sm:block"
+                    >+</span
+                >
+                <span
+                    aria-hidden="true"
+                    class="technical-label pointer-events-none absolute -top-2 right-1 hidden bg-background px-1 text-muted-foreground sm:block"
+                    >+</span
+                >
                 <p class="technical-label bg-background px-4 py-5">
                     Shipped / Community registry
                 </p>

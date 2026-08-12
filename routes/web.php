@@ -4,15 +4,17 @@ use App\Http\Controllers\CloudConnectionController;
 use App\Http\Controllers\ConnectedEnvironmentController;
 use App\Http\Controllers\CreatorController;
 use App\Http\Controllers\DiscoverController;
+use App\Http\Controllers\OgController;
 use App\Http\Controllers\ProjectCheerController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectReleaseController;
 use App\Http\Controllers\ProjectVerificationController;
 use App\Http\Controllers\ProjectVisibilityController;
 use App\Http\Controllers\ReleaseController;
+use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'Welcome')->name('home');
+Route::get('/', WelcomeController::class)->name('home');
 Route::get('/discover', DiscoverController::class)->name('discover');
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -34,5 +36,13 @@ Route::get('/@{creator:handle}/{project:slug}/releases/{release}', [ReleaseContr
 Route::get('/@{creator:handle}/{project:slug}', [ProjectController::class, 'show'])
     ->scopeBindings()
     ->name('projects.show');
+
+Route::get('/og/@{creator:handle}/{project:slug}', [OgController::class, 'project'])
+    ->scopeBindings()
+    ->name('og.project');
+
+Route::get('/covers/@{creator:handle}/{project:slug}', [OgController::class, 'cover'])
+    ->scopeBindings()
+    ->name('cover.project');
 
 require __DIR__.'/settings.php';

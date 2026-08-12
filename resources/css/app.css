@@ -5,6 +5,9 @@
 @import '@fontsource/ibm-plex-mono/400.css';
 @import '@fontsource/ibm-plex-mono/500.css';
 @import '@fontsource/ibm-plex-mono/600.css';
+@import '@fontsource/instrument-sans/400.css';
+@import '@fontsource/instrument-sans/500.css';
+@import '@fontsource/instrument-sans/600.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -14,6 +17,7 @@
 @theme inline {
     --font-sans: 'IBM Plex Mono', ui-monospace, monospace;
     --font-display: 'Archivo Black', ui-sans-serif, sans-serif;
+    --font-prose: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
 
     --radius-lg: var(--radius);
     --radius-md: calc(var(--radius) - 2px);
@@ -334,6 +338,28 @@
     }
 }
 
+@keyframes shipped-filed-stamp {
+    0% {
+        opacity: 0;
+        transform: scale(1.6) rotate(-12deg);
+    }
+
+    55% {
+        opacity: 1;
+        transform: scale(0.92) rotate(-2deg);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1) rotate(-4deg);
+    }
+}
+
+.filed-stamp {
+    animation: shipped-filed-stamp 480ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+
 @keyframes shipped-registry-ticker {
     from {
         transform: translateX(0);
@@ -360,3 +386,55 @@
         transform: none;
     }
 }
+
+/*
+  Paper substrate. A whisper of grain over the page sells the "printed
+  dispatch sheet" without changing layout. Pointer-events keep it inert.
+*/
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    pointer-events: none;
+    opacity: 0.035;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/*
+  Print: a launch record should read as an archival dispatch sheet.
+  Hide interactive chrome, keep the hairline rules and the dispatch identity.
+*/
+@media print {
+    body::after {
+        display: none;
+    }
+
+    header,
+    footer,
+    [data-print-hidden] {
+        display: none !important;
+    }
+
+    body,
+    html {
+        background: #fff !important;
+    }
+
+    .border-x,
+    .border-b,
+    .border-t {
+        border-color: #000 !important;
+    }
+
+    a {
+        text-decoration: none !important;
+        color: #000 !important;
+    }
+
+    section {
+        page-break-inside: avoid;
+    }
+}
+

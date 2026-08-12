@@ -15,7 +15,10 @@ class DiscoverController extends Controller
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
             'category' => ['nullable', 'string', 'exists:categories,slug'],
+            'sort' => ['nullable', 'in:latest,cheered'],
         ]);
+
+        $sort = $filters['sort'] ?? 'latest';
 
         $projects = Project::query()
             ->discoverable()
@@ -23,14 +26,17 @@ class DiscoverController extends Controller
             ->when($filters['category'] ?? null, fn ($query, $slug) => $query->whereHas('category', fn ($query) => $query->where('slug', $slug)))
             ->with(['creator', 'category'])
             ->withCount('cheers')
-            ->latest()
+            ->when($sort === 'cheered', fn ($query) => $query->orderByDesc('cheers_count')->latest(), fn ($query) => $query->latest())
             ->paginate(9)
             ->withQueryString();
 
         return Inertia::render('Discover/Index', [
             'projects' => $projects,
             'categories' => Category::query()->orderBy('name')->get(),
-            'filters' => $filters,
+            'activeCategory' => $filters['category'] ?? null
+                ? Category::query()->where('slug', $filters['category'])->first()
+                : null,
+            'filters' => [...$filters, 'sort' => $sort],
         ]);
     }
 }

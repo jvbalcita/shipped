@@ -37,3 +37,13 @@ Shipped is a public registry for products that have crossed the line from work-i
 - Motion is short and purposeful: one page-arrival reveal and launch-card hover feedback are enough. Respect `prefers-reduced-motion`.
 - Keyboard focus is a 3px red offset outline. Do not rely on color alone for status.
 - Icons supplement text; all icon-only controls require an accessible name.
+
+## Identity extensions
+
+- **Reading copy:** long-form prose (descriptions, release notes) uses the `--font-prose` face (Instrument Sans) via the `font-prose` utility. Metadata, kickers, labels, and buttons stay IBM Plex Mono. Use `tabular-nums` on dates, counts, and serials.
+- **Filed serials:** a project receives a permanent `DISPATCH 0001` number only when it enters the public registry (public + verified + a published release). Surface the serial via the `filed_serial` accessor; drafts have none.
+- **Social previews:** every discoverable launch renders a self-contained 1200×630 SVG at `og.project` (paper substrate, black frame, red `FILED` stamp, dispatch number, name, `@handle`). Open Graph metadata is injected server-side from `$page['props']` so non-JS crawlers see it.
+- **The FILED moment:** first publication flashes a `filed` payload that plays a one-shot stamp overlay (`shipped-filed-stamp` keyframe) over the studio.
+- **Substrate & marks:** a faint, inert grain overlays the page (`body::after`, `mix-blend-multiply`); printer's registration `+` marks sit in the footer corners. A `@media print` rule strips chrome so a launch record prints as an archival sheet.
+- **Command palette:** `⌘K` opens a branded palette for navigation and the primary "ship yours" action.
+

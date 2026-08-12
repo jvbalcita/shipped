@@ -3,6 +3,7 @@ import { Link, router } from '@inertiajs/vue3';
 import { Search } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import ProjectCard from '@/components/shipped/ProjectCard.vue';
+import ProjectCardSkeleton from '@/components/shipped/ProjectCardSkeleton.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,15 +31,26 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { X } from '@lucide/vue';
 import { discover } from '@/routes';
 
 const props = defineProps<{
-    projects: { data: any[]; current_page: number; last_page: number };
+    projects: {
+        data: any[];
+        current_page: number;
+        last_page: number;
+        total: number;
+        from?: number;
+        to?: number;
+    };
     categories: any[];
-    filters: { q?: string; category?: string };
+    activeCategory: { id: number; name: string; slug: string } | null;
+    filters: { q?: string; category?: string; sort?: string };
 }>();
 const search = ref(props.filters.q ?? '');
 const category = ref(props.filters.category ?? 'all');
+const sort = ref(props.filters.sort ?? 'latest');
+const loading = ref(false);
 const totalPages = computed(() => props.projects.last_page);
 const projectGridClass = computed(() => {
     if (props.projects.data.length === 1) {
@@ -47,17 +59,42 @@ const projectGridClass = computed(() => {
 
     return 'md:grid-cols-2 xl:grid-cols-3';
 });
+const resultsLabel = computed(() => {
+    const { total, from, to } = props.projects;
+    if (total === 0) return 'No records';
+    if (total === 1) return '1 record';
+    return `${from}–${to} of ${total} records`;
+});
 
 function applyFilters(page = 1) {
+    loading.value = true;
     router.get(
         discover().url,
         {
             q: search.value || undefined,
             category: category.value === 'all' ? undefined : category.value,
+            sort: sort.value === 'latest' ? undefined : sort.value,
             page,
         },
-        { preserveScroll: true, preserveState: true, replace: true },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            replace: true,
+            onFinish: () => {
+                loading.value = false;
+            },
+        },
     );
+}
+
+function clearSearch() {
+    search.value = '';
+    applyFilters();
+}
+
+function clearCategory() {
+    category.value = 'all';
+    applyFilters();
 }
 </script>
 
@@ -121,7 +158,64 @@ function applyFilters(page = 1) {
                 >
             </div>
             <div
-                v-if="projects.data.length"
+                class="flex flex-wrap items-center justify-between gap-3 border-b border-foreground bg-background px-5 py-3 sm:px-8"
+            >
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="technical-label tabular-nums">{{
+                        resultsLabel
+                    }}</span>
+                    <span
+                        v-if="search"
+                        class="inline-flex items-center gap-1.5 border border-foreground bg-background px-2 py-1 font-mono text-[10px] uppercase tracking-[.08em]"
+                    >
+                        <span class="max-w-[12rem] truncate"
+                            >"{{ search }}"</span
+                        >
+                        <button
+                            type="button"
+                            aria-label="Clear search"
+                            class="text-primary"
+                            @click="clearSearch"
+                        >
+                            <X class="size-3" aria-hidden="true" />
+                        </button>
+                    </span>
+                    <span
+                        v-if="activeCategory"
+                        class="inline-flex items-center gap-1.5 border border-foreground bg-background px-2 py-1 font-mono text-[10px] uppercase tracking-[.08em]"
+                    >
+                        {{ activeCategory.name }}
+                        <button
+                            type="button"
+                            aria-label="Clear category filter"
+                            class="text-primary"
+                            @click="clearCategory"
+                        >
+                            <X class="size-3" aria-hidden="true" />
+                        </button>
+                    </span>
+                </div>
+                <Select v-model="sort" @update:model-value="applyFilters()"
+                    ><SelectTrigger
+                        class="h-8 w-[12rem] rounded-none border-foreground bg-background font-mono text-[10px] uppercase tracking-[.08em]"
+                        ><span class="text-muted-foreground">Sort /</span>
+                        <SelectValue /> </SelectTrigger
+                    ><SelectContent>
+                        <SelectItem value="latest">Latest</SelectItem>
+                        <SelectItem value="cheered">Most cheered</SelectItem>
+                    </SelectContent></Select
+                >
+            </div>
+            <div
+                v-if="loading"
+                class="grid gap-3 bg-secondary p-3 sm:gap-4 sm:p-4"
+                :class="projectGridClass"
+                aria-label="Loading launches"
+            >
+                <ProjectCardSkeleton :count="projects.data.length || 9" />
+            </div>
+            <div
+                v-else-if="projects.data.length"
                 class="grid gap-3 bg-secondary p-3 sm:gap-4 sm:p-4"
                 :class="projectGridClass"
             >

@@ -50,10 +50,13 @@ defineProps<{ release: any }>();
                 </div>
                 <div class="p-5 sm:p-8">
                     <div class="flex flex-wrap items-center gap-3">
-                        <Badge
-                            variant="outline"
-                            class="rounded-none border-foreground font-mono text-[10px] tracking-[.08em] uppercase"
-                            >{{ release.project.category.name }}</Badge
+                        <Badge variant="outline">{{
+                            release.project.category.name
+                        }}</Badge>
+                        <span
+                            v-if="release.project.filed_serial"
+                            class="technical-label tabular-nums text-muted-foreground"
+                            >{{ release.project.filed_serial }}</span
                         >
                         <Link
                             :href="
@@ -72,7 +75,7 @@ defineProps<{ release: any }>();
                         {{ release.title }}
                     </h1>
                     <p
-                        class="mt-8 max-w-3xl leading-8 whitespace-pre-line text-muted-foreground"
+                        class="font-prose mt-8 max-w-3xl text-[1.0625rem] leading-8 whitespace-pre-line text-foreground"
                     >
                         {{ release.notes }}
                     </p>

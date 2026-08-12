@@ -84,7 +84,14 @@ class ProjectController extends Controller
         abort_unless($project->creator->is($creator), 404);
         abort_unless(request()->user()?->is($project->creator) || Project::query()->discoverable()->whereKey($project)->exists(), 404);
 
-        return Inertia::render('Projects/Show', ['project' => $project->load(['creator', 'category', 'releases' => fn ($query) => $query->published()->latest('published_at')])->loadCount('cheers')]);
+        $project->load(['creator', 'category', 'releases' => fn ($query) => $query->published()->latest('published_at')])->loadCount('cheers');
+
+        return Inertia::render('Projects/Show', [
+            'project' => $project,
+            'ogTitle' => $project->name.' — Shipped',
+            'ogDescription' => $project->tagline,
+            'ogImage' => route('og.project', ['creator' => $creator, 'project' => $project]),
+        ]);
     }
 
     /**
@@ -124,6 +131,12 @@ class ProjectController extends Controller
             }
 
             $data['cover_image_path'] = $request->file('cover_image')->store('project-covers');
+        } elseif ($request->boolean('cover_removal')) {
+            if ($project->cover_image_path) {
+                Storage::delete($project->cover_image_path);
+            }
+
+            $data['cover_image_path'] = null;
         }
         unset($data['cover_image']);
         $project->update($data);
@@ -135,6 +148,8 @@ class ProjectController extends Controller
         if ($project->wasChanged('connected_environment_id')) {
             $verification->invalidate($project, 'The selected Laravel Cloud environment changed and must be verified again.');
         }
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Project record saved.']);
 
         return to_route('projects.edit', $project);
     }

@@ -24,9 +24,11 @@ const delegatedProps = reactiveOmit(props, "class", "size", "isActive")
     v-bind="delegatedProps"
     :class="cn(
       buttonVariants({
-        variant: isActive ? 'outline' : 'ghost',
+        variant: 'ghost',
         size,
       }),
+      'tabular-nums',
+      isActive && 'bg-foreground text-background hover:bg-foreground hover:text-background',
       props.class)"
   >
     <slot />

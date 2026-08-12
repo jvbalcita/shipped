@@ -1,12 +1,15 @@
 <?php
 
 use App\Models\Category;
+use App\Models\Cheer;
 use App\Models\Project;
 use App\Models\Release;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Testing\AssertableInertia as Assert;
 
 test('a creator can publish a project after creating its first release', function () {
     $creator = User::factory()->create();
@@ -146,6 +149,27 @@ test('replacing a project cover removes the old file from the configured default
     Storage::disk('s3')->assertExists($project->fresh()->cover_image_path);
 });
 
+test('a creator can remove an existing project cover', function () {
+    config()->set('filesystems.default', 's3');
+    Storage::fake('s3');
+
+    $creator = User::factory()->create();
+    $project = Project::factory()->for($creator, 'creator')->create([
+        'cover_image_path' => 'project-covers/original.png',
+    ]);
+
+    Storage::disk('s3')->put($project->cover_image_path, 'old cover');
+
+    $this->actingAs($creator)
+        ->patch(route('projects.update', $project), [
+            'cover_removal' => true,
+        ])
+        ->assertRedirect(route('projects.edit', $project));
+
+    Storage::disk('s3')->assertMissing('project-covers/original.png');
+    expect($project->fresh()->cover_image_path)->toBeNull();
+});
+
 test('a creator receives project field validation errors before a draft is stored', function () {
     $creator = User::factory()->create();
 
@@ -254,4 +278,167 @@ test('discovery supports search and category filters through the public query st
     $this->get(route('discover', ['q' => 'Registry', 'category' => 'package']))
         ->assertSuccessful()
         ->assertSee('Registry Kit');
+});
+
+test('discovery sorts by most cheered when requested', function () {
+    $creator = User::factory()->create();
+    $category = Category::factory()->create();
+
+    $cheered = Project::factory()->public()->for($creator, 'creator')->for($category)->create(['name' => 'Beloved Kit']);
+    Release::factory()->for($cheered)->create(['published_at' => now()]);
+    Cheer::factory()->for($cheered)->for(User::factory())->create();
+    Cheer::factory()->for($cheered)->for(User::factory())->create();
+
+    $lonely = Project::factory()->public()->for($creator, 'creator')->for($category)->create(['name' => 'Lonely Kit']);
+    Release::factory()->for($lonely)->create(['published_at' => now()]);
+
+    $this->get(route('discover', ['sort' => 'cheered']))
+        ->assertSuccessful()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('projects.data.0.id', $cheered->id)
+            ->where('projects.data.1.id', $lonely->id));
+});
+
+test('discovery resolves the active category object for filter chips', function () {
+    $creator = User::factory()->create();
+    $category = Category::factory()->create(['name' => 'Studio', 'slug' => 'studio']);
+    $project = Project::factory()->public()->for($creator, 'creator')->for($category)->create();
+    Release::factory()->for($project)->create(['published_at' => now()]);
+
+    $this->get(route('discover', ['category' => 'studio']))
+        ->assertSuccessful()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('activeCategory.slug', 'studio')
+            ->where('activeCategory.name', 'Studio'));
+});
+
+test('missing records render the branded error page', function () {
+    $this->get('/this-record-does-not-exist')
+        ->assertNotFound()
+        ->assertSee('Not on file.');
+});
+
+test('filing a project for the first time assigns a permanent dispatch number', function () {
+    $creator = User::factory()->create();
+    $project = Project::factory()->for($creator, 'creator')->create([
+        'is_public' => false,
+        'verification_status' => 'verified',
+        'verified_at' => now(),
+    ]);
+    Release::factory()->for($project)->create(['published_at' => now()]);
+
+    expect($project->fresh()->filed_number)->toBeNull();
+
+    $this->actingAs($creator)
+        ->patch(route('projects.visibility.update', $project), ['is_public' => true])
+        ->assertRedirect();
+
+    $filed = $project->fresh();
+
+    expect($filed->filed_number)->toBe(1)
+        ->and($filed->filed_at)->not()->toBeNull()
+        ->and($filed->filed_serial)->toBe('DISPATCH 0001');
+});
+
+test('each filed project receives the next sequential dispatch number', function () {
+    $creator = User::factory()->create();
+    $first = Project::factory()->for($creator, 'creator')->create([
+        'is_public' => false, 'verification_status' => 'verified', 'verified_at' => now(),
+    ]);
+    Release::factory()->for($first)->create(['published_at' => now()]);
+    $second = Project::factory()->for($creator, 'creator')->create([
+        'is_public' => false, 'verification_status' => 'verified', 'verified_at' => now(),
+    ]);
+    Release::factory()->for($second)->create(['published_at' => now()]);
+
+    $this->actingAs($creator)->patch(route('projects.visibility.update', $first), ['is_public' => true])->assertRedirect();
+    $this->actingAs($creator)->patch(route('projects.visibility.update', $second), ['is_public' => true])->assertRedirect();
+
+    expect($first->fresh()->filed_number)->toBe(1)
+        ->and($second->fresh()->filed_number)->toBe(2);
+});
+
+test('a project keeps its dispatch number if toggled private and public again', function () {
+    $creator = User::factory()->create();
+    $project = Project::factory()->for($creator, 'creator')->create([
+        'is_public' => false, 'verification_status' => 'verified', 'verified_at' => now(),
+    ]);
+    Release::factory()->for($project)->create(['published_at' => now()]);
+
+    $this->actingAs($creator)->patch(route('projects.visibility.update', $project), ['is_public' => true])->assertRedirect();
+    expect($project->fresh()->filed_number)->toBe(1);
+
+    $this->actingAs($creator)->patch(route('projects.visibility.update', $project), ['is_public' => false])->assertRedirect();
+    $this->actingAs($creator)->patch(route('projects.visibility.update', $project), ['is_public' => true])->assertRedirect();
+
+    expect($project->fresh()->filed_number)->toBe(1)
+        ->and($project->fresh()->filed_at)->not()->toBeNull();
+});
+
+test('the homepage surfaces a live snapshot of the registry', function () {
+    $creator = User::factory()->create(['handle' => 'maker']);
+    $project = Project::factory()->filed()->public()->for($creator, 'creator')->create();
+    Release::factory()->for($project)->create(['published_at' => now()]);
+    Cache::forget('shipped:registry:stats');
+
+    $this->get(route('home'))
+        ->assertSuccessful()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Welcome')
+            ->where('launchCount', 1)
+            ->where('creatorCount', 1)
+            ->has('latestDispatchAt'));
+});
+
+test('a filed launch renders a branded social preview image', function () {
+    $creator = User::factory()->create(['handle' => 'maker']);
+    $project = Project::factory()->filed()->public()->for($creator, 'creator')->create(['name' => 'Registry Kit']);
+    Release::factory()->for($project)->create(['published_at' => now()]);
+
+    $this->get(route('og.project', ['creator' => $creator, 'project' => $project]))
+        ->assertSuccessful()
+        ->assertHeader('Content-Type', 'image/svg+xml')
+        ->assertSee('REGISTRY KIT')
+        ->assertSee('DISPATCH')
+        ->assertSee('@MAKER');
+});
+
+test('a coverless project renders a typographic default cover bearing its name', function () {
+    $creator = User::factory()->create(['handle' => 'maker']);
+    $project = Project::factory()->filed()->public()->for($creator, 'creator')->create(['name' => 'Registry Kit', 'cover_image_path' => null]);
+    Release::factory()->for($project)->create(['published_at' => now()]);
+
+    $this->get(route('cover.project', ['creator' => $creator, 'project' => $project]))
+        ->assertSuccessful()
+        ->assertHeader('Content-Type', 'image/svg+xml')
+        ->assertSee('REGISTRY KIT')
+        ->assertSee('@MAKER');
+});
+
+test('a private draft has no default cover for the public', function () {
+    $creator = User::factory()->create(['handle' => 'maker']);
+    $project = Project::factory()->for($creator, 'creator')->create(['name' => 'Stealth Kit']);
+
+    $this->get(route('cover.project', ['creator' => $creator, 'project' => $project]))
+        ->assertNotFound();
+});
+
+test('the launch page publishes open-graph metadata for crawlers', function () {
+    $creator = User::factory()->create(['handle' => 'maker']);
+    $project = Project::factory()->filed()->public()->for($creator, 'creator')->create(['name' => 'Registry Kit', 'tagline' => 'A durable record.']);
+    Release::factory()->for($project)->create(['published_at' => now()]);
+
+    $this->get(route('projects.show', ['creator' => $creator, 'project' => $project]))
+        ->assertSuccessful()
+        ->assertSee('property="og:image"', false)
+        ->assertSee('property="og:title"', false)
+        ->assertSee(route('og.project', ['creator' => $creator, 'project' => $project], false));
+});
+
+test('a private draft has no social preview image', function () {
+    $creator = User::factory()->create(['handle' => 'maker']);
+    $project = Project::factory()->for($creator, 'creator')->create(['name' => 'Stealth Kit']);
+
+    $this->get(route('og.project', ['creator' => $creator, 'project' => $project]))
+        ->assertNotFound();
 });

@@ -13,6 +13,8 @@ class CreatorController extends Controller
         return Inertia::render('Creators/Show', [
             'creator' => $creator->only('name', 'handle', 'bio', 'avatar_path'),
             'projects' => $creator->projects()->discoverable()->with('category')->withCount('cheers')->latest()->get(),
+            'ogTitle' => $creator->name.' — Shipped',
+            'ogDescription' => 'Public launches filed by @'.$creator->handle.'.',
         ]);
     }
 }

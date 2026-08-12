@@ -15,13 +15,19 @@ const props = withDefaults(
     { modelValue: null, error: '', existingUrl: null },
 );
 
-const emit = defineEmits<{ 'update:modelValue': [value: File | null] }>();
+const emit = defineEmits<{
+    'update:modelValue': [value: File | null];
+    'remove-existing': [];
+}>();
 const input = ref<InstanceType<typeof Input> | null>(null);
 const isDragging = ref(false);
+const showExisting = ref(!!props.existingUrl);
 const previewUrl = computed(() =>
     props.modelValue
         ? URL.createObjectURL(props.modelValue)
-        : props.existingUrl,
+        : showExisting.value
+            ? props.existingUrl
+            : null,
 );
 
 function selectFile(file?: File): void {
@@ -31,7 +37,18 @@ function selectFile(file?: File): void {
 }
 
 function removeFile(): void {
-    emit('update:modelValue', null);
+    // Deselecting a freshly picked file restores the saved cover (if any);
+    // only when there is no new file do we signal removal of the existing one.
+    if (props.modelValue) {
+        emit('update:modelValue', null);
+
+        return;
+    }
+
+    if (showExisting.value) {
+        showExisting.value = false;
+        emit('remove-existing');
+    }
 }
 </script>
 

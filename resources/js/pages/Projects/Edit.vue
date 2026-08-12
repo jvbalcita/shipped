@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { router, useForm } from '@inertiajs/vue3';
-import { CalendarClock, Check, Eye, Send } from '@lucide/vue';
-import { computed, ref, watch } from 'vue';
+import { CalendarClock, Check, Eye, EyeOff, Send } from '@lucide/vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import DateTimePicker from '@/components/shipped/DateTimePicker.vue';
 import FileUpload from '@/components/shipped/FileUpload.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
@@ -23,6 +23,7 @@ import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Spinner } from '@/components/ui/spinner';
 import {
     Select,
     SelectContent,
@@ -48,6 +49,7 @@ const projectForm = useForm({
     category_id: String(props.project.category_id),
     live_url: props.project.live_url ?? '',
     cover_image: null as File | null,
+    cover_removal: false as boolean,
 });
 const releaseForm = useForm({
     title: '',
@@ -65,6 +67,18 @@ const hasPublishedRelease = computed(() =>
             new Date(release.published_at) <= new Date(),
     ),
 );
+
+function onCoverChange(file: File | null): void {
+    projectForm.cover_image = file;
+    // A fresh upload supersedes any pending removal of the old cover.
+    if (file) {
+        projectForm.cover_removal = false;
+    }
+}
+
+function onCoverRemove(): void {
+    projectForm.cover_removal = true;
+}
 
 function saveProject(): void {
     projectForm.patch(update(props.project).url, {
@@ -118,16 +132,69 @@ watch(isScheduled, (isScheduling) => {
         releaseForm.clearErrors('published_at');
     }
 });
+const publishing = ref(false);
+const withdrawing = ref(false);
+const confirmWithdraw = ref(false);
+
 function publishProject(): void {
+    publishing.value = true;
     router.patch(
         visibility.update(props.project).url,
         { is_public: true },
         {
             preserveScroll: true,
-            onFinish: () => (confirmPublish.value = false),
+            onFinish: () => {
+                confirmPublish.value = false;
+                publishing.value = false;
+            },
         },
     );
 }
+
+function withdrawProject(): void {
+    withdrawing.value = true;
+    router.patch(
+        visibility.update(props.project).url,
+        { is_public: false },
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                confirmWithdraw.value = false;
+                withdrawing.value = false;
+            },
+        },
+    );
+}
+
+// The "FILED" moment: when the server flashes a filed payload on first publish,
+// slam a stamp over the studio for ~3s, then dismiss.
+const filedSerial = ref<string | null>(null);
+let filedTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function handleFiled(event: Event): void {
+    const detail = (event as CustomEvent).detail as {
+        filed_serial?: string;
+    } | undefined;
+    if (!detail?.filed_serial) {
+        return;
+    }
+
+    filedSerial.value = detail.filed_serial;
+    if (filedTimeout) {
+        clearTimeout(filedTimeout);
+    }
+    filedTimeout = setTimeout(() => {
+        filedSerial.value = null;
+    }, 3000);
+}
+
+onMounted(() => window.addEventListener('shipped:filed', handleFiled));
+onUnmounted(() => {
+    window.removeEventListener('shipped:filed', handleFiled);
+    if (filedTimeout) {
+        clearTimeout(filedTimeout);
+    }
+});
 </script>
 
 <template>
@@ -213,20 +280,21 @@ function publishProject(): void {
                             }}</FieldError></Field
                         ><Field
                             ><FieldLabel>Cover image</FieldLabel
-                            ><FileUpload
-                                v-model="projectForm.cover_image"
-                                :existing-url="
-                                    project.cover_image_url
-                                        ? project.cover_image_url
-                                        : null
-                                "
-                                :error="
-                                    projectForm.errors.cover_image
-                                " /></Field
+                                ><FileUpload
+                                    :model-value="projectForm.cover_image"
+                                    :existing-url="
+                                        project.cover_image_url
+                                            ? project.cover_image_url
+                                            : null
+                                    "
+                                    :error="projectForm.errors.cover_image"
+                                    @update:model-value="onCoverChange"
+                                    @remove-existing="onCoverRemove" /></Field
                         ><Button
                             type="submit"
                             :disabled="projectForm.processing"
-                            >Save project record</Button
+                            ><Spinner v-if="projectForm.processing" />Save
+                            project record</Button
                         >
                     </form>
                 </section>
@@ -308,8 +376,8 @@ function publishProject(): void {
                                 releaseForm.processing ||
                                 (isScheduled && !isScheduledTimeValid)
                             "
-                            ><CalendarClock
-                                v-if="isScheduled"
+                            ><Spinner v-if="releaseForm.processing" /><CalendarClock
+                                v-else-if="isScheduled"
                                 class="size-4"
                             /><Send v-else class="size-4" />{{
                                 isScheduled
@@ -324,20 +392,18 @@ function publishProject(): void {
                             >Create a published release first, then confirm the
                             public project record below.</AlertDescription
                         ></Alert
-                    ><AlertDialog v-model:open="confirmPublish"
+                    ><AlertDialog v-if="!project.is_public" v-model:open="confirmPublish"
                         ><AlertDialogTrigger as-child
                             ><Button
                                 class="mt-6 w-full"
                                 variant="outline"
                                 :disabled="
+                                    publishing ||
                                     !hasPublishedRelease ||
                                     project.verification_status !== 'verified'
                                 "
-                                ><Eye class="size-4" />{{
-                                    project.is_public
-                                        ? 'Project is public'
-                                        : 'Publish project'
-                                }}</Button
+                                ><Eye class="size-4" />Publish
+                                project</Button
                             ></AlertDialogTrigger
                         ><AlertDialogContent
                             class="rounded-none border-2 border-foreground"
@@ -351,10 +417,48 @@ function publishProject(): void {
                                 ></AlertDialogHeader
                             ><AlertDialogFooter
                                 ><AlertDialogCancel
+                                    :disabled="publishing"
                                     >Keep private</AlertDialogCancel
-                                ><AlertDialogAction @click="publishProject"
-                                    ><Check class="size-4" /> Publish
-                                    publicly</AlertDialogAction
+                                ><AlertDialogAction
+                                    :disabled="publishing"
+                                    @click="publishProject"
+                                    ><Spinner v-if="publishing" /><Check
+                                        v-else
+                                        class="size-4" />
+                                    Publish publicly</AlertDialogAction
+                                ></AlertDialogFooter
+                            ></AlertDialogContent
+                        ></AlertDialog
+                    ><AlertDialog v-else v-model:open="confirmWithdraw"
+                        ><AlertDialogTrigger as-child
+                            ><Button
+                                class="mt-6 w-full"
+                                variant="ghost"
+                                :disabled="withdrawing"
+                                ><EyeOff class="size-4" />Withdraw from
+                                public</Button
+                            ></AlertDialogTrigger
+                        ><AlertDialogContent
+                            class="rounded-none border-2 border-foreground"
+                            ><AlertDialogHeader
+                                ><AlertDialogTitle
+                                    >Withdraw this project?</AlertDialogTitle
+                                ><AlertDialogDescription
+                                    >It will be removed from the public
+                                    registry. Its dispatch number stays on the
+                                    record, and you can republish
+                                    anytime.</AlertDialogDescription
+                                ></AlertDialogHeader
+                            ><AlertDialogFooter
+                                ><AlertDialogCancel :disabled="withdrawing"
+                                    >Keep public</AlertDialogCancel
+                                ><AlertDialogAction
+                                    :disabled="withdrawing"
+                                    @click="withdrawProject"
+                                    ><Spinner v-if="withdrawing" /><Check
+                                        v-else
+                                        class="size-4" />
+                                    Withdraw from public</AlertDialogAction
                                 ></AlertDialogFooter
                             ></AlertDialogContent
                         ></AlertDialog
@@ -408,4 +512,30 @@ function publishProject(): void {
             </section>
         </section>
     </PublicShell>
+    <Teleport to="body">
+        <div
+            v-if="filedSerial"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-foreground/80 p-6 motion-safe:animate-[shipped-page-enter_0.2s_ease-out]"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Launch filed"
+            @click="filedSerial = null"
+        >
+            <div
+                class="filed-stamp flex flex-col items-center gap-6 border-[6px] border-primary bg-background px-12 py-10 text-center sm:px-20 sm:py-14"
+            >
+                <p class="technical-label text-primary">Launch filed</p>
+                <p
+                    class="display-type text-[clamp(3.5rem,12vw,7rem)] leading-[0.82] text-primary"
+                >
+                    FILED
+                </p>
+                <p
+                    class="technical-label tabular-nums text-muted-foreground"
+                >
+                    {{ filedSerial }}
+                </p>
+            </div>
+        </div>
+    </Teleport>
 </template>
