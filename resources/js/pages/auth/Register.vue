@@ -62,19 +62,22 @@ defineOptions({
             </div>
 
             <div class="grid gap-2">
-                <Label for="handle">Public handle</Label>
+                <Label for="username">Username</Label>
                 <Input
-                    id="handle"
+                    id="username"
                     type="text"
                     required
                     :tabindex="3"
-                    name="handle"
+                    name="username"
                     placeholder="jack"
+                    pattern="[a-z0-9_]{3,30}"
+                    autocomplete="username"
                 />
                 <p class="text-xs text-muted-foreground">
-                    Used in your public Shipped URL. It cannot be changed later.
+                    Used in your public Shipped URL (lowercase letters, numbers,
+                    underscores).
                 </p>
-                <InputError :message="errors.handle" />
+                <InputError :message="errors.username" />
             </div>
 
             <div class="grid gap-2">

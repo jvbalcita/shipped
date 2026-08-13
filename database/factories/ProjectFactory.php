@@ -28,6 +28,8 @@ class ProjectFactory extends Factory
             'description' => fake()->paragraph(),
             'live_url' => fake()->url(),
             'github_url' => fake()->url(),
+            'pricing' => 'free',
+            'launch_date' => null,
             'is_public' => false,
             'verification_status' => 'unverified',
         ];
@@ -41,7 +43,7 @@ class ProjectFactory extends Factory
     public function filed(): static
     {
         return $this->state(fn () => [
-            'filed_number' => ((int) Project::query()->max('filed_number') ?? 0) + 1,
+            'filed_number' => (int) (Project::query()->max('filed_number') ?? 0) + 1,
             'filed_at' => now(),
         ]);
     }

@@ -14,7 +14,7 @@
             $name = mb_substr($name, 0, 17).'…';
         }
     }
-    $handle = '@'.strtoupper($project->creator->handle);
+    $username = '@'.strtoupper($project->creator->username);
     $serial = $project->filed_serial;
 @endphp
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" role="img" aria-label="{{ $project->name }}">
@@ -25,6 +25,6 @@
 
     <text x="96" y="472" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="{{ $size }}" font-weight="900" letter-spacing="-4" fill="#050505">{{ $name }}</text>
 
-    <text x="100" y="638" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" letter-spacing="2" fill="#585852">{{ $handle }}</text>
+    <text x="100" y="638" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" letter-spacing="2" fill="#585852">{{ $username }}</text>
     <text x="1100" y="638" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" letter-spacing="2" fill="#050505">{{ $serial ? strtoupper($serial) : 'COVER PENDING' }}</text>
 </svg>

@@ -105,7 +105,7 @@ defineProps<{ release: any }>();
                         <Link
                             :href="creatorShow(release.project.creator)"
                             class="text-primary underline underline-offset-4"
-                            >@{{ release.project.creator.handle }}</Link
+                            >@{{ release.project.creator.username }}</Link
                         >
                     </p>
                 </div>

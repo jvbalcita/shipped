@@ -1,16 +1,20 @@
 <script setup lang="ts">
-import { Form, Head, usePage } from '@inertiajs/vue3';
-import { Link } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import DeleteUser from '@/components/DeleteUser.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
+import FileUpload from '@/components/shipped/FileUpload.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
+
+type ProfileLink = { type: string; url: string };
+
+const linkTypes = ['website', 'github', 'twitter', 'linkedin'] as const;
 
 defineOptions({
     layout: {
@@ -25,6 +29,58 @@ defineOptions({
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
+
+const initialLinks =
+    (user.value.links as ProfileLink[] | null | undefined) ?? [];
+
+const form = useForm({
+    name: user.value.name,
+    email: user.value.email,
+    title: (user.value.title as string) || 'Creator',
+    location: (user.value.location as string) || '',
+    links:
+        initialLinks.length > 0
+            ? initialLinks.map((link) => ({ type: link.type, url: link.url }))
+            : ([] as ProfileLink[]),
+    avatar: null as File | null,
+    avatar_removal: false as boolean,
+});
+
+const addLink = (): void => {
+    if (form.links.length >= 8) {
+        return;
+    }
+
+    form.links.push({ type: 'website', url: '' });
+};
+
+const removeLink = (index: number): void => {
+    form.links.splice(index, 1);
+};
+
+const onAvatarChange = (file: File | null): void => {
+    form.avatar = file;
+    if (file) {
+        form.avatar_removal = false;
+    }
+};
+
+const onAvatarRemove = (): void => {
+    form.avatar_removal = true;
+    form.avatar = null;
+};
+
+const submit = (): void => {
+    form
+        .transform((data) => ({
+            ...data,
+            _method: 'patch',
+        }))
+        .post(ProfileController.update.url(), {
+            forceFormData: true,
+            preserveScroll: true,
+        });
+};
 </script>
 
 <template>
@@ -36,41 +92,139 @@ const user = computed(() => page.props.auth.user);
         <Heading
             variant="small"
             title="Profile"
-            description="Update your name and email address"
+            description="Update your public identity"
         />
 
-        <Form
-            v-bind="ProfileController.update.form()"
-            class="space-y-6"
-            v-slot="{ errors, processing }"
-        >
+        <form class="space-y-6" @submit.prevent="submit">
+            <div class="grid gap-2">
+                <Label>Avatar</Label>
+                <FileUpload
+                    :model-value="form.avatar"
+                    :existing-url="(user.avatar as string) || null"
+                    :error="form.errors.avatar"
+                    data-test="profile-avatar"
+                    @update:model-value="onAvatarChange"
+                    @remove-existing="onAvatarRemove"
+                />
+                <InputError class="mt-2" :message="form.errors.avatar" />
+            </div>
+
             <div class="grid gap-2">
                 <Label for="name">Name</Label>
                 <Input
                     id="name"
+                    v-model="form.name"
                     class="mt-1 block w-full"
-                    name="name"
-                    :default-value="user.name"
                     required
                     autocomplete="name"
                     placeholder="Full name"
                 />
-                <InputError class="mt-2" :message="errors.name" />
+                <InputError class="mt-2" :message="form.errors.name" />
+            </div>
+
+            <div class="grid gap-2">
+                <Label for="title">Title</Label>
+                <Input
+                    id="title"
+                    v-model="form.title"
+                    class="mt-1 block w-full"
+                    required
+                    maxlength="50"
+                    placeholder="Creator"
+                    data-test="profile-title"
+                />
+                <InputError class="mt-2" :message="form.errors.title" />
+            </div>
+
+            <div class="grid gap-2">
+                <Label for="location">Location</Label>
+                <Input
+                    id="location"
+                    v-model="form.location"
+                    class="mt-1 block w-full"
+                    maxlength="80"
+                    placeholder="Berlin, DE"
+                    data-test="profile-location"
+                />
+                <InputError class="mt-2" :message="form.errors.location" />
             </div>
 
             <div class="grid gap-2">
                 <Label for="email">Email address</Label>
                 <Input
                     id="email"
+                    v-model="form.email"
                     type="email"
                     class="mt-1 block w-full"
-                    name="email"
-                    :default-value="user.email"
                     required
                     autocomplete="username"
                     placeholder="Email address"
                 />
-                <InputError class="mt-2" :message="errors.email" />
+                <InputError class="mt-2" :message="form.errors.email" />
+            </div>
+
+            <div class="grid gap-3">
+                <div class="flex items-center justify-between gap-3">
+                    <Label>Links</Label>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        data-test="profile-add-link"
+                        :disabled="form.links.length >= 8"
+                        @click="addLink"
+                    >
+                        Add link
+                    </Button>
+                </div>
+
+                <div
+                    v-for="(link, index) in form.links"
+                    :key="index"
+                    class="grid gap-2 border border-foreground p-3 sm:grid-cols-[10rem_1fr_auto]"
+                >
+                    <div class="grid gap-2">
+                        <Label :for="`link-type-${index}`" class="sr-only"
+                            >Type</Label
+                        >
+                        <select
+                            :id="`link-type-${index}`"
+                            v-model="link.type"
+                            class="h-9 border border-foreground bg-background px-3 font-mono text-xs uppercase"
+                            data-test="profile-link-type"
+                        >
+                            <option
+                                v-for="type in linkTypes"
+                                :key="type"
+                                :value="type"
+                            >
+                                {{ type }}
+                            </option>
+                        </select>
+                    </div>
+                    <div class="grid gap-2">
+                        <Label :for="`link-url-${index}`" class="sr-only"
+                            >URL</Label
+                        >
+                        <Input
+                            :id="`link-url-${index}`"
+                            v-model="link.url"
+                            type="url"
+                            placeholder="https://"
+                            data-test="profile-link-url"
+                        />
+                    </div>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        data-test="profile-remove-link"
+                        @click="removeLink(index)"
+                    >
+                        Remove
+                    </Button>
+                </div>
+                <InputError class="mt-2" :message="form.errors.links" />
             </div>
 
             <div v-if="page.props.mustVerifyEmail && !user.email_verified_at">
@@ -94,11 +248,14 @@ const user = computed(() => page.props.auth.user);
             </div>
 
             <div class="flex items-center gap-4">
-                <Button :disabled="processing" data-test="update-profile-button"
+                <Button
+                    type="submit"
+                    :disabled="form.processing"
+                    data-test="update-profile-button"
                     >Save</Button
                 >
             </div>
-        </Form>
+        </form>
     </div>
 
     <DeleteUser />

@@ -1,0 +1,5 @@
+# Add Socialite OAuth login alongside Fortify password/passkey auth
+
+Laravel Socialite will provide Google and GitHub OAuth login and registration as additional options alongside the existing Fortify password + 2FA + passkey flows. A dedicated `oauth_accounts` table (not columns on `users`) stores per-provider identity — `user_id`, `provider` enum(google, github), `provider_id`, encrypted `provider_token` and `provider_refresh_token`, `token_expires_at`, `linked_at` — with a UNIQUE composite on `(provider, provider_id)` so one creator may link multiple providers. Avatar imports from the provider into `users.avatar_path` on first registration only and is never overwritten thereafter.
+
+Socialite login refuses to auto-merge into an existing user when the provider's email matches a row that has no corresponding `oauth_accounts` link — the visitor must authenticate to their existing account and link the provider from the Settings > Security tab. This prevents account-takeover-by-email-collision while keeping OAuth login frictionless for genuinely new creators.

@@ -40,6 +40,8 @@ import type { ConnectedEnvironmentSummary } from '@/types';
 const props = defineProps<{
     project: any;
     categories: { id: number; name: string }[];
+    pricingOptions: { value: string; label: string }[];
+    suggestedTags: string[];
     connectedEnvironments: ConnectedEnvironmentSummary[];
 }>();
 const projectForm = useForm({
@@ -48,9 +50,27 @@ const projectForm = useForm({
     description: props.project.description,
     category_id: String(props.project.category_id),
     live_url: props.project.live_url ?? '',
+    pricing: props.project.pricing ?? 'free',
+    launch_date: props.project.launch_date
+        ? String(props.project.launch_date).slice(0, 10)
+        : '',
+    tags: (props.project.tags ?? []).map((tag: { name: string }) => tag.name).join(', '),
     cover_image: null as File | null,
     cover_removal: false as boolean,
+    logo: null as File | null,
+    logo_removal: false as boolean,
 });
+
+function appendSuggestedTag(tag: string): void {
+    const current = projectForm.tags
+        .split(',')
+        .map((value: string) => value.trim())
+        .filter(Boolean);
+    if (!current.includes(tag)) {
+        current.push(tag);
+        projectForm.tags = current.join(', ');
+    }
+}
 const releaseForm = useForm({
     title: '',
     notes: '',
@@ -78,6 +98,17 @@ function onCoverChange(file: File | null): void {
 
 function onCoverRemove(): void {
     projectForm.cover_removal = true;
+}
+
+function onLogoChange(file: File | null): void {
+    projectForm.logo = file;
+    if (file) {
+        projectForm.logo_removal = false;
+    }
+}
+
+function onLogoRemove(): void {
+    projectForm.logo_removal = true;
 }
 
 function saveProject(): void {
@@ -290,6 +321,75 @@ onUnmounted(() => {
                                     :error="projectForm.errors.cover_image"
                                     @update:model-value="onCoverChange"
                                     @remove-existing="onCoverRemove" /></Field
+                        ><Field
+                            ><FieldLabel>Logo</FieldLabel
+                            ><FileUpload
+                                :model-value="projectForm.logo"
+                                :existing-url="
+                                    project.logo_url ? project.logo_url : null
+                                "
+                                :error="projectForm.errors.logo"
+                                @update:model-value="onLogoChange"
+                                @remove-existing="onLogoRemove"
+                            />
+                            <p class="text-xs text-muted-foreground">
+                                Square PNG, JPG, or WebP. At least 256×256, up
+                                to 6 MB.
+                            </p></Field
+                        ><Field
+                            ><FieldLabel for="pricing">Pricing</FieldLabel
+                            ><Select v-model="projectForm.pricing"
+                                ><SelectTrigger
+                                    id="pricing"
+                                    class="h-10 w-full rounded-none border-foreground"
+                                    ><SelectValue /></SelectTrigger
+                                ><SelectContent
+                                    ><SelectItem
+                                        v-for="option in pricingOptions"
+                                        :key="option.value"
+                                        :value="option.value"
+                                        >{{ option.label }}</SelectItem
+                                    ></SelectContent
+                                ></Select
+                            ><FieldError v-if="projectForm.errors.pricing">{{
+                                projectForm.errors.pricing
+                            }}</FieldError></Field
+                        ><Field
+                            ><FieldLabel for="launch_date"
+                                >Launch date</FieldLabel
+                            ><Input
+                                id="launch_date"
+                                v-model="projectForm.launch_date"
+                                type="date"
+                                data-test="project-launch-date"
+                            /><FieldError
+                                v-if="projectForm.errors.launch_date"
+                                >{{
+                                    projectForm.errors.launch_date
+                                }}</FieldError
+                            ></Field
+                        ><Field
+                            ><FieldLabel for="tags">Tags</FieldLabel
+                            ><Input
+                                id="tags"
+                                v-model="projectForm.tags"
+                                placeholder="laravel, vue, indie"
+                                data-test="project-tags"
+                            />
+                            <div class="mt-2 flex flex-wrap gap-2">
+                                <button
+                                    v-for="tag in suggestedTags"
+                                    :key="tag"
+                                    type="button"
+                                    class="technical-label border border-foreground px-2 py-1 hover:bg-secondary"
+                                    @click="appendSuggestedTag(tag)"
+                                >
+                                    {{ tag }}
+                                </button>
+                            </div>
+                            <FieldError v-if="projectForm.errors.tags">{{
+                                projectForm.errors.tags
+                            }}</FieldError></Field
                         ><Button
                             type="submit"
                             :disabled="projectForm.processing"

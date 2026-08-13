@@ -19,9 +19,25 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        collect(['SaaS', 'Developer Tool', 'Open Source', 'Game', 'Experiment', 'Package'])->each(fn (string $name) => Category::query()->firstOrCreate(['slug' => str($name)->slug()], ['name' => $name]));
+        collect([
+            'SaaS',
+            'Developer Tool',
+            'Open Source',
+            'Game',
+            'Experiment',
+            'Package',
+            'Library',
+            'Plugin',
+            'Theme',
+            'Mobile App',
+            'Desktop App',
+            'AI Tool',
+            'Boilerplate',
+            'Course',
+            'Community',
+        ])->each(fn (string $name) => Category::query()->firstOrCreate(['slug' => str($name)->slug()], ['name' => $name]));
 
-        $studio = User::query()->firstOrCreate(['email' => 'studio@shipped.test'], ['name' => 'Shipped Studio', 'handle' => 'shipped-studio', 'password' => Hash::make('password')]);
+        $studio = User::query()->firstOrCreate(['email' => 'studio@shipped.test'], ['name' => 'Shipped Studio', 'username' => 'shipped_studio', 'password' => Hash::make('password')]);
 
         collect([
             ['name' => 'Northstar', 'tagline' => 'A calmer home for open-source maintainers.', 'category' => 'Developer Tool', 'title' => 'Issue triage that respects your attention.', 'cover' => 'project-covers/northstar.svg'],

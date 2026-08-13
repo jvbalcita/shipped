@@ -48,17 +48,63 @@ defineProps<{ project: any }>();
                 >
             </div>
             <div class="bg-background p-4">
-                <h2 class="display-type text-2xl">{{ project.name }}</h2>
+                <div class="flex items-start gap-3">
+                    <img
+                        v-if="project.logo_url"
+                        :src="project.logo_url"
+                        :alt="`${project.name} logo`"
+                        class="size-10 shrink-0 border border-foreground object-cover"
+                    />
+                    <div class="min-w-0">
+                        <h2 class="display-type text-2xl">{{ project.name }}</h2>
+                        <p
+                            v-if="project.pricing_label || project.pricing"
+                            class="technical-label mt-2 text-primary"
+                        >
+                            {{
+                                project.pricing_label ||
+                                String(project.pricing).replaceAll('_', ' ')
+                            }}
+                        </p>
+                        <p
+                            v-if="project.launch_date"
+                            class="technical-label mt-1 text-muted-foreground"
+                        >
+                            Launched
+                            {{
+                                new Date(
+                                    project.launch_date,
+                                ).toLocaleDateString(undefined, {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                })
+                            }}
+                        </p>
+                    </div>
+                </div>
                 <p
                     class="mt-4 line-clamp-2 text-sm leading-6 text-muted-foreground"
                 >
                     {{ project.tagline }}
                 </p>
+                <ul
+                    v-if="project.tags?.length"
+                    class="mt-3 flex flex-wrap gap-2"
+                >
+                    <li
+                        v-for="tag in project.tags"
+                        :key="tag.id ?? tag.slug ?? tag.name"
+                        class="technical-label border border-foreground px-2 py-0.5"
+                    >
+                        {{ tag.name }}
+                    </li>
+                </ul>
             </div>
             <div
                 class="technical-label flex items-center justify-between bg-background px-4 py-3"
             >
-                <span>@{{ project.creator.handle }}</span>
+                <span>@{{ project.creator.username }}</span>
                 <span
                     v-if="project.verification_status === 'verified'"
                     class="inline-flex items-center gap-1 text-primary"

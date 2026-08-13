@@ -26,7 +26,11 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { index, store } from '@/routes/projects';
 
-const props = defineProps<{ categories: { id: number; name: string }[] }>();
+const props = defineProps<{
+    categories: { id: number; name: string }[];
+    pricingOptions: { value: string; label: string }[];
+    suggestedTags: string[];
+}>();
 const step = ref(1);
 const form = useForm({
     name: '',
@@ -35,8 +39,23 @@ const form = useForm({
     category_id: String(props.categories[0]?.id ?? ''),
     live_url: '',
     github_url: '',
+    pricing: props.pricingOptions[0]?.value ?? 'free',
+    launch_date: '',
+    tags: '',
     cover_image: null as File | null,
+    logo: null as File | null,
 });
+
+function appendSuggestedTag(tag: string): void {
+    const current = form.tags
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean);
+    if (!current.includes(tag)) {
+        current.push(tag);
+        form.tags = current.join(', ');
+    }
+}
 const progress = computed(() => (step.value / 3) * 100);
 
 function isValidUrl(value: string): boolean {
@@ -269,6 +288,72 @@ function continueComposer(): void {
                                         :error="
                                             form.errors.cover_image
                                         " /></Field
+                                ><Field
+                                    ><FieldLabel>Logo</FieldLabel
+                                    ><FileUpload
+                                        v-model="form.logo"
+                                        :error="form.errors.logo"
+                                    /><p
+                                        class="text-xs text-muted-foreground"
+                                    >
+                                        Square PNG, JPG, or WebP. At least
+                                        256×256, up to 6 MB.
+                                    </p></Field
+                                ><Field
+                                    ><FieldLabel for="pricing"
+                                        >Pricing</FieldLabel
+                                    ><Select v-model="form.pricing"
+                                        ><SelectTrigger
+                                            id="pricing"
+                                            class="h-10 w-full rounded-none border-foreground"
+                                            ><SelectValue /></SelectTrigger
+                                        ><SelectContent
+                                            ><SelectItem
+                                                v-for="option in pricingOptions"
+                                                :key="option.value"
+                                                :value="option.value"
+                                                >{{ option.label }}</SelectItem
+                                            ></SelectContent
+                                        ></Select
+                                    ><FieldError v-if="form.errors.pricing">{{
+                                        form.errors.pricing
+                                    }}</FieldError></Field
+                                ><Field
+                                    ><FieldLabel for="launch_date"
+                                        >Launch date</FieldLabel
+                                    ><Input
+                                        id="launch_date"
+                                        v-model="form.launch_date"
+                                        type="date"
+                                        data-test="project-launch-date"
+                                    /><FieldError
+                                        v-if="form.errors.launch_date"
+                                        >{{
+                                            form.errors.launch_date
+                                        }}</FieldError
+                                    ></Field
+                                ><Field
+                                    ><FieldLabel for="tags">Tags</FieldLabel
+                                    ><Input
+                                        id="tags"
+                                        v-model="form.tags"
+                                        placeholder="laravel, vue, indie"
+                                        data-test="project-tags"
+                                    />
+                                    <div class="mt-2 flex flex-wrap gap-2">
+                                        <button
+                                            v-for="tag in suggestedTags"
+                                            :key="tag"
+                                            type="button"
+                                            class="technical-label border border-foreground px-2 py-1 hover:bg-secondary"
+                                            @click="appendSuggestedTag(tag)"
+                                        >
+                                            {{ tag }}
+                                        </button>
+                                    </div>
+                                    <FieldError v-if="form.errors.tags">{{
+                                        form.errors.tags
+                                    }}</FieldError></Field
                                 ><Field
                                     ><FieldLabel for="live_url"
                                         >Live URL</FieldLabel

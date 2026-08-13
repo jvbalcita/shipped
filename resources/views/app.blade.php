@@ -16,26 +16,28 @@
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
         @vite(['resources/css/app.css', 'resources/js/app.ts', "resources/js/pages/{$page['component']}.vue"])
+
+        @isset($page['props']['ogTitle'])
+            <meta property="og:title" content="{{ $page['props']['ogTitle'] }}" />
+            <meta name="twitter:title" content="{{ $page['props']['ogTitle'] }}" />
+            <meta property="og:type" content="website" />
+            <meta property="og:site_name" content="Shipped" />
+        @endisset
+        @isset($page['props']['ogDescription'])
+            <meta name="description" content="{{ $page['props']['ogDescription'] }}" />
+            <meta property="og:description" content="{{ $page['props']['ogDescription'] }}" />
+        @endisset
+        @isset($page['props']['ogImage'])
+            <meta property="og:image" content="{{ $page['props']['ogImage'] }}" />
+            <meta property="og:image:type" content="image/svg+xml" />
+            <meta property="og:image:width" content="1200" />
+            <meta property="og:image:height" content="630" />
+            <meta name="twitter:card" content="summary_large_image" />
+            <meta name="twitter:image" content="{{ $page['props']['ogImage'] }}" />
+        @endisset
+
         <x-inertia::head>
             <title>{{ config('app.name', 'Shipped') }}</title>
-            @isset($page['props']['ogTitle'])
-                <meta property="og:title" content="{{ $page['props']['ogTitle'] }}" />
-                <meta name="twitter:title" content="{{ $page['props']['ogTitle'] }}" />
-                <meta property="og:type" content="website" />
-                <meta property="og:site_name" content="Shipped" />
-            @endisset
-            @isset($page['props']['ogDescription'])
-                <meta name="description" content="{{ $page['props']['ogDescription'] }}" />
-                <meta property="og:description" content="{{ $page['props']['ogDescription'] }}" />
-            @endisset
-            @isset($page['props']['ogImage'])
-                <meta property="og:image" content="{{ $page['props']['ogImage'] }}" />
-                <meta property="og:image:type" content="image/svg+xml" />
-                <meta property="og:image:width" content="1200" />
-                <meta property="og:image:height" content="630" />
-                <meta name="twitter:card" content="summary_large_image" />
-                <meta name="twitter:image" content="{{ $page['props']['ogImage'] }}" />
-            @endisset
         </x-inertia::head>
     </head>
     <body class="font-sans antialiased">

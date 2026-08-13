@@ -29,19 +29,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('projects/{project}/cheers', [ProjectCheerController::class, 'store'])->name('projects.cheers.store');
 });
 
-Route::get('/@{creator:handle}', [CreatorController::class, 'show'])->name('creators.show');
-Route::get('/@{creator:handle}/{project:slug}/releases/{release}', [ReleaseController::class, 'show'])
+Route::get('/@{creator:username}', [CreatorController::class, 'show'])->name('creators.show');
+Route::get('/@{creator:username}/{project:slug}/releases/{release}', [ReleaseController::class, 'show'])
     ->scopeBindings()
     ->name('releases.show');
-Route::get('/@{creator:handle}/{project:slug}', [ProjectController::class, 'show'])
+Route::get('/@{creator:username}/{project:slug}', [ProjectController::class, 'show'])
     ->scopeBindings()
     ->name('projects.show');
 
-Route::get('/og/@{creator:handle}/{project:slug}', [OgController::class, 'project'])
+Route::get('/og/@{creator:username}/{project:slug}', [OgController::class, 'project'])
     ->scopeBindings()
     ->name('og.project');
 
-Route::get('/covers/@{creator:handle}/{project:slug}', [OgController::class, 'cover'])
+Route::get('/covers/@{creator:username}/{project:slug}', [OgController::class, 'cover'])
     ->scopeBindings()
     ->name('cover.project');
 

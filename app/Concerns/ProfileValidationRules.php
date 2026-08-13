@@ -22,6 +22,44 @@ trait ProfileValidationRules
     }
 
     /**
+     * @return array<string, array<int, ValidationRule|array<mixed>|string>>
+     */
+    protected function publicProfileRules(): array
+    {
+        return [
+            'title' => $this->titleRules(),
+            'location' => $this->locationRules(),
+            'links' => $this->linksRules(),
+            'links.*.type' => ['required_with:links', 'string', Rule::in(['website', 'github', 'twitter', 'linkedin'])],
+            'links.*.url' => ['required_with:links', 'string', 'url', 'max:255'],
+        ];
+    }
+
+    /**
+     * @return array<int, ValidationRule|array<mixed>|string>
+     */
+    protected function titleRules(): array
+    {
+        return ['required', 'string', 'max:50'];
+    }
+
+    /**
+     * @return array<int, ValidationRule|array<mixed>|string>
+     */
+    protected function locationRules(): array
+    {
+        return ['nullable', 'string', 'max:80'];
+    }
+
+    /**
+     * @return array<int, ValidationRule|array<mixed>|string>
+     */
+    protected function linksRules(): array
+    {
+        return ['nullable', 'array', 'max:8'];
+    }
+
+    /**
      * Get the validation rules used to validate user names.
      *
      * @return array<int, ValidationRule|array<mixed>|string>

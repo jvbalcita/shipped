@@ -240,7 +240,7 @@ test('an unverified project cannot become public even with a published release',
 });
 
 test('only verified published projects are discoverable to guests', function () {
-    $creator = User::factory()->create(['handle' => 'creator']);
+    $creator = User::factory()->create(['username' => 'creator']);
     $verified = Project::factory()->public()->for($creator, 'creator')->create(['name' => 'Verified']);
     Release::factory()->for($verified)->create(['published_at' => now()]);
     $unverified = Project::factory()->unverified()->for($creator, 'creator')->create([

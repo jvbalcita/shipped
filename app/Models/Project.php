@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Enums\ProjectPricing;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Storage;
@@ -17,15 +19,31 @@ class Project extends Model
     /** @use HasFactory<ProjectFactory> */
     use HasFactory;
 
-    protected $fillable = ['category_id', 'connected_environment_id', 'name', 'slug', 'tagline', 'description', 'cover_image_path', 'live_url', 'github_url', 'is_public'];
+    protected $fillable = [
+        'category_id',
+        'connected_environment_id',
+        'name',
+        'slug',
+        'tagline',
+        'description',
+        'cover_image_path',
+        'logo_path',
+        'live_url',
+        'github_url',
+        'pricing',
+        'launch_date',
+        'is_public',
+    ];
 
-    protected $appends = ['cover_image_url', 'filed_serial'];
+    protected $appends = ['cover_image_url', 'logo_url', 'filed_serial'];
 
     protected function casts(): array
     {
         return [
             'is_public' => 'boolean',
             'is_demo' => 'boolean',
+            'pricing' => ProjectPricing::class,
+            'launch_date' => 'date',
             'verified_at' => 'datetime',
             'verification_checked_at' => 'datetime',
             'filed_at' => 'datetime',
@@ -65,6 +83,12 @@ class Project extends Model
     public function cheers(): HasMany
     {
         return $this->hasMany(Cheer::class);
+    }
+
+    /** @return BelongsToMany<Tag, $this> */
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(Tag::class)->withTimestamps();
     }
 
     /**
@@ -150,6 +174,16 @@ class Project extends Model
             get: fn (): ?string => $this->cover_image_path === null
                 ? null
                 : Storage::disk()->url($this->cover_image_path),
+        );
+    }
+
+    /** @return Attribute<string|null, never> */
+    protected function logoUrl(): Attribute
+    {
+        return Attribute::make(
+            get: fn (): ?string => $this->logo_path === null
+                ? null
+                : Storage::disk()->url($this->logo_path),
         );
     }
 

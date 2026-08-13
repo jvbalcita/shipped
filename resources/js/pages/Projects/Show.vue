@@ -53,6 +53,53 @@ function cheerProject(project: any): void {
                     <p class="mt-8 max-w-2xl text-lg leading-8">
                         {{ project.tagline }}
                     </p>
+                    <div class="mt-4 flex flex-wrap items-center gap-3">
+                        <img
+                            v-if="project.logo_url"
+                            :src="project.logo_url"
+                            :alt="`${project.name} logo`"
+                            class="size-12 border border-foreground object-cover"
+                            data-test="project-logo"
+                        />
+                        <span
+                            v-if="project.pricing_label || project.pricing"
+                            class="technical-label text-primary"
+                            data-test="project-pricing"
+                            >{{
+                                project.pricing_label ||
+                                String(project.pricing).replaceAll('_', ' ')
+                            }}</span
+                        >
+                        <span
+                            v-if="project.launch_date"
+                            class="technical-label text-muted-foreground"
+                            data-test="project-launch-date"
+                            >Launched
+                            {{
+                                new Date(project.launch_date).toLocaleDateString(
+                                    undefined,
+                                    {
+                                        year: 'numeric',
+                                        month: 'short',
+                                        day: 'numeric',
+                                    },
+                                )
+                            }}</span
+                        >
+                    </div>
+                    <ul
+                        v-if="project.tags?.length"
+                        class="mt-4 flex flex-wrap gap-2"
+                        data-test="project-tags"
+                    >
+                        <li
+                            v-for="tag in project.tags"
+                            :key="tag.id ?? tag.slug ?? tag.name"
+                            class="technical-label border border-foreground px-2 py-0.5"
+                        >
+                            {{ tag.name }}
+                        </li>
+                    </ul>
                     <p
                         class="font-prose mt-8 max-w-2xl text-[1.0625rem] leading-7 whitespace-pre-line text-foreground"
                     >
@@ -92,7 +139,7 @@ function cheerProject(project: any): void {
                         <Link
                             :href="creatorShow(project.creator)"
                             class="text-primary underline underline-offset-4"
-                            >@{{ project.creator.handle }}</Link
+                            >@{{ project.creator.username }}</Link
                         >
                     </p>
                 </div>
