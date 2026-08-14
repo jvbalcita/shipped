@@ -19,7 +19,6 @@ test('profile information can be updated', function () {
         ->actingAs($user)
         ->patch(route('profile.update'), [
             'name' => 'Test User',
-            'email' => 'test@example.com',
             'title' => 'Indie Hacker',
             'location' => 'Berlin, DE',
             'links' => [
@@ -35,14 +34,12 @@ test('profile information can be updated', function () {
     $user->refresh();
 
     expect($user->name)->toBe('Test User');
-    expect($user->email)->toBe('test@example.com');
     expect($user->title)->toBe('Indie Hacker');
     expect($user->location)->toBe('Berlin, DE');
     expect($user->links)->toBe([
         ['type' => 'website', 'url' => 'https://example.com'],
         ['type' => 'github', 'url' => 'https://github.com/example'],
     ]);
-    expect($user->email_verified_at)->toBeNull();
 });
 
 test('profile rejects invalid links and overlong fields', function () {

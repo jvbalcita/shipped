@@ -11,4 +11,8 @@ return [
         'pest',
         'inertia',
     ],
+
+    'username_reservation_days' => 30,
+
+    'username_change_cooldown_minutes' => 10080,
 ];

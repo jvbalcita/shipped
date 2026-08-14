@@ -6,7 +6,7 @@ use App\Concerns\ProfileValidationRules;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class ProfileUpdateRequest extends FormRequest
+class EmailUpdateRequest extends FormRequest
 {
     use ProfileValidationRules;
 
@@ -18,10 +18,7 @@ class ProfileUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => $this->nameRules(),
-            ...$this->publicProfileRules(),
-            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
-            'avatar_removal' => ['sometimes', 'boolean'],
+            'email' => $this->emailRules($this->user()->id),
         ];
     }
 }

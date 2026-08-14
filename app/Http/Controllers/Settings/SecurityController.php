@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Settings\EmailUpdateRequest;
 use App\Http\Requests\Settings\PasswordUpdateRequest;
 use App\Http\Requests\Settings\TwoFactorAuthenticationRequest;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -18,12 +20,19 @@ class SecurityController extends Controller
      */
     public function edit(TwoFactorAuthenticationRequest $request): Response
     {
+        $user = $request->user();
+
+        $linkedProviders = $user->oauthAccounts()
+            ->pluck('provider')
+            ->all();
+
         $props = [
+            'email' => $user->email,
+            'linkedProviders' => $linkedProviders,
             'canManageTwoFactor' => Features::canManageTwoFactorAuthentication(),
             'canManagePasskeys' => Features::canManagePasskeys(),
             'passkeys' => Features::canManagePasskeys()
-                ? $request->user()
-                    ->passkeys()
+                ? $user->passkeys()
                     ->select(['id', 'name', 'credential', 'created_at', 'last_used_at'])
                     ->latest()
                     ->get()
@@ -62,5 +71,26 @@ class SecurityController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Password updated.')]);
 
         return back();
+    }
+
+    /**
+     * Update the user's email address.
+     */
+    public function updateEmail(EmailUpdateRequest $request): RedirectResponse
+    {
+        $user = $request->user();
+        $emailChanged = $user->email !== $request->email;
+
+        $user->fill(['email' => $request->email]);
+
+        if ($emailChanged) {
+            $user->email_verified_at = null;
+        }
+
+        $user->save();
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Email updated.')]);
+
+        return Redirect::route('security.edit');
     }
 }

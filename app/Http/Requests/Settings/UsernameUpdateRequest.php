@@ -2,14 +2,12 @@
 
 namespace App\Http\Requests\Settings;
 
-use App\Concerns\ProfileValidationRules;
+use App\Rules\NotReservedUsername;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class ProfileUpdateRequest extends FormRequest
+class UsernameUpdateRequest extends FormRequest
 {
-    use ProfileValidationRules;
-
     /**
      * Get the validation rules that apply to the request.
      *
@@ -18,10 +16,15 @@ class ProfileUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => $this->nameRules(),
-            ...$this->publicProfileRules(),
-            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
-            'avatar_removal' => ['sometimes', 'boolean'],
+            'username' => [
+                'required',
+                'string',
+                'min:3',
+                'max:30',
+                'regex:/^[a-z0-9_]+$/',
+                'unique:users,username',
+                new NotReservedUsername,
+            ],
         ];
     }
 }

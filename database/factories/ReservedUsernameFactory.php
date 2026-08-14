@@ -2,16 +2,17 @@
 
 namespace Database\Factories;
 
-use App\Models\Cheer;
-use App\Models\Project;
+use App\Models\ReservedUsername;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<Cheer>
+ * @extends Factory<ReservedUsername>
  */
-class CheerFactory extends Factory
+class ReservedUsernameFactory extends Factory
 {
+    protected $model = ReservedUsername::class;
+
     /**
      * Define the model's default state.
      *
@@ -20,9 +21,9 @@ class CheerFactory extends Factory
     public function definition(): array
     {
         return [
+            'username' => fake()->unique()->regexify('[a-z][a-z0-9_]{2,19}'),
             'user_id' => User::factory(),
-            'cheerable_type' => 'project',
-            'cheerable_id' => Project::factory(),
+            'expires_at' => now()->addDays(30),
         ];
     }
 }
