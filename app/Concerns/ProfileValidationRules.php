@@ -29,10 +29,19 @@ trait ProfileValidationRules
         return [
             'title' => $this->titleRules(),
             'location' => $this->locationRules(),
+            'bio' => $this->bioRules(),
             'links' => $this->linksRules(),
             'links.*.type' => ['required_with:links', 'string', Rule::in(['website', 'github', 'twitter', 'linkedin'])],
             'links.*.url' => ['required_with:links', 'string', 'url', 'max:255'],
         ];
+    }
+
+    /**
+     * @return array<int, ValidationRule|array<mixed>|string>
+     */
+    protected function bioRules(): array
+    {
+        return ['nullable', 'string', 'max:280'];
     }
 
     /**

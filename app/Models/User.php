@@ -60,6 +60,36 @@ class User extends Authenticatable implements PasskeyUser
         return $this->hasMany(Cheer::class);
     }
 
+    /** @return HasMany<OAuthAccount, $this> */
+    public function oauthAccounts(): HasMany
+    {
+        return $this->hasMany(OAuthAccount::class);
+    }
+
+    /**
+     * Build a unique username from a seed, slugified to the allowed pattern.
+     */
+    public static function generateUniqueUsername(string $seed): string
+    {
+        $base = strtolower(preg_replace('/[^a-z0-9]+/i', '_', explode('@', $seed)[0]));
+        $base = trim($base, '_');
+
+        if ($base === '') {
+            $base = 'creator';
+        }
+
+        $base = substr($base, 0, 24);
+        $candidate = $base;
+        $attempt = 1;
+
+        while (static::where('username', $candidate)->exists()) {
+            $candidate = substr($base, 0, 20).'_'.$attempt;
+            $attempt++;
+        }
+
+        return $candidate;
+    }
+
     /** @return HasOne<CloudConnection, $this> */
     public function cloudConnection(): HasOne
     {
