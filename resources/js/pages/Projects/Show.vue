@@ -15,6 +15,16 @@ import { computed, ref } from 'vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
 import SectionHeader from '@/components/shipped/SectionHeader.vue';
 import { Textarea } from '@/components/ui/textarea';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { defaultCoverUrl } from '@/lib/cover';
@@ -41,10 +51,23 @@ const reviewForm = useForm({
     body: props.project.user_review?.body ?? '',
 });
 
-const commentForm = useForm({ body: '', parent_id: null });
+const commentForm = useForm({ body: '' });
+const replyForm = useForm({ body: '', parent_id: null as number | null });
 const replyTo = ref<number | null>(null);
 const editingId = ref<number | null>(null);
 const editForm = useForm({ body: '' });
+const commentPendingDelete = ref<any>(null);
+
+function formatTimestamp(iso: string | null): string {
+    if (!iso) {
+        return '';
+    }
+
+    return new Intl.DateTimeFormat(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+    }).format(new Date(iso));
+}
 
 const topLevelComments = computed(() =>
     (props.project.comments ?? []).filter((c: any) => c.parent_id === null),
@@ -76,8 +99,16 @@ function removeReview(): void {
 function submitComment(): void {
     commentForm.post(storeComment(props.project).url, {
         preserveScroll: true,
+        onSuccess: () => commentForm.reset(),
+    });
+}
+
+function submitReply(): void {
+    replyForm.post(storeComment(props.project).url, {
+        preserveScroll: true,
         onSuccess: () => {
-            commentForm.reset();
+            replyForm.reset();
+            replyForm.parent_id = null;
             replyTo.value = null;
         },
     });
@@ -85,8 +116,8 @@ function submitComment(): void {
 
 function startReply(comment: any): void {
     replyTo.value = comment.id;
-    commentForm.body = '';
-    commentForm.parent_id = comment.id;
+    replyForm.reset();
+    replyForm.parent_id = comment.id;
 }
 
 function startEdit(comment: any): void {
@@ -106,10 +137,20 @@ function saveEdit(comment: any): void {
     );
 }
 
-function deleteComment(comment: any): void {
+function deleteComment(): void {
+    const comment = commentPendingDelete.value;
+    if (!comment) {
+        return;
+    }
+
     useForm({}).delete(
         destroyComment({ project: props.project, comment }).url,
-        { preserveScroll: true },
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                commentPendingDelete.value = null;
+            },
+        },
     );
 }
 
@@ -150,22 +191,24 @@ function cheerProject(project: any): void {
                             Cloud</span
                         >
                     </div>
-                    <h1
-                        class="display-type launch-name mt-12 text-[clamp(3.5rem,9vw,9rem)]"
-                    >
-                        {{ project.name }}
-                    </h1>
-                    <p class="mt-8 max-w-2xl text-lg leading-8">
-                        {{ project.tagline }}
-                    </p>
-                    <div class="mt-4 flex flex-wrap items-center gap-3">
+                    <div class="mt-12 flex items-center gap-5 sm:gap-8">
                         <img
                             v-if="project.logo_url"
                             :src="project.logo_url"
                             :alt="`${project.name} logo`"
-                            class="size-12 border border-foreground object-cover"
+                            class="size-20 shrink-0 border border-foreground object-cover sm:size-28"
                             data-test="project-logo"
                         />
+                        <h1
+                            class="display-type launch-name text-[clamp(3.5rem,9vw,9rem)]"
+                        >
+                            {{ project.name }}
+                        </h1>
+                    </div>
+                    <p class="mt-8 max-w-2xl text-lg leading-8">
+                        {{ project.tagline }}
+                    </p>
+                    <div class="mt-4 flex flex-wrap items-center gap-3">
                         <span
                             v-if="project.pricing_label || project.pricing"
                             class="technical-label text-primary"
@@ -333,6 +376,226 @@ function cheerProject(project: any): void {
                     </li>
                 </ol>
             </SectionHeader>
+            <SectionHeader :label="`Discussion / ${topLevelComments.length}`">
+                <form
+                    v-if="$page.props.auth.user"
+                    novalidate
+                    class="mb-8 grid gap-3"
+                    @submit.prevent="submitComment"
+                >
+                    <Textarea
+                        v-model="commentForm.body"
+                        placeholder="Join the discussion (max 500 characters)"
+                    />
+                    <p
+                        v-if="commentForm.errors.body"
+                        class="text-sm text-destructive"
+                    >
+                        {{ commentForm.errors.body }}
+                    </p>
+                    <div>
+                        <Button type="submit" :disabled="commentForm.processing"
+                            >Post comment</Button
+                        >
+                    </div>
+                </form>
+                <ul
+                    v-if="topLevelComments.length"
+                    class="divide-y divide-foreground border-y border-foreground"
+                >
+                    <li
+                        v-for="comment in topLevelComments"
+                        :key="comment.id"
+                        class="py-5"
+                    >
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="min-w-0">
+                                <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                                    <p class="technical-label">{{
+                                        comment.user?.username ?? comment.user?.name
+                                    }}</p>
+                                    <time
+                                        class="technical-label text-muted-foreground"
+                                        >{{ formatTimestamp(comment.created_at) }}</time
+                                    >
+                                </div>
+                                <p
+                                    v-if="comment.is_deleted"
+                                    class="technical-label mt-1 italic text-muted-foreground"
+                                >
+                                    [deleted]
+                                </p>
+                                <template v-else-if="editingId === comment.id">
+                                    <Textarea
+                                        v-model="editForm.body"
+                                        class="mt-2 min-h-32"
+                                    />
+                                    <div class="mt-2 flex gap-2">
+                                        <Button
+                                            size="sm"
+                                            :disabled="editForm.processing"
+                                            @click="saveEdit(comment)"
+                                            >Save</Button
+                                        >
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            type="button"
+                                            @click="editingId = null"
+                                            >Cancel</Button
+                                        >
+                                    </div>
+                                </template>
+                                <p
+                                    v-else
+                                    class="mt-2 whitespace-pre-line text-sm leading-6"
+                                >
+                                    {{ comment.body }}
+                                </p>
+                            </div>
+                            <div
+                                v-if="!comment.is_deleted"
+                                class="flex shrink-0 flex-col items-end gap-2"
+                            >
+                                <button
+                                    type="button"
+                                    class="technical-label inline-flex items-center gap-1"
+                                    :class="
+                                        comment.cheered_by_viewer
+                                            ? 'text-primary'
+                                            : 'text-muted-foreground'
+                                    "
+                                    @click="cheerComment(comment)"
+                                >
+                                    <Heart class="size-4" />{{
+                                        comment.cheers_count
+                                    }}
+                                </button>
+                                <div
+                                    v-if="$page.props.auth.user"
+                                    class="flex gap-1"
+                                >
+                                    <Button
+                                        v-if="comment.can_edit"
+                                        size="sm"
+                                        variant="ghost"
+                                        :aria-label="`Edit comment by ${comment.user?.username}`"
+                                        @click="startEdit(comment)"
+                                        ><Pencil class="size-4" /></Button
+                                    >
+                                    <Button
+                                        v-if="comment.can_delete"
+                                        size="sm"
+                                        variant="ghost"
+                                        :aria-label="`Delete comment by ${comment.user?.username}`"
+                                        @click="commentPendingDelete = comment"
+                                        ><Trash2 class="size-4" /></Button
+                                    >
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        :aria-label="`Reply to ${comment.user?.username}`"
+                                        @click="startReply(comment)"
+                                        ><CornerUpLeft class="size-4" /></Button
+                                    >
+                                </div>
+                            </div>
+                        </div>
+                        <ul
+                            v-if="repliesFor(comment.id).length"
+                            class="mt-4 space-y-4 border-l border-foreground pl-4"
+                        >
+                            <li
+                                v-for="reply in repliesFor(comment.id)"
+                                :key="reply.id"
+                            >
+                                <div
+                                    class="flex items-start justify-between gap-4"
+                                >
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                                            <p class="technical-label">{{
+                                                reply.user?.username ??
+                                                reply.user?.name
+                                            }}</p>
+                                            <time
+                                                class="technical-label text-muted-foreground"
+                                                >{{
+                                                    formatTimestamp(reply.created_at)
+                                                }}</time
+                                            >
+                                        </div>
+                                        <p
+                                            v-if="reply.is_deleted"
+                                            class="technical-label mt-1 italic text-muted-foreground"
+                                        >
+                                            [deleted]
+                                        </p>
+                                        <p
+                                            v-else
+                                            class="mt-2 whitespace-pre-line text-sm leading-6"
+                                        >
+                                            {{ reply.body }}
+                                        </p>
+                                    </div>
+                                    <div
+                                        v-if="!reply.is_deleted"
+                                        class="shrink-0"
+                                    >
+                                        <button
+                                            type="button"
+                                            class="technical-label inline-flex items-center gap-1"
+                                            :class="
+                                                reply.cheered_by_viewer
+                                                    ? 'text-primary'
+                                                    : 'text-muted-foreground'
+                                            "
+                                            @click="cheerComment(reply)"
+                                        >
+                                            <Heart class="size-4" />{{
+                                                reply.cheers_count
+                                            }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+                        <form
+                            v-if="replyTo === comment.id && $page.props.auth.user"
+                            class="mt-4 grid gap-2 border-l border-foreground pl-4"
+                            @submit.prevent="submitReply"
+                        >
+                            <Textarea
+                                v-model="replyForm.body"
+                                placeholder="Your reply"
+                            />
+                            <p
+                                v-if="replyForm.errors.body"
+                                class="text-sm text-destructive"
+                            >
+                                {{ replyForm.errors.body }}
+                            </p>
+                            <div class="flex gap-2">
+                                <Button
+                                    size="sm"
+                                    :disabled="replyForm.processing"
+                                    >Reply</Button
+                                >
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    type="button"
+                                    @click="replyTo = null"
+                                    >Cancel</Button
+                                >
+                            </div>
+                        </form>
+                    </li>
+                </ul>
+                <p v-else class="technical-label text-muted-foreground">
+                    <MessageSquare class="mr-1 inline size-4" />No comments yet.
+                </p>
+            </SectionHeader>
             <SectionHeader :label="`Reviews / ${project.reviews?.length ?? 0}`">
                 <div
                     v-if="project.rating_average !== null"
@@ -412,9 +675,17 @@ function cheerProject(project: any): void {
                         class="py-4"
                     >
                         <div class="flex items-center justify-between gap-3">
-                            <span class="technical-label">{{
-                                review.user?.username ?? review.user?.name
-                            }}</span>
+                            <div class="flex flex-wrap items-baseline gap-x-3">
+                                <span class="technical-label">{{
+                                    review.user?.username ?? review.user?.name
+                                }}</span>
+                                <time
+                                    class="technical-label text-muted-foreground"
+                                    >{{
+                                        formatTimestamp(review.created_at)
+                                    }}</time
+                                >
+                            </div>
                             <span class="technical-label text-primary"
                                 >{{ '★'.repeat(review.rating) }}</span
                             >
@@ -431,206 +702,33 @@ function cheerProject(project: any): void {
                     No reviews yet.
                 </p>
             </SectionHeader>
-            <SectionHeader :label="`Discussion / ${topLevelComments.length}`">
-                <form
-                    v-if="$page.props.auth.user"
-                    novalidate
-                    class="mb-8 grid gap-3"
-                    @submit.prevent="submitComment"
-                >
-                    <Textarea
-                        v-model="commentForm.body"
-                        placeholder="Join the discussion (max 500 characters)"
-                    />
-                    <p
-                        v-if="commentForm.errors.body"
-                        class="text-sm text-destructive"
-                    >
-                        {{ commentForm.errors.body }}
-                    </p>
-                    <div>
-                        <Button type="submit" :disabled="commentForm.processing"
-                            >Post comment</Button
-                        >
-                        <p
-                            v-if="commentForm.errors.parent_id"
-                            class="mt-2 text-sm text-destructive"
-                        >
-                            {{ commentForm.errors.parent_id }}
-                        </p>
-                    </div>
-                </form>
-                <ul
-                    v-if="topLevelComments.length"
-                    class="divide-y divide-foreground border-y border-foreground"
-                >
-                    <li
-                        v-for="comment in topLevelComments"
-                        :key="comment.id"
-                        class="py-5"
-                    >
-                        <div class="flex items-start justify-between gap-4">
-                            <div class="min-w-0">
-                                <p class="technical-label">{{
-                                    comment.user?.username ?? comment.user?.name
-                                }}</p>
-                                <p
-                                    v-if="comment.is_deleted"
-                                    class="technical-label mt-1 italic text-muted-foreground"
-                                >
-                                    [deleted]
-                                </p>
-                                <template v-else-if="editingId === comment.id">
-                                    <Textarea v-model="editForm.body" class="mt-2" />
-                                    <div class="mt-2 flex gap-2">
-                                        <Button
-                                            size="sm"
-                                            :disabled="editForm.processing"
-                                            @click="saveEdit(comment)"
-                                            >Save</Button
-                                        >
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            type="button"
-                                            @click="editingId = null"
-                                            >Cancel</Button
-                                        >
-                                    </div>
-                                </template>
-                                <p
-                                    v-else
-                                    class="mt-2 whitespace-pre-line text-sm leading-6"
-                                >
-                                    {{ comment.body }}
-                                </p>
-                            </div>
-                            <div
-                                v-if="!comment.is_deleted"
-                                class="flex shrink-0 flex-col items-end gap-2"
-                            >
-                                <button
-                                    type="button"
-                                    class="technical-label inline-flex items-center gap-1"
-                                    :class="
-                                        comment.cheered_by_viewer
-                                            ? 'text-primary'
-                                            : 'text-muted-foreground'
-                                    "
-                                    @click="cheerComment(comment)"
-                                >
-                                    <Heart class="size-4" />{{
-                                        comment.cheers_count
-                                    }}
-                                </button>
-                                <div
-                                    v-if="$page.props.auth.user"
-                                    class="flex gap-1"
-                                >
-                                    <Button
-                                        v-if="comment.can_edit"
-                                        size="sm"
-                                        variant="ghost"
-                                        @click="startEdit(comment)"
-                                        ><Pencil class="size-4" /></Button
-                                    >
-                                    <Button
-                                        v-if="comment.can_delete"
-                                        size="sm"
-                                        variant="ghost"
-                                        @click="deleteComment(comment)"
-                                        ><Trash2 class="size-4" /></Button
-                                    >
-                                    <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        @click="startReply(comment)"
-                                        ><CornerUpLeft class="size-4" /></Button
-                                    >
-                                </div>
-                            </div>
-                        </div>
-                        <ul
-                            v-if="repliesFor(comment.id).length"
-                            class="mt-4 space-y-4 border-l border-foreground pl-4"
-                        >
-                            <li
-                                v-for="reply in repliesFor(comment.id)"
-                                :key="reply.id"
-                            >
-                                <div
-                                    class="flex items-start justify-between gap-4"
-                                >
-                                    <div class="min-w-0">
-                                        <p class="technical-label">{{
-                                            reply.user?.username ??
-                                            reply.user?.name
-                                        }}</p>
-                                        <p
-                                            v-if="reply.is_deleted"
-                                            class="technical-label mt-1 italic text-muted-foreground"
-                                        >
-                                            [deleted]
-                                        </p>
-                                        <p
-                                            v-else
-                                            class="mt-2 whitespace-pre-line text-sm leading-6"
-                                        >
-                                            {{ reply.body }}
-                                        </p>
-                                    </div>
-                                    <div
-                                        v-if="!reply.is_deleted"
-                                        class="shrink-0"
-                                    >
-                                        <button
-                                            type="button"
-                                            class="technical-label inline-flex items-center gap-1"
-                                            :class="
-                                                reply.cheered_by_viewer
-                                                    ? 'text-primary'
-                                                    : 'text-muted-foreground'
-                                            "
-                                            @click="cheerComment(reply)"
-                                        >
-                                            <Heart class="size-4" />{{
-                                                reply.cheers_count
-                                            }}
-                                        </button>
-                                    </div>
-                                </div>
-                            </li>
-                        </ul>
-                        <form
-                            v-if="replyTo === comment.id && $page.props.auth.user"
-                            class="mt-4 grid gap-2 border-l border-foreground pl-4"
-                            @submit.prevent="submitComment"
-                        >
-                            <Textarea
-                                v-model="commentForm.body"
-                                placeholder="Your reply"
-                            />
-                            <div class="flex gap-2">
-                                <Button
-                                    size="sm"
-                                    :disabled="commentForm.processing"
-                                    >Reply</Button
-                                >
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    type="button"
-                                    @click="replyTo = null"
-                                    >Cancel</Button
-                                >
-                            </div>
-                        </form>
-                    </li>
-                </ul>
-                <p v-else class="technical-label text-muted-foreground">
-                    <MessageSquare class="mr-1 inline size-4" />No comments yet.
-                </p>
-            </SectionHeader>
         </section>
+
+        <AlertDialog
+            :open="commentPendingDelete !== null"
+            @update:open="
+                (value: boolean) => {
+                    if (!value) commentPendingDelete = null;
+                }
+            "
+        >
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Delete this comment?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        The comment will be removed. If it has replies, a
+                        [deleted] placeholder keeps the thread intact.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                        data-test="confirm-delete-comment"
+                        @click="deleteComment()"
+                        >Delete</AlertDialogAction
+                    >
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     </PublicShell>
 </template>

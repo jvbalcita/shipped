@@ -100,6 +100,12 @@ function verify(): void {
                     <AlertDescription>
                         Connect Laravel Cloud to verify this project.
                     </AlertDescription>
+                    <Button as-child class="mt-3" data-test="connect-cloud">
+                        <Link :href="dashboard()"
+                            ><CloudOff class="size-4" />Connect Laravel
+                            Cloud</Link
+                        >
+                    </Button>
                 </Alert>
 
                 <Alert

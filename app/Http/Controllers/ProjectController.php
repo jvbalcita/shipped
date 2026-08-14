@@ -224,7 +224,7 @@ class ProjectController extends Controller
             : $connection->connectedEnvironments;
 
         return Inertia::render('Projects/Edit', [
-            'project' => $project->load(['releases', 'connectedEnvironment', 'tags']),
+            'project' => $project->load(['releases', 'connectedEnvironment', 'tags', 'screenshots']),
             'categories' => Category::query()->orderBy('name')->get(),
             'pricingOptions' => collect(ProjectPricing::cases())->map(fn (ProjectPricing $pricing) => [
                 'value' => $pricing->value,

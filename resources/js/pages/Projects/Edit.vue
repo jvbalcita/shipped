@@ -3,6 +3,7 @@ import { router, useForm } from '@inertiajs/vue3';
 import { CalendarClock, Check, Eye, EyeOff, Send } from '@lucide/vue';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import DateTimePicker from '@/components/shipped/DateTimePicker.vue';
+import DatePicker from '@/components/shipped/DatePicker.vue';
 import FileUpload from '@/components/shipped/FileUpload.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
 import RichTextEditor from '@/components/shipped/RichTextEditor.vue';
@@ -401,17 +402,14 @@ onUnmounted(() => {
                             ><FieldLabel>Logo</FieldLabel
                             ><FileUpload
                                 :model-value="projectForm.logo"
+                                kind="logo"
                                 :existing-url="
                                     project.logo_url ? project.logo_url : null
                                 "
                                 :error="projectForm.errors.logo"
                                 @update:model-value="onLogoChange"
                                 @remove-existing="onLogoRemove"
-                            />
-                            <p class="text-xs text-muted-foreground">
-                                Square PNG, JPG, or WebP. At least 256×256, up
-                                to 6 MB.
-                            </p></Field
+                            /></Field
                         ><Field
                             ><FieldLabel>Screenshots</FieldLabel>
                             <p class="text-xs text-muted-foreground">
@@ -527,11 +525,10 @@ onUnmounted(() => {
                         ><Field
                             ><FieldLabel for="launch_date"
                                 >Launch date</FieldLabel
-                            ><Input
+                            ><DatePicker
                                 id="launch_date"
                                 v-model="projectForm.launch_date"
-                                type="date"
-                                data-test="project-launch-date"
+                                placeholder="Pick a launch date"
                             /><FieldError
                                 v-if="projectForm.errors.launch_date"
                                 >{{

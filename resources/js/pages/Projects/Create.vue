@@ -2,6 +2,7 @@
 import { router, useForm } from '@inertiajs/vue3';
 import { ArrowLeft, ArrowRight, Check, Send } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import DatePicker from '@/components/shipped/DatePicker.vue';
 import FileUpload from '@/components/shipped/FileUpload.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
 import SectionHeader from '@/components/shipped/SectionHeader.vue';
@@ -317,13 +318,9 @@ function continueComposer(): void {
                                     ><FieldLabel>Logo</FieldLabel
                                     ><FileUpload
                                         v-model="form.logo"
+                                        kind="logo"
                                         :error="form.errors.logo"
-                                    /><p
-                                        class="text-xs text-muted-foreground"
-                                    >
-                                         Square PNG, JPG, or WebP. At least
-                                        256×256, up to 6 MB.
-                                    </p></Field
+                                    /></Field
                                 ><Field
                                     ><FieldLabel>Screenshots</FieldLabel>
                                     <p class="text-xs text-muted-foreground">
@@ -392,11 +389,10 @@ function continueComposer(): void {
                                 ><Field
                                     ><FieldLabel for="launch_date"
                                         >Launch date</FieldLabel
-                                    ><Input
+                                    ><DatePicker
                                         id="launch_date"
                                         v-model="form.launch_date"
-                                        type="date"
-                                        data-test="project-launch-date"
+                                        placeholder="Pick a launch date"
                                     /><FieldError
                                         v-if="form.errors.launch_date"
                                         >{{

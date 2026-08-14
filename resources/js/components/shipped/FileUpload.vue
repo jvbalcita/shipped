@@ -11,8 +11,10 @@ const props = withDefaults(
         modelValue?: File | null;
         error?: string;
         existingUrl?: string | null;
+        /** "cover" renders a wide plate; "logo" renders a square app-icon slot. */
+        kind?: 'cover' | 'logo';
     }>(),
-    { modelValue: null, error: '', existingUrl: null },
+    { modelValue: null, error: '', existingUrl: null, kind: 'cover' },
 );
 
 const emit = defineEmits<{
@@ -28,6 +30,14 @@ const previewUrl = computed(() =>
         : showExisting.value
             ? props.existingUrl
             : null,
+);
+
+const isLogo = computed(() => props.kind === 'logo');
+const noun = computed(() => (isLogo.value ? 'logo' : 'cover'));
+const hint = computed(() =>
+    isLogo.value
+        ? 'Square PNG, JPG, or WebP. At least 256×256, up to 6 MB.'
+        : 'PNG, JPG, or WebP. Maximum 4 MB.',
 );
 
 function selectFile(file?: File): void {
@@ -63,8 +73,11 @@ function removeFile(): void {
             @change="selectFile(($event.target as HTMLInputElement).files?.[0])"
         />
         <div
-            class="grid min-h-52 place-items-center border border-dashed border-foreground bg-card p-4 text-center"
-            :class="{ 'border-[3px] border-primary': isDragging }"
+            class="grid place-items-center border border-dashed border-foreground bg-card p-4 text-center"
+            :class="[
+                isLogo ? 'size-36' : 'min-h-52 w-full',
+                { 'border-[3px] border-primary': isDragging },
+            ]"
             @dragover.prevent="isDragging = true"
             @dragleave.prevent="isDragging = false"
             @drop.prevent="
@@ -75,26 +88,38 @@ function removeFile(): void {
             <img
                 v-if="previewUrl"
                 :src="previewUrl"
-                alt="Selected project cover"
-                class="max-h-64 w-full object-cover"
+                :alt="`Selected project ${noun}`"
+                class="w-full object-contain"
+                :class="isLogo ? 'size-full p-2' : 'max-h-64'"
             />
-            <div v-else class="grid max-w-sm place-items-center gap-3">
+            <div
+                v-else
+                class="grid max-w-sm place-items-center gap-3"
+                :class="{ 'px-2': isLogo }"
+            >
                 <ImagePlus class="size-8" aria-hidden="true" />
-                <p class="technical-label">Drop a cover plate here</p>
-                <p class="text-sm text-muted-foreground">
-                    PNG, JPG, or WebP. Maximum 4 MB.
+                <p class="technical-label">
+                    Drop {{ isLogo ? 'a square logo' : 'a cover plate' }} here
+                </p>
+                <p v-if="!isLogo" class="text-sm text-muted-foreground">
+                    {{ hint }}
                 </p>
             </div>
         </div>
+        <p v-if="isLogo" class="text-xs text-muted-foreground">
+            {{ hint }}
+        </p>
         <Progress
             v-if="modelValue"
             :model-value="100"
-            aria-label="Cover selected"
+            :aria-label="`${noun} selected`"
         />
         <div class="flex flex-wrap gap-2">
             <Button type="button" variant="outline" @click="input?.$el.click()"
                 ><Upload class="size-4" />{{
-                    previewUrl ? 'Replace cover' : 'Choose cover'
+                    previewUrl
+                        ? `Replace ${noun}`
+                        : `Choose ${noun}`
                 }}</Button
             >
             <Button
@@ -106,7 +131,7 @@ function removeFile(): void {
             >
         </div>
         <Alert v-if="error" variant="destructive"
-            ><AlertTitle>Cover rejected</AlertTitle
+            ><AlertTitle>{{ noun }} rejected</AlertTitle
             ><AlertDescription>{{ error }}</AlertDescription></Alert
         >
     </div>

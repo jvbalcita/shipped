@@ -26,6 +26,8 @@ class ProjectScreenshot extends Model
 
     protected $table = 'project_screenshots';
 
+    protected $appends = ['url'];
+
     protected $fillable = ['project_id', 'path', 'caption', 'sort_order'];
 
     /**
