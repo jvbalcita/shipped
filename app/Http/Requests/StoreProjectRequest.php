@@ -37,6 +37,10 @@ class StoreProjectRequest extends FormRequest
             'tags' => ['nullable', 'string', 'max:500'],
             'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:6144', new SquareImage(256)],
+            'screenshots' => ['nullable', 'array', 'max:5'],
+            'screenshots.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'screenshots_captions' => ['nullable', 'array', 'max:5'],
+            'screenshots_captions.*' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

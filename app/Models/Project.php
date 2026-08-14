@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\Cheerable;
 use App\Enums\ProjectPricing;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -17,6 +18,8 @@ use Illuminate\Support\Facades\Storage;
 class Project extends Model
 {
     /** @use HasFactory<ProjectFactory> */
+    use Cheerable;
+
     use HasFactory;
 
     protected $fillable = [
@@ -79,16 +82,28 @@ class Project extends Model
         return $this->hasMany(Release::class);
     }
 
-    /** @return HasMany<Cheer, $this> */
-    public function cheers(): HasMany
-    {
-        return $this->hasMany(Cheer::class);
-    }
-
     /** @return BelongsToMany<Tag, $this> */
     public function tags(): BelongsToMany
     {
-        return $this->belongsToMany(Tag::class)->withTimestamps();
+        return $this->belongsToMany(Tag::class);
+    }
+
+    /** @return HasMany<ProjectScreenshot, $this> */
+    public function screenshots(): HasMany
+    {
+        return $this->hasMany(ProjectScreenshot::class)->orderBy('sort_order');
+    }
+
+    /** @return HasMany<Review, $this> */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    /** @return HasMany<Comment, $this> */
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class);
     }
 
     /**

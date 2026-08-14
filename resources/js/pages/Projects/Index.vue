@@ -3,6 +3,7 @@ import { Link } from '@inertiajs/vue3';
 import { Plus } from '@lucide/vue';
 import CloudConnectionPanel from '@/components/shipped/CloudConnectionPanel.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
+import SectionHeader from '@/components/shipped/SectionHeader.vue';
 import StudioProjectRow from '@/components/shipped/StudioProjectRow.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -71,31 +72,24 @@ defineProps<{
         <section
             class="page-enter mx-auto flex w-full max-w-[90rem] min-w-0 flex-1 flex-col border-x border-b border-foreground"
         >
-            <div
-                class="grid border-b border-foreground p-5 sm:grid-cols-[.45fr_1.55fr] sm:p-8"
-            >
-                <p class="technical-label text-primary">
-                    Creator studio / Workspace
-                </p>
-                <div>
-                    <div
-                        class="flex flex-col items-start gap-5 sm:flex-row sm:justify-between"
+            <SectionHeader label="Creator studio / Workspace">
+                <div
+                    class="flex flex-col items-start gap-5 sm:flex-row sm:justify-between"
+                >
+                    <h1 class="display-type text-[clamp(3rem,7vw,7rem)]">
+                        Your launches.
+                    </h1>
+                    <Button as-child class="w-full shrink-0 sm:w-auto"
+                        ><Link :href="create()"
+                            ><Plus class="size-4" />New launch</Link
+                        ></Button
                     >
-                        <h1 class="display-type text-[clamp(3rem,7vw,7rem)]">
-                            Your launches.
-                        </h1>
-                        <Button as-child class="w-full shrink-0 sm:w-auto"
-                            ><Link :href="create()"
-                                ><Plus class="size-4" />New launch</Link
-                            ></Button
-                        >
-                    </div>
-                    <p class="mt-6 max-w-xl text-muted-foreground">
-                        Draft the record, publish the release, then make the
-                        project public when it is ready.
-                    </p>
                 </div>
-            </div>
+                <p class="mt-6 max-w-xl text-muted-foreground">
+                    Draft the record, publish the release, then make the
+                    project public when it is ready.
+                </p>
+            </SectionHeader>
             <CloudConnectionPanel
                 :connection="cloudConnection"
                 :environments="connectedEnvironments"

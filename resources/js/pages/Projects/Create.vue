@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, Check, Send } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import FileUpload from '@/components/shipped/FileUpload.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
+import SectionHeader from '@/components/shipped/SectionHeader.vue';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
@@ -23,7 +24,7 @@ import {
     StepperTitle,
     StepperTrigger,
 } from '@/components/ui/stepper';
-import { Textarea } from '@/components/ui/textarea';
+import RichTextEditor from '@/components/shipped/RichTextEditor.vue';
 import { index, store } from '@/routes/projects';
 
 const props = defineProps<{
@@ -44,7 +45,35 @@ const form = useForm({
     tags: '',
     cover_image: null as File | null,
     logo: null as File | null,
+    screenshots: [] as File[],
+    screenshots_captions: [] as string[],
 });
+
+const MAX_SCREENSHOTS = 5;
+
+const newScreenshots = ref<{ file: File; caption: string }[]>([]);
+
+const canAddScreenshot = computed(
+    () => newScreenshots.value.length < MAX_SCREENSHOTS,
+);
+
+function addScreenshots(files: FileList | null): void {
+    if (files === null) {
+        return;
+    }
+
+    for (const file of Array.from(files)) {
+        if (!canAddScreenshot.value) {
+            break;
+        }
+
+        newScreenshots.value.push({ file, caption: '' });
+    }
+}
+
+function removeNewScreenshot(index: number): void {
+    newScreenshots.value.splice(index, 1);
+}
 
 function appendSuggestedTag(tag: string): void {
     const current = form.tags
@@ -129,6 +158,9 @@ function continueComposer(): void {
         return;
     }
 
+    form.screenshots = newScreenshots.value.map((screenshot) => screenshot.file);
+    form.screenshots_captions = newScreenshots.value.map((screenshot) => screenshot.caption);
+
     form.post(store().url, {
         forceFormData: true,
         onError: (errors) => {
@@ -147,24 +179,19 @@ function continueComposer(): void {
         <section
             class="page-enter mx-auto w-full max-w-[90rem] min-w-0 border-x border-b border-foreground"
         >
-            <div
-                class="grid border-b border-foreground p-5 sm:grid-cols-[.45fr_1.55fr] sm:p-8"
+            <SectionHeader
+                :label="`Launch composer / ${String(step).padStart(2, '0')} / 03`"
             >
-                <p class="technical-label text-primary">
-                    Launch composer / {{ String(step).padStart(2, '0') }} / 03
+                <h1
+                    class="display-type mt-12 text-[clamp(3rem,7vw,7rem)] sm:mt-0"
+                >
+                    Give it a shape.
+                </h1>
+                <p class="mt-6 max-w-2xl leading-7 text-muted-foreground">
+                    Start private. Build a launch record with enough
+                    substance to become public.
                 </p>
-                <div>
-                    <h1
-                        class="display-type mt-12 text-[clamp(3rem,7vw,7rem)] sm:mt-0"
-                    >
-                        Give it a shape.
-                    </h1>
-                    <p class="mt-6 max-w-2xl leading-7 text-muted-foreground">
-                        Start private. Build a launch record with enough
-                        substance to become public.
-                    </p>
-                </div>
-            </div>
+            </SectionHeader>
             <div class="border-b border-foreground p-5 sm:p-8">
                 <Stepper
                     v-model="step"
@@ -241,10 +268,8 @@ function continueComposer(): void {
                                 ><Field
                                     ><FieldLabel for="description"
                                         >The fuller story</FieldLabel
-                                    ><Textarea
-                                        id="description"
+                                    ><RichTextEditor
                                         v-model="form.description"
-                                        required
                                     /><FieldError
                                         v-if="form.errors.description"
                                         >{{
@@ -296,9 +321,55 @@ function continueComposer(): void {
                                     /><p
                                         class="text-xs text-muted-foreground"
                                     >
-                                        Square PNG, JPG, or WebP. At least
+                                         Square PNG, JPG, or WebP. At least
                                         256×256, up to 6 MB.
                                     </p></Field
+                                ><Field
+                                    ><FieldLabel>Screenshots</FieldLabel>
+                                    <p class="text-xs text-muted-foreground">
+                                        Up to {{ MAX_SCREENSHOTS }} images,
+                                        JPG/PNG/WebP, up to 5 MB each.
+                                    </p>
+                                    <div class="grid gap-3">
+                                        <div
+                                            v-for="(screenshot, index) in newScreenshots"
+                                            :key="`new-${index}`"
+                                            class="flex items-start gap-3 border border-dashed border-foreground p-3"
+                                        >
+                                            <div
+                                                class="flex h-20 w-32 items-center justify-center bg-muted text-xs"
+                                            >
+                                                {{ screenshot.file.name }}
+                                            </div>
+                                            <div class="grid flex-1 gap-2">
+                                                <Input
+                                                    v-model="screenshot.caption"
+                                                    placeholder="Caption (optional)"
+                                                />
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    @click="removeNewScreenshot(index)"
+                                                >
+                                                    Remove
+                                                </Button>
+                                            </div>
+                                        </div>
+
+                                        <input
+                                            v-if="canAddScreenshot"
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/webp"
+                                            multiple
+                                            data-test="project-screenshots"
+                                            @change="addScreenshots(($event.target as HTMLInputElement).files)"
+                                        />
+                                    </div>
+                                    <FieldError
+                                        v-if="form.errors.screenshots"
+                                        >{{ form.errors.screenshots }}</FieldError
+                                    ></Field
                                 ><Field
                                     ><FieldLabel for="pricing"
                                         >Pricing</FieldLabel
