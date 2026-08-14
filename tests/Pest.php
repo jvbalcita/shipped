@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -44,7 +45,7 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+function verifiedUser(): User
 {
-    // ..
+    return User::factory()->create(['email_verified_at' => now()]);
 }

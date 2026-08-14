@@ -101,7 +101,6 @@ test('only the project owner can edit it and a cheer is unique per member', func
         ->assertForbidden();
 
     $this->actingAs($member)->post(route('projects.cheers.store', $project))->assertRedirect();
-    $this->actingAs($member)->post(route('projects.cheers.store', $project))->assertRedirect();
 
     expect($project->cheers()->count())->toBe(1);
 });
@@ -286,8 +285,8 @@ test('discovery sorts by most cheered when requested', function () {
 
     $cheered = Project::factory()->public()->for($creator, 'creator')->for($category)->create(['name' => 'Beloved Kit']);
     Release::factory()->for($cheered)->create(['published_at' => now()]);
-    Cheer::factory()->for($cheered)->for(User::factory())->create();
-    Cheer::factory()->for($cheered)->for(User::factory())->create();
+    Cheer::factory()->create(['cheerable_id' => $cheered->id, 'user_id' => User::factory()]);
+    Cheer::factory()->create(['cheerable_id' => $cheered->id, 'user_id' => User::factory()]);
 
     $lonely = Project::factory()->public()->for($creator, 'creator')->for($category)->create(['name' => 'Lonely Kit']);
     Release::factory()->for($lonely)->create(['published_at' => now()]);

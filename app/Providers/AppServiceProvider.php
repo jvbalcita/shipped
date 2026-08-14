@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\Comment;
+use App\Models\Project;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
@@ -32,6 +35,12 @@ class AppServiceProvider extends ServiceProvider
     protected function configureDefaults(): void
     {
         Date::use(CarbonImmutable::class);
+
+        // Stable, short morph keys for polymorphic cheers (projects + comments).
+        Relation::enforceMorphMap([
+            'project' => Project::class,
+            'comment' => Comment::class,
+        ]);
 
         DB::prohibitDestructiveCommands(
             app()->isProduction(),
