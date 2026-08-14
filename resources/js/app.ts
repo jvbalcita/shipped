@@ -7,7 +7,9 @@ const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 // Shipped is intentionally paper-light. Remove a persisted starter-kit theme
 // class before Vue mounts so old localStorage preferences cannot darken controls.
-document.documentElement.classList.remove('dark');
+if (!import.meta.env.SSR) {
+    document.documentElement.classList.remove('dark');
+}
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
@@ -34,4 +36,6 @@ createInertiaApp({
 });
 
 // This will listen for flash toast data from the server...
-initializeFlashToast();
+if (!import.meta.env.SSR) {
+    initializeFlashToast();
+}

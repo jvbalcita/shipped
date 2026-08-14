@@ -1,12 +1,56 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import { ArrowUpRight, Heart, ShieldCheck } from '@lucide/vue';
+import { ref, watch } from 'vue';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Badge } from '@/components/ui/badge';
 import { defaultCoverUrl } from '@/lib/cover';
 import { show } from '@/routes/projects';
+import { store as storeCheer } from '@/routes/projects/cheers';
 
-defineProps<{ project: any }>();
+const props = defineProps<{ project: any }>();
+
+const page = usePage();
+const cheered = ref(Boolean(props.project.cheered_by_viewer));
+const count = ref(Number(props.project.cheers_count ?? 0));
+
+// Resync local state when the Discover page re-renders with fresh counts.
+watch(() => props.project.cheers_count, (value) => {
+    count.value = Number(value ?? 0);
+});
+watch(() => props.project.cheered_by_viewer, (value) => {
+    cheered.value = Boolean(value);
+});
+
+function toggleCheer(): void {
+    const authed = page.props.auth.user !== null;
+
+    const previousCheered = cheered.value;
+    const previousCount = count.value;
+
+    // Authenticated creators toggle optimistically; guests get routed to login
+    // by the auth-protected cheer route (intended returns them to Discover).
+    if (authed) {
+        cheered.value = !previousCheered;
+        count.value = previousCheered
+            ? Math.max(0, previousCount - 1)
+            : previousCount + 1;
+    }
+
+    router.post(
+        storeCheer(props.project).url,
+        {},
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onError: () => {
+                // Automatic rollback on failure.
+                cheered.value = previousCheered;
+                count.value = previousCount;
+            },
+        },
+    );
+}
 </script>
 
 <template>
@@ -41,11 +85,21 @@ defineProps<{ project: any }>();
                 class="flex items-center justify-between bg-background px-4 py-3"
             >
                 <Badge variant="outline">{{ project.category.name }}</Badge>
-                <span class="inline-flex items-center gap-1 text-xs"
-                    ><Heart class="size-3" aria-hidden="true" />{{
-                        project.cheers_count
-                    }}</span
+                <button
+                    type="button"
+                    class="technical-label inline-flex items-center gap-1 focus-visible:outline-2"
+                    :class="cheered ? 'text-primary' : 'text-muted-foreground'"
+                    data-test="project-cheer"
+                    :aria-pressed="cheered"
+                    :aria-label="`Cheer ${project.name}`"
+                    @click.prevent.stop="toggleCheer"
                 >
+                    <Heart
+                        class="size-3"
+                        :class="{ 'fill-current': cheered }"
+                        aria-hidden="true"
+                    />{{ count }}
+                </button>
             </div>
             <div class="bg-background p-4">
                 <div class="flex items-start gap-3">
@@ -80,6 +134,13 @@ defineProps<{ project: any }>();
                                     day: 'numeric',
                                 })
                             }}
+                        </p>
+                        <p
+                            v-if="project.rating_average != null"
+                            class="technical-label mt-1 text-primary"
+                            data-test="project-rating"
+                        >
+                            ★ {{ project.rating_average }} / 5
                         </p>
                     </div>
                 </div>

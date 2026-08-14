@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { edit } from '@/routes/profile';
+import { update as updateUsername } from '@/routes/username';
 import { send } from '@/routes/verification';
 
 type ProfileLink = { type: string; url: string };
@@ -35,9 +36,9 @@ const initialLinks =
 
 const form = useForm({
     name: user.value.name,
-    email: user.value.email,
     title: (user.value.title as string) || 'Creator',
     location: (user.value.location as string) || '',
+    bio: (user.value.bio as string) || '',
     links:
         initialLinks.length > 0
             ? initialLinks.map((link) => ({ type: link.type, url: link.url }))
@@ -80,6 +81,19 @@ const submit = (): void => {
             forceFormData: true,
             preserveScroll: true,
         });
+};
+
+const usernameForm = useForm({
+    username: user.value.username as string,
+});
+
+const submitUsername = (): void => {
+    usernameForm.patch(updateUsername.url(), {
+        preserveScroll: true,
+        onSuccess: () => {
+            usernameForm.username = user.value.username as string;
+        },
+    });
 };
 </script>
 
@@ -150,17 +164,17 @@ const submit = (): void => {
             </div>
 
             <div class="grid gap-2">
-                <Label for="email">Email address</Label>
-                <Input
-                    id="email"
-                    v-model="form.email"
-                    type="email"
-                    class="mt-1 block w-full"
-                    required
-                    autocomplete="username"
-                    placeholder="Email address"
+                <Label for="bio">Bio</Label>
+                <textarea
+                    id="bio"
+                    v-model="form.bio"
+                    class="mt-1 block w-full border border-foreground bg-background p-3 text-sm"
+                    maxlength="280"
+                    rows="4"
+                    placeholder="A short bio shown on your creator page"
+                    data-test="profile-bio"
                 />
-                <InputError class="mt-2" :message="form.errors.email" />
+                <InputError class="mt-2" :message="form.errors.bio" />
             </div>
 
             <div class="grid gap-3">
@@ -253,6 +267,38 @@ const submit = (): void => {
                     :disabled="form.processing"
                     data-test="update-profile-button"
                     >Save</Button
+                >
+            </div>
+        </form>
+
+        <form class="space-y-4 border-t border-border pt-6" @submit.prevent="submitUsername">
+            <Heading
+                variant="small"
+                title="Username"
+                description="Changing your username holds the old one for 30 days."
+            />
+
+            <div class="grid gap-2">
+                <Label for="username">Username</Label>
+                <Input
+                    id="username"
+                    v-model="usernameForm.username"
+                    class="mt-1 block w-full font-mono"
+                    required
+                    autocomplete="off"
+                    maxlength="30"
+                    placeholder="username"
+                    data-test="profile-username"
+                />
+                <InputError class="mt-2" :message="usernameForm.errors.username" />
+            </div>
+
+            <div class="flex items-center gap-4">
+                <Button
+                    type="submit"
+                    :disabled="usernameForm.processing"
+                    data-test="update-username-button"
+                    >Change username</Button
                 >
             </div>
         </form>

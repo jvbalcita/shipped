@@ -2,6 +2,7 @@
 import { Link, usePage } from '@inertiajs/vue3';
 import { KeyRound, UserRound } from '@lucide/vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
+import SectionHeader from '@/components/shipped/SectionHeader.vue';
 import { Button } from '@/components/ui/button';
 import { edit as profileEdit } from '@/routes/profile';
 import { edit as securityEdit } from '@/routes/security';
@@ -14,16 +15,13 @@ const page = usePage();
         <section
             class="mx-auto w-full max-w-[90rem] min-w-0 border-x border-foreground"
         >
-            <div
-                class="grid border-b border-foreground p-5 sm:grid-cols-[.45fr_1.55fr] sm:p-8"
-            >
-                <p class="technical-label text-primary">Creator controls</p>
+            <SectionHeader label="Creator controls">
                 <h1
                     class="display-type mt-12 text-[clamp(3rem,6vw,6rem)] sm:mt-0"
                 >
                     Settings.
                 </h1>
-            </div>
+            </SectionHeader>
             <div class="grid gap-px bg-foreground lg:grid-cols-[16rem_1fr]">
                 <nav class="bg-background p-4" aria-label="Settings navigation">
                     <Button

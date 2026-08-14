@@ -5,6 +5,7 @@ import { computed, ref } from 'vue';
 import ProjectCard from '@/components/shipped/ProjectCard.vue';
 import ProjectCardSkeleton from '@/components/shipped/ProjectCardSkeleton.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
+import SectionHeader from '@/components/shipped/SectionHeader.vue';
 import { Button } from '@/components/ui/button';
 import {
     Empty,
@@ -116,26 +117,19 @@ function clearPricing() {
         <section
             class="page-enter mx-auto w-full max-w-[90rem] min-w-0 border-x border-b border-foreground"
         >
-            <div
-                class="grid border-b border-foreground p-5 sm:grid-cols-[.45fr_1.55fr] sm:p-8"
-            >
-                <p class="technical-label text-primary">
-                    Public registry / Browse
+            <SectionHeader label="Public registry / Browse">
+                <h1
+                    class="display-type mt-12 max-w-4xl text-[clamp(3.25rem,6.5vw,6.75rem)] sm:mt-0"
+                >
+                    Explore launches.
+                </h1>
+                <p
+                    class="mt-6 max-w-xl text-sm leading-6 text-muted-foreground"
+                >
+                    Public records from Laravel builders, searchable by name
+                    and category.
                 </p>
-                <div>
-                    <h1
-                        class="display-type mt-12 max-w-4xl text-[clamp(3.25rem,6.5vw,6.75rem)] sm:mt-0"
-                    >
-                        Explore launches.
-                    </h1>
-                    <p
-                        class="mt-6 max-w-xl text-sm leading-6 text-muted-foreground"
-                    >
-                        Public records from Laravel builders, searchable by name
-                        and category.
-                    </p>
-                </div>
-            </div>
+            </SectionHeader>
             <div
                 class="grid border-b border-foreground bg-transparent md:grid-cols-[1fr_12rem_12rem_auto]"
             >

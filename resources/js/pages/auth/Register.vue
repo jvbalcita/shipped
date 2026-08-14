@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { login } from '@/routes';
 import { store } from '@/routes/register';
+import { redirect as oauthRedirect } from '@/routes/oauth';
 
 defineProps<{
     passwordRules: string;
@@ -24,6 +25,28 @@ defineOptions({
 
 <template>
     <Head title="Register" />
+
+    <div class="grid gap-3">
+        <a
+            :href="oauthRedirect({ provider: 'github' })"
+            class="inline-flex h-9 w-full items-center justify-center gap-2 border border-foreground bg-background text-sm font-medium transition-colors hover:bg-muted"
+            data-test="oauth-github"
+        >
+            Continue with GitHub
+        </a>
+        <a
+            :href="oauthRedirect({ provider: 'google' })"
+            class="inline-flex h-9 w-full items-center justify-center gap-2 border border-foreground bg-background text-sm font-medium transition-colors hover:bg-muted"
+            data-test="oauth-google"
+        >
+            Continue with Google
+        </a>
+    </div>
+
+    <div class="relative text-center text-sm">
+        <span class="relative z-10 bg-background px-2 text-muted-foreground">Or register with email</span>
+        <div class="absolute inset-x-0 top-1/2 -z-0 h-px bg-border"></div>
+    </div>
 
     <Form
         v-bind="store.form()"
