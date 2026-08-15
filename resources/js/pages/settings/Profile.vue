@@ -114,6 +114,7 @@ const submitUsername = (): void => {
                 <Label>Avatar</Label>
                 <FileUpload
                     :model-value="form.avatar"
+                    kind="avatar"
                     :existing-url="(user.avatar as string) || null"
                     :error="form.errors.avatar"
                     data-test="profile-avatar"

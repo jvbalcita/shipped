@@ -11,8 +11,8 @@ const props = withDefaults(
         modelValue?: File | null;
         error?: string;
         existingUrl?: string | null;
-        /** "cover" renders a wide plate; "logo" renders a square app-icon slot. */
-        kind?: 'cover' | 'logo';
+        /** "cover" renders a wide plate; "logo"/"avatar" render a square slot. */
+        kind?: 'cover' | 'logo' | 'avatar';
     }>(),
     { modelValue: null, error: '', existingUrl: null, kind: 'cover' },
 );
@@ -32,13 +32,21 @@ const previewUrl = computed(() =>
             : null,
 );
 
-const isLogo = computed(() => props.kind === 'logo');
-const noun = computed(() => (isLogo.value ? 'logo' : 'cover'));
-const hint = computed(() =>
-    isLogo.value
-        ? 'Square PNG, JPG, or WebP. At least 256×256, up to 6 MB.'
-        : 'PNG, JPG, or WebP. Maximum 4 MB.',
+const isSquare = computed(() => props.kind !== 'cover');
+const noun = computed(() =>
+    props.kind === 'logo' ? 'logo' : props.kind === 'avatar' ? 'avatar' : 'cover',
 );
+const hint = computed(() => {
+    if (props.kind === 'logo') {
+        return 'Square PNG, JPG, or WebP. At least 256×256, up to 6 MB.';
+    }
+
+    if (props.kind === 'avatar') {
+        return 'Square PNG, JPG, or WebP. Maximum 3 MB.';
+    }
+
+    return 'PNG, JPG, or WebP. Maximum 4 MB.';
+});
 
 function selectFile(file?: File): void {
     if (file && ['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
@@ -75,7 +83,7 @@ function removeFile(): void {
         <div
             class="grid place-items-center border border-dashed border-foreground bg-card p-4 text-center"
             :class="[
-                isLogo ? 'size-36' : 'min-h-52 w-full',
+                isSquare ? 'size-36' : 'min-h-52 w-full',
                 { 'border-[3px] border-primary': isDragging },
             ]"
             @dragover.prevent="isDragging = true"
@@ -88,25 +96,31 @@ function removeFile(): void {
             <img
                 v-if="previewUrl"
                 :src="previewUrl"
-                :alt="`Selected project ${noun}`"
+                :alt="`Selected ${noun}`"
                 class="w-full object-contain"
-                :class="isLogo ? 'size-full p-2' : 'max-h-64'"
+                :class="isSquare ? 'size-full p-2' : 'max-h-64'"
             />
             <div
                 v-else
                 class="grid max-w-sm place-items-center gap-3"
-                :class="{ 'px-2': isLogo }"
+                :class="{ 'px-2': isSquare }"
             >
                 <ImagePlus class="size-8" aria-hidden="true" />
                 <p class="technical-label">
-                    Drop {{ isLogo ? 'a square logo' : 'a cover plate' }} here
+                    Drop
+                    {{
+                        isSquare
+                            ? `a square ${noun}`
+                            : 'a cover plate'
+                    }}
+                    here
                 </p>
-                <p v-if="!isLogo" class="text-sm text-muted-foreground">
+                <p v-if="!isSquare" class="text-sm text-muted-foreground">
                     {{ hint }}
                 </p>
             </div>
         </div>
-        <p v-if="isLogo" class="text-xs text-muted-foreground">
+        <p v-if="isSquare" class="text-xs text-muted-foreground">
             {{ hint }}
         </p>
         <Progress
