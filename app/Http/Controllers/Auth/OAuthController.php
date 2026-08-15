@@ -15,10 +15,11 @@ use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\InvalidStateException;
+use Symfony\Component\HttpFoundation\RedirectResponse as SymfonyRedirectResponse;
 
 class OAuthController extends Controller
 {
-    public function redirect(Request $request, string $provider): RedirectResponse
+    public function redirect(Request $request, string $provider): SymfonyRedirectResponse
     {
         $providerEnum = $this->resolveProvider($provider);
 
@@ -38,6 +39,7 @@ class OAuthController extends Controller
         }
 
         try {
+            /** @var \Laravel\Socialite\Two\User $socialiteUser */
             $socialiteUser = Socialite::driver($providerEnum->value)->user();
         } catch (InvalidStateException) {
             return redirect()->route('login')

@@ -9,13 +9,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 use Laravel\Socialite\Facades\Socialite;
+use Symfony\Component\HttpFoundation\RedirectResponse as SymfonyRedirectResponse;
 
 class OAuthController extends Controller
 {
     /**
      * Begin linking a provider to the authenticated creator.
      */
-    public function link(Request $request, string $provider): RedirectResponse
+    public function link(Request $request, string $provider): SymfonyRedirectResponse
     {
         $providerEnum = OAuthProvider::tryFrom($provider);
 

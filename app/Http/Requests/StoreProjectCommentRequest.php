@@ -37,6 +37,7 @@ class StoreProjectCommentRequest extends FormRequest
                     return;
                 }
 
+                /** @var Comment|null $parent */
                 $parent = Comment::query()->find($parentId);
                 $valid = $parent !== null
                     && $project instanceof Project

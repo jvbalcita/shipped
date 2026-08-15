@@ -13,13 +13,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 
+/**
+ * @property ProjectPricing|null $pricing
+ * @property Carbon|null $launch_date
+ * @property-read float|null $reviews_avg_rating
+ */
 class Project extends Model
 {
-    /** @use HasFactory<ProjectFactory> */
     use Cheerable;
 
+    /** @use HasFactory<ProjectFactory> */
     use HasFactory;
 
     protected $fillable = [

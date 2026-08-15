@@ -15,6 +15,7 @@ class Cheer extends Model
 
     protected $fillable = ['user_id', 'cheerable_type', 'cheerable_id'];
 
+    /** @return MorphTo<Model, $this> */
     public function cheerable(): MorphTo
     {
         return $this->morphTo();

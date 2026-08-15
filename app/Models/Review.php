@@ -17,7 +17,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Project $project
- * @property User $user
+ * @property User|null $user
  */
 class Review extends Model
 {

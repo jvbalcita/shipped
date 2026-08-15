@@ -8,7 +8,7 @@ enum OAuthProvider: string
     case GitHub = 'github';
 
     /**
-     * @return array<int, self>
+     * @return array<int, string>
      */
     public static function values(): array
     {

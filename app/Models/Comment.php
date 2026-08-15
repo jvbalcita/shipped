@@ -20,14 +20,14 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Project $project
- * @property User $user
+ * @property User|null $user
  * @property Comment|null $parent
  */
 class Comment extends Model
 {
-    /** @use HasFactory<CommentFactory> */
     use Cheerable;
 
+    /** @use HasFactory<CommentFactory> */
     use HasFactory;
 
     protected $fillable = ['project_id', 'user_id', 'parent_id', 'body', 'deleted_at'];
