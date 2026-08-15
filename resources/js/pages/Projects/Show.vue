@@ -56,6 +56,10 @@ const replyForm = useForm({ body: '', parent_id: null as number | null });
 const replyTo = ref<number | null>(null);
 const editingId = ref<number | null>(null);
 const editForm = useForm({ body: '' });
+// Delete confirmation is a two-ref flow: closing the dialog must not clear
+// the target before the delete request reads it (the action click closes
+// the dialog first, then fires the handler).
+const deleteDialogOpen = ref(false);
 const commentPendingDelete = ref<any>(null);
 
 function formatTimestamp(iso: string | null): string {
@@ -154,6 +158,16 @@ function deleteComment(): void {
     );
 }
 
+function cancelDelete(): void {
+    deleteDialogOpen.value = false;
+    commentPendingDelete.value = null;
+}
+
+function requestDelete(comment: any): void {
+    commentPendingDelete.value = comment;
+    deleteDialogOpen.value = true;
+}
+
 function cheerComment(comment: any): void {
     useForm({}).post(storeCommentCheer(comment).url, { preserveScroll: true });
 }
@@ -171,9 +185,21 @@ function cheerProject(project: any): void {
         <section
             class="page-enter mx-auto w-full max-w-[90rem] min-w-0 border-x border-foreground"
         >
-            <div
-                class="grid border-b border-foreground lg:grid-cols-[minmax(0,1.1fr)_minmax(0,.9fr)]"
-            >
+            <div class="relative border-b border-foreground bg-secondary">
+                <img
+                    :src="project.cover_image_url ?? defaultCoverUrl(project)"
+                    :alt="`${project.name} cover image`"
+                    class="media-reveal aspect-[21/9] w-full object-cover"
+                    :class="{ grayscale: !!project.cover_image_url }"
+                    data-test="project-cover"
+                />
+                <span
+                    v-if="!project.cover_image_url"
+                    class="technical-label absolute top-6 left-6 text-primary"
+                    >Cover pending</span
+                >
+            </div>
+            <div class="border-b border-foreground">
                 <div class="min-w-0 p-5 sm:p-8">
                     <div class="flex flex-wrap items-center gap-3">
                         <Badge variant="outline">{{
@@ -311,21 +337,6 @@ function cheerProject(project: any): void {
                             >@{{ project.creator.username }}</Link
                         >
                     </p>
-                </div>
-                <div
-                    class="relative min-w-0 border-t border-foreground bg-secondary lg:border-t-0 lg:border-l"
-                >
-                    <img
-                        :src="project.cover_image_url ?? defaultCoverUrl(project)"
-                        :alt="`${project.name} cover image`"
-                        class="media-reveal size-full min-h-80 object-cover"
-                        :class="{ grayscale: !!project.cover_image_url }"
-                    />
-                    <span
-                        v-if="!project.cover_image_url"
-                        class="technical-label absolute top-6 left-6 text-primary"
-                        >Cover pending</span
-                    >
                 </div>
             </div>
             <SectionHeader label="Release chronology">
@@ -488,7 +499,7 @@ function cheerProject(project: any): void {
                                         size="sm"
                                         variant="ghost"
                                         :aria-label="`Delete comment by ${comment.user?.username}`"
-                                        @click="commentPendingDelete = comment"
+                                        @click="requestDelete(comment)"
                                         ><Trash2 class="size-4" /></Button
                                     >
                                     <Button
@@ -599,9 +610,29 @@ function cheerProject(project: any): void {
             <SectionHeader :label="`Reviews / ${project.reviews?.length ?? 0}`">
                 <div
                     v-if="project.rating_average !== null"
-                    class="technical-label mb-6 text-primary"
+                    class="mb-6 flex items-center gap-3"
                 >
-                    Average {{ project.rating_average }} / 5
+                    <span
+                        class="flex items-center gap-0.5 text-primary"
+                        :aria-label="`Average ${project.rating_average} out of 5`"
+                    >
+                        <Star
+                            v-for="value in 5"
+                            :key="value"
+                            class="size-6"
+                            :class="
+                                value <= Math.round(project.rating_average)
+                                    ? 'fill-current'
+                                    : 'text-muted-foreground'
+                            "
+                        />
+                    </span>
+                    <span class="font-display text-2xl tabular-nums">{{
+                        project.rating_average
+                    }}</span>
+                    <span class="technical-label text-muted-foreground"
+                        >/ 5</span
+                    >
                 </div>
                 <form
                     v-if="$page.props.auth.user"
@@ -686,9 +717,21 @@ function cheerProject(project: any): void {
                                     }}</time
                                 >
                             </div>
-                            <span class="technical-label text-primary"
-                                >{{ '★'.repeat(review.rating) }}</span
+                            <span
+                                class="flex items-center gap-0.5 text-primary"
+                                :aria-label="`${review.rating} out of 5`"
                             >
+                                <Star
+                                    v-for="value in 5"
+                                    :key="value"
+                                    class="size-5"
+                                    :class="
+                                        value <= review.rating
+                                            ? 'fill-current'
+                                            : 'text-muted-foreground'
+                                    "
+                                />
+                            </span>
                         </div>
                         <p
                             v-if="review.body"
@@ -704,14 +747,7 @@ function cheerProject(project: any): void {
             </SectionHeader>
         </section>
 
-        <AlertDialog
-            :open="commentPendingDelete !== null"
-            @update:open="
-                (value: boolean) => {
-                    if (!value) commentPendingDelete = null;
-                }
-            "
-        >
+        <AlertDialog v-model:open="deleteDialogOpen">
             <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle>Delete this comment?</AlertDialogTitle>
@@ -721,7 +757,9 @@ function cheerProject(project: any): void {
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel @click="cancelDelete"
+                        >Cancel</AlertDialogCancel
+                    >
                     <AlertDialogAction
                         data-test="confirm-delete-comment"
                         @click="deleteComment()"

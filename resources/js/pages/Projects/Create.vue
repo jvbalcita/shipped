@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { router, useForm } from '@inertiajs/vue3';
-import { ArrowLeft, ArrowRight, Check, Send } from '@lucide/vue';
+import { ArrowLeft, ArrowRight, Check, ImagePlus, Send } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import DatePicker from '@/components/shipped/DatePicker.vue';
 import FileUpload from '@/components/shipped/FileUpload.vue';
@@ -53,6 +53,7 @@ const form = useForm({
 const MAX_SCREENSHOTS = 5;
 
 const newScreenshots = ref<{ file: File; caption: string }[]>([]);
+const screenshotInput = ref<HTMLInputElement | null>(null);
 
 const canAddScreenshot = computed(
     () => newScreenshots.value.length < MAX_SCREENSHOTS,
@@ -355,13 +356,31 @@ function continueComposer(): void {
                                         </div>
 
                                         <input
-                                            v-if="canAddScreenshot"
+                                            ref="screenshotInput"
                                             type="file"
                                             accept="image/jpeg,image/png,image/webp"
                                             multiple
+                                            class="sr-only"
+                                            tabindex="-1"
                                             data-test="project-screenshots"
-                                            @change="addScreenshots(($event.target as HTMLInputElement).files)"
+                                            @change="
+                                                addScreenshots(
+                                                    ($event.target as HTMLInputElement)
+                                                        .files,
+                                                );
+                                                ($event.target as HTMLInputElement).value =
+                                                    '';
+                                            "
                                         />
+                                        <Button
+                                            v-if="canAddScreenshot"
+                                            type="button"
+                                            variant="outline"
+                                            @click="screenshotInput?.click()"
+                                        >
+                                            <ImagePlus class="size-4" />
+                                            Add screenshots
+                                        </Button>
                                     </div>
                                     <FieldError
                                         v-if="form.errors.screenshots"

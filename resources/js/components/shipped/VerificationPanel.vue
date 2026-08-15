@@ -85,9 +85,24 @@ function verify(): void {
 <template>
     <section class="border-t border-foreground p-5 sm:p-8">
         <div class="grid gap-8 lg:grid-cols-[.45fr_1.55fr]">
-            <div>
-                <p class="technical-label text-primary">Verification</p>
-                <h2 class="display-type mt-4 text-4xl">Prove it.</h2>
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <p class="technical-label text-primary">Verification</p>
+                    <h2 class="display-type mt-4 text-4xl">Prove it.</h2>
+                </div>
+                <Button
+                    v-if="!hasConnection"
+                    as-child
+                    variant="ghost"
+                    class="technical-label h-auto px-2 text-primary hover:text-primary"
+                    data-test="connect-cloud"
+                >
+                    <Link
+                        :href="dashboard()"
+                        aria-label="Connect Laravel Cloud from the dashboard"
+                        >CONNECT</Link
+                    >
+                </Button>
             </div>
 
             <div class="max-w-2xl">
@@ -100,12 +115,6 @@ function verify(): void {
                     <AlertDescription>
                         Connect Laravel Cloud to verify this project.
                     </AlertDescription>
-                    <Button as-child class="mt-3" data-test="connect-cloud">
-                        <Link :href="dashboard()"
-                            ><CloudOff class="size-4" />Connect Laravel
-                            Cloud</Link
-                        >
-                    </Button>
                 </Alert>
 
                 <Alert
