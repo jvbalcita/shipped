@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use App\Concerns\Cheerable;
+use App\Concerns\Followable;
 use App\Enums\ProjectPricing;
+use Carbon\CarbonInterface;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -19,11 +21,12 @@ use Illuminate\Support\Facades\Storage;
 /**
  * @property ProjectPricing|null $pricing
  * @property Carbon|null $launch_date
+ * @property CarbonInterface|null $verified_at
  * @property-read float|null $reviews_avg_rating
  */
 class Project extends Model
 {
-    use Cheerable;
+    use Cheerable, Followable;
 
     /** @use HasFactory<ProjectFactory> */
     use HasFactory;

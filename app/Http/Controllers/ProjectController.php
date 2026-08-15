@@ -115,7 +115,7 @@ class ProjectController extends Controller
             'screenshots:id,project_id,path,caption,sort_order',
             'reviews.user:id,name,username',
             'releases' => fn ($query) => $query->published()->latest('published_at'),
-        ])->loadCount(['cheers', 'reviews'])
+        ])->loadCount(['cheers', 'reviews', 'followers'])
             ->loadAvg('reviews', 'rating');
 
         $viewer = request()->user();
@@ -157,6 +157,8 @@ class ProjectController extends Controller
                 'verification_status' => $project->verification_status,
                 'filed_serial' => $project->filed_serial,
                 'cheers_count' => $project->cheers_count,
+                'followers_count' => $project->followers_count,
+                'followed_by_viewer' => $viewer !== null && $project->isFollowedBy($viewer),
                 'creator' => $project->creator->only('id', 'name', 'username'),
                 'category' => $project->category?->only('id', 'name', 'slug'),
                 'tags' => $project->tags->map->only('id', 'name', 'slug')->values(),

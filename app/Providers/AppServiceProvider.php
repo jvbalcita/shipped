@@ -2,12 +2,22 @@
 
 namespace App\Providers;
 
+use App\Models\Cheer;
 use App\Models\Comment;
 use App\Models\Project;
+use App\Models\Release;
+use App\Models\Review;
+use App\Models\User;
+use App\Observers\CheerObserver;
+use App\Observers\ProjectObserver;
+use App\Observers\ReleaseObserver;
+use App\Observers\ReviewObserver;
+use App\Policies\FollowPolicy;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -27,6 +37,18 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->registerObservers();
+    }
+
+    /**
+     * Activity feed observers: cheap, idempotent writes on model events.
+     */
+    protected function registerObservers(): void
+    {
+        Project::observe(ProjectObserver::class);
+        Release::observe(ReleaseObserver::class);
+        Review::observe(ReviewObserver::class);
+        Cheer::observe(CheerObserver::class);
     }
 
     /**
@@ -36,11 +58,17 @@ class AppServiceProvider extends ServiceProvider
     {
         Date::use(CarbonImmutable::class);
 
-        // Stable, short morph keys for polymorphic cheers (projects + comments).
+        // Stable, short morph keys for polymorphic relationships
+        // (cheers, follows, activities).
         Relation::enforceMorphMap([
             'project' => Project::class,
             'comment' => Comment::class,
+            'user' => User::class,
+            'release' => Release::class,
+            'review' => Review::class,
         ]);
+
+        Gate::define('follow', fn (User $user, User|Project $followable): bool => (new FollowPolicy)->follow($user, $followable));
 
         DB::prohibitDestructiveCommands(
             app()->isProduction(),

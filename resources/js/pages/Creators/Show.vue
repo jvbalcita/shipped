@@ -1,10 +1,15 @@
 <script setup lang="ts">
+import { usePage } from '@inertiajs/vue3';
 import { Briefcase, Code, Globe } from '@lucide/vue';
+import FollowButton from '@/components/shipped/FollowButton.vue';
 import ProjectCard from '@/components/shipped/ProjectCard.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
 import SectionHeader from '@/components/shipped/SectionHeader.vue';
+import { destroy as destroyFollow, store as storeFollow } from '@/routes/users/follow';
 
 defineProps<{ creator: any; projects: any[] }>();
+
+const page = usePage();
 
 const linkIcon = (type: string) => {
     if (type === 'github') {
@@ -25,16 +30,36 @@ const linkIcon = (type: string) => {
             class="page-enter mx-auto w-full max-w-[90rem] min-w-0 border-x border-b border-foreground"
         >
             <SectionHeader :label="`Creator file / @${creator.username}`">
-                <div
-                    v-if="creator.avatar_url"
-                    class="mb-6 size-20 overflow-hidden border border-foreground bg-secondary"
-                >
-                    <img
-                        :src="creator.avatar_url"
-                        :alt="`${creator.name} avatar`"
-                        class="size-full object-cover"
-                        data-test="creator-avatar"
+                <div class="mt-12 flex flex-wrap items-center justify-between gap-4 sm:mt-0">
+                    <div
+                        v-if="creator.avatar_url"
+                        class="mb-6 size-20 overflow-hidden border border-foreground bg-secondary"
+                    >
+                        <img
+                            :src="creator.avatar_url"
+                            :alt="`${creator.name} avatar`"
+                            class="size-full object-cover"
+                            data-test="creator-avatar"
+                        />
+                    </div>
+                    <FollowButton
+                        v-if="page.props.auth.user?.username !== creator.username"
+                        :key="creator.username"
+                        :count="creator.followers_count"
+                        :following="creator.followed_by_viewer"
+                        :action="
+                            creator.followed_by_viewer
+                                ? { ...destroyFollow(creator), method: 'delete' as const }
+                                : { ...storeFollow(creator), method: 'post' as const }
+                        "
                     />
+                </div>
+                <div
+                    class="technical-label mt-6 text-muted-foreground"
+                    data-test="creator-followers-count"
+                >
+                    {{ creator.followers_count }}
+                    {{ creator.followers_count === 1 ? 'follower' : 'followers' }}
                 </div>
                 <h1
                     class="display-type mt-12 text-[clamp(3rem,7vw,7rem)] sm:mt-0"

@@ -6,15 +6,18 @@ use App\Http\Controllers\CommentCheerController;
 use App\Http\Controllers\ConnectedEnvironmentController;
 use App\Http\Controllers\CreatorController;
 use App\Http\Controllers\DiscoverController;
+use App\Http\Controllers\FeedController;
 use App\Http\Controllers\OgController;
 use App\Http\Controllers\ProjectCheerController;
 use App\Http\Controllers\ProjectCommentController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ProjectFollowController;
 use App\Http\Controllers\ProjectReleaseController;
 use App\Http\Controllers\ProjectReviewController;
 use App\Http\Controllers\ProjectVerificationController;
 use App\Http\Controllers\ProjectVisibilityController;
 use App\Http\Controllers\ReleaseController;
+use App\Http\Controllers\UserFollowController;
 use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
 
@@ -30,6 +33,7 @@ Route::get('oauth/{provider}/callback', [OAuthController::class, 'callback'])
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [ProjectController::class, 'index'])->name('dashboard');
+    Route::get('feed', FeedController::class)->name('feed');
     Route::post('cloud-connection', [CloudConnectionController::class, 'store'])->name('cloud-connection.store');
     Route::delete('cloud-connection', [CloudConnectionController::class, 'destroy'])->name('cloud-connection.destroy');
     Route::get('cloud-connection/environments', [ConnectedEnvironmentController::class, 'index'])->name('cloud-connection.environments');
@@ -45,6 +49,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->only(['store', 'update', 'destroy'])
         ->scoped(['comment' => 'id']);
     Route::post('comments/{comment}/cheers', [CommentCheerController::class, 'store'])->name('comments.cheers.store');
+    Route::post('users/{user}/follow', [UserFollowController::class, 'store'])->name('users.follow.store');
+    Route::delete('users/{user}/follow', [UserFollowController::class, 'destroy'])->name('users.follow.destroy');
+    Route::post('projects/{project}/follow', [ProjectFollowController::class, 'store'])->name('projects.follow.store');
+    Route::delete('projects/{project}/follow', [ProjectFollowController::class, 'destroy'])->name('projects.follow.destroy');
 });
 
 Route::get('/@{creator:username}', [CreatorController::class, 'show'])->name('creators.show');
