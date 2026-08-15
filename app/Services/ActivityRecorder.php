@@ -20,7 +20,7 @@ final class ActivityRecorder
     /**
      * @param  array<string, mixed>  $meta
      */
-    public function record(string $verb, ?User $actor, Model $subject, ?CarbonInterface $occurredAt = null, array $meta = []): ?Activity
+    public function record(string $verb, ?User $actor, Model $subject, ?CarbonInterface $occurredAt = null, array $meta = []): Activity
     {
         assert(in_array($verb, self::VERBS, true));
 

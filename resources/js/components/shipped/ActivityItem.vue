@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import { Heart, Package, Rocket, ShieldCheck, Star } from '@lucide/vue';
-import type { FeedActivity } from '@/types/feed';
 import { show as creatorShow } from '@/routes/creators';
 import { show as projectShow } from '@/routes/projects';
 import { show as releaseShow } from '@/routes/releases';
+import type { FeedActivity } from '@/types/feed';
 
 defineProps<{ activity: FeedActivity }>();
 
