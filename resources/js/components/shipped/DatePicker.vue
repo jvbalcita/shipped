@@ -56,40 +56,42 @@ function clearDate(): void {
 </script>
 
 <template>
-    <div class="flex gap-2">
-        <Popover v-model:open="isOpen">
-            <PopoverTrigger as-child>
-                <Button
-                    :id="id"
-                    type="button"
-                    variant="outline"
-                    class="h-10 w-full justify-between font-normal tracking-normal normal-case"
-                    :class="!modelValue && 'text-muted-foreground'"
-                    data-test="date-picker-trigger"
-                >
-                    <span>{{ displayValue }}</span>
-                    <CalendarDays class="size-4" />
-                </Button>
-            </PopoverTrigger>
-            <PopoverContent
-                class="w-auto rounded-none border-2 border-foreground bg-background p-0 shadow-none"
-                align="start"
+    <Popover v-model:open="isOpen">
+        <PopoverTrigger as-child>
+            <Button
+                :id="id"
+                type="button"
+                variant="outline"
+                class="h-10 w-full justify-between gap-2 font-normal tracking-normal normal-case"
+                :class="!modelValue && 'text-muted-foreground'"
+                data-test="date-picker-trigger"
             >
-                <Calendar
-                    :model-value="selectedDate"
-                    layout="month-and-year"
-                    @update:model-value="selectDate"
-                />
-            </PopoverContent>
-        </Popover>
-        <Button
-            v-if="modelValue"
-            type="button"
-            variant="ghost"
-            aria-label="Clear date"
-            @click="clearDate"
+                <span class="truncate">{{ displayValue }}</span>
+                <span class="flex shrink-0 items-center gap-1">
+                    <span
+                        v-if="modelValue"
+                        role="button"
+                        tabindex="0"
+                        aria-label="Clear date"
+                        class="inline-flex size-6 items-center justify-center rounded-none hover:bg-secondary"
+                        @click.stop="clearDate"
+                        @keydown.enter.stop.prevent="clearDate"
+                    >
+                        <X class="size-4" />
+                    </span>
+                    <CalendarDays class="size-4" />
+                </span>
+            </Button>
+        </PopoverTrigger>
+        <PopoverContent
+            class="w-auto rounded-none border-2 border-foreground bg-background p-0 shadow-none"
+            align="start"
         >
-            <X class="size-4" />
-        </Button>
-    </div>
+            <Calendar
+                :model-value="selectedDate"
+                layout="month-and-year"
+                @update:model-value="selectDate"
+            />
+        </PopoverContent>
+    </Popover>
 </template>

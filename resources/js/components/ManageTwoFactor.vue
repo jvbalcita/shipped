@@ -28,7 +28,7 @@ onUnmounted(() => clearTwoFactorAuthData());
 </script>
 
 <template>
-    <div v-if="canManageTwoFactor" class="space-y-6">
+    <div v-if="canManageTwoFactor" class="mt-8 space-y-6 border-t border-foreground pt-6">
         <Heading
             variant="small"
             title="Two-factor authentication"

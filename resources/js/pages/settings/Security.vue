@@ -102,7 +102,7 @@ defineOptions({
         </form>
     </div>
 
-    <div class="space-y-6 border-t border-border pt-6">
+    <div class="mt-8 space-y-6 border-t border-foreground pt-6">
         <Heading
             variant="small"
             title="Update password"
@@ -172,7 +172,7 @@ defineOptions({
         </Form>
     </div>
 
-    <div class="space-y-4 border-t border-border pt-6">
+    <div class="mt-8 space-y-4 border-t border-foreground pt-6">
         <Heading
             variant="small"
             title="Connected providers"

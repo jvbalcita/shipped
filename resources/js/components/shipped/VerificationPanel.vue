@@ -85,36 +85,33 @@ function verify(): void {
 <template>
     <section class="border-t border-foreground p-5 sm:p-8">
         <div class="grid gap-8 lg:grid-cols-[.45fr_1.55fr]">
-            <div class="flex items-start justify-between gap-4">
-                <div>
-                    <p class="technical-label text-primary">Verification</p>
-                    <h2 class="display-type mt-4 text-4xl">Prove it.</h2>
-                </div>
-                <Button
-                    v-if="!hasConnection"
-                    as-child
-                    variant="ghost"
-                    class="technical-label h-auto px-2 text-primary hover:text-primary"
-                    data-test="connect-cloud"
-                >
-                    <Link
-                        :href="dashboard()"
-                        aria-label="Connect Laravel Cloud from the dashboard"
-                        >CONNECT</Link
-                    >
-                </Button>
+            <div>
+                <p class="technical-label text-primary">Verification</p>
+                <h2 class="display-type mt-4 text-4xl">Prove it.</h2>
             </div>
 
             <div class="max-w-2xl">
                 <Alert
                     v-if="!hasConnection"
-                    class="rounded-none border-foreground"
+                    class="relative rounded-none border-foreground pr-20"
                 >
                     <CloudOff class="size-4" />
                     <AlertTitle>Laravel Cloud is disconnected</AlertTitle>
                     <AlertDescription>
                         Connect Laravel Cloud to verify this project.
                     </AlertDescription>
+                    <Button
+                        as-child
+                        variant="ghost"
+                        class="technical-label absolute top-2 right-2 h-auto px-2 text-primary hover:text-primary"
+                        data-test="connect-cloud"
+                    >
+                        <Link
+                            :href="dashboard()"
+                            aria-label="Connect Laravel Cloud from the dashboard"
+                            >CONNECT</Link
+                        >
+                    </Button>
                 </Alert>
 
                 <Alert

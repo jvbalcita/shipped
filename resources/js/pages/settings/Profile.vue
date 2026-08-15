@@ -271,7 +271,7 @@ const submitUsername = (): void => {
             </div>
         </form>
 
-        <form class="space-y-4 border-t border-border pt-6" @submit.prevent="submitUsername">
+        <form class="mt-8 space-y-4 border-t border-foreground pt-6" @submit.prevent="submitUsername">
             <Heading
                 variant="small"
                 title="Username"
@@ -304,5 +304,7 @@ const submitUsername = (): void => {
         </form>
     </div>
 
-    <DeleteUser />
+    <div class="mt-8 border-t border-foreground pt-6">
+        <DeleteUser />
+    </div>
 </template>

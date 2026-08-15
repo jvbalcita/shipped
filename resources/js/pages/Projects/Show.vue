@@ -189,7 +189,7 @@ function cheerProject(project: any): void {
                 <img
                     :src="project.cover_image_url ?? defaultCoverUrl(project)"
                     :alt="`${project.name} cover image`"
-                    class="media-reveal aspect-[21/9] w-full object-cover"
+                    class="media-reveal aspect-[8/3] max-h-96 w-full object-cover"
                     :class="{ grayscale: !!project.cover_image_url }"
                     data-test="project-cover"
                 />
@@ -417,7 +417,7 @@ function cheerProject(project: any): void {
                     <li
                         v-for="comment in topLevelComments"
                         :key="comment.id"
-                        class="py-5"
+                        class="group py-5"
                     >
                         <div class="flex items-start justify-between gap-4">
                             <div class="min-w-0">
@@ -484,7 +484,7 @@ function cheerProject(project: any): void {
                                 </button>
                                 <div
                                     v-if="$page.props.auth.user"
-                                    class="flex gap-1"
+                                    class="flex gap-1 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
                                 >
                                     <Button
                                         v-if="comment.can_edit"
@@ -519,6 +519,7 @@ function cheerProject(project: any): void {
                             <li
                                 v-for="reply in repliesFor(comment.id)"
                                 :key="reply.id"
+                                class="group"
                             >
                                 <div
                                     class="flex items-start justify-between gap-4"
@@ -542,6 +543,29 @@ function cheerProject(project: any): void {
                                         >
                                             [deleted]
                                         </p>
+                                        <template
+                                            v-else-if="editingId === reply.id"
+                                        >
+                                            <Textarea
+                                                v-model="editForm.body"
+                                                class="mt-2 min-h-32"
+                                            />
+                                            <div class="mt-2 flex gap-2">
+                                                <Button
+                                                    size="sm"
+                                                    :disabled="editForm.processing"
+                                                    @click="saveEdit(reply)"
+                                                    >Save</Button
+                                                >
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    type="button"
+                                                    @click="editingId = null"
+                                                    >Cancel</Button
+                                                >
+                                            </div>
+                                        </template>
                                         <p
                                             v-else
                                             class="mt-2 whitespace-pre-line text-sm leading-6"
@@ -551,7 +575,7 @@ function cheerProject(project: any): void {
                                     </div>
                                     <div
                                         v-if="!reply.is_deleted"
-                                        class="shrink-0"
+                                        class="flex shrink-0 flex-col items-end gap-2"
                                     >
                                         <button
                                             type="button"
@@ -567,6 +591,27 @@ function cheerProject(project: any): void {
                                                 reply.cheers_count
                                             }}
                                         </button>
+                                        <div
+                                            v-if="$page.props.auth.user"
+                                            class="flex gap-1 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+                                        >
+                                            <Button
+                                                v-if="reply.can_edit"
+                                                size="sm"
+                                                variant="ghost"
+                                                :aria-label="`Edit reply by ${reply.user?.username}`"
+                                                @click="startEdit(reply)"
+                                                ><Pencil class="size-4" /></Button
+                                            >
+                                            <Button
+                                                v-if="reply.can_delete"
+                                                size="sm"
+                                                variant="ghost"
+                                                :aria-label="`Delete reply by ${reply.user?.username}`"
+                                                @click="requestDelete(reply)"
+                                                ><Trash2 class="size-4" /></Button
+                                            >
+                                        </div>
                                     </div>
                                 </div>
                             </li>

@@ -30,7 +30,7 @@ const handleRegisterSuccess = () => {
 </script>
 
 <template>
-    <div v-if="canManagePasskeys" class="space-y-6">
+    <div v-if="canManagePasskeys" class="mt-8 space-y-6 border-t border-foreground pt-6">
         <Heading
             variant="small"
             title="Passkeys"
