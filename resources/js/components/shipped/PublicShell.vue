@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { ArrowUpRight, LogOut, Menu, Settings, ShieldCheck } from '@lucide/vue';
+import CommandPalette from '@/components/shipped/CommandPalette.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,7 +11,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Toaster } from '@/components/ui/sonner';
-import CommandPalette from '@/components/shipped/CommandPalette.vue';
 import UserMenuContent from '@/components/UserMenuContent.vue';
 import { useInitials } from '@/composables/useInitials';
 import { dashboard, discover, login, logout, register } from '@/routes';

@@ -93,13 +93,25 @@ function verify(): void {
             <div class="max-w-2xl">
                 <Alert
                     v-if="!hasConnection"
-                    class="rounded-none border-foreground"
+                    class="relative rounded-none border-foreground pr-20"
                 >
                     <CloudOff class="size-4" />
                     <AlertTitle>Laravel Cloud is disconnected</AlertTitle>
                     <AlertDescription>
                         Connect Laravel Cloud to verify this project.
                     </AlertDescription>
+                    <Button
+                        as-child
+                        variant="ghost"
+                        class="technical-label absolute top-2 right-2 h-auto px-2 text-primary hover:text-primary"
+                        data-test="connect-cloud"
+                    >
+                        <Link
+                            :href="dashboard()"
+                            aria-label="Connect Laravel Cloud from the dashboard"
+                            >CONNECT</Link
+                        >
+                    </Button>
                 </Alert>
 
                 <Alert

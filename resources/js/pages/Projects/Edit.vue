@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { router, useForm } from '@inertiajs/vue3';
-import { CalendarClock, Check, Eye, EyeOff, Send } from '@lucide/vue';
+import { CalendarClock, Check, Eye, EyeOff, ImagePlus, Send } from '@lucide/vue';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import DatePicker from '@/components/shipped/DatePicker.vue';
 import DateTimePicker from '@/components/shipped/DateTimePicker.vue';
 import FileUpload from '@/components/shipped/FileUpload.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
+import RichTextEditor from '@/components/shipped/RichTextEditor.vue';
+import SectionHeader from '@/components/shipped/SectionHeader.vue';
 import VerificationPanel from '@/components/shipped/VerificationPanel.vue';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
@@ -23,7 +26,6 @@ import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Spinner } from '@/components/ui/spinner';
 import {
     Select,
     SelectContent,
@@ -31,6 +33,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { update } from '@/routes/projects';
 import { store as releaseStore } from '@/routes/projects/releases';
@@ -40,6 +43,8 @@ import type { ConnectedEnvironmentSummary } from '@/types';
 const props = defineProps<{
     project: any;
     categories: { id: number; name: string }[];
+    pricingOptions: { value: string; label: string }[];
+    suggestedTags: string[];
     connectedEnvironments: ConnectedEnvironmentSummary[];
 }>();
 const projectForm = useForm({
@@ -48,9 +53,33 @@ const projectForm = useForm({
     description: props.project.description,
     category_id: String(props.project.category_id),
     live_url: props.project.live_url ?? '',
+    pricing: props.project.pricing ?? 'free',
+    launch_date: props.project.launch_date
+        ? String(props.project.launch_date).slice(0, 10)
+        : '',
+    tags: (props.project.tags ?? []).map((tag: { name: string }) => tag.name).join(', '),
     cover_image: null as File | null,
     cover_removal: false as boolean,
+    logo: null as File | null,
+    logo_removal: false as boolean,
+    screenshots: [] as File[],
+    screenshots_captions: [] as string[],
+    screenshot_order: [] as number[],
+    screenshot_captions: {} as Record<number, string>,
+    removed_screenshots: [] as number[],
 });
+
+function appendSuggestedTag(tag: string): void {
+    const current = projectForm.tags
+        .split(',')
+        .map((value: string) => value.trim())
+        .filter(Boolean);
+
+    if (!current.includes(tag)) {
+        current.push(tag);
+        projectForm.tags = current.join(', ');
+    }
+}
 const releaseForm = useForm({
     title: '',
     notes: '',
@@ -70,6 +99,7 @@ const hasPublishedRelease = computed(() =>
 
 function onCoverChange(file: File | null): void {
     projectForm.cover_image = file;
+
     // A fresh upload supersedes any pending removal of the old cover.
     if (file) {
         projectForm.cover_removal = false;
@@ -80,11 +110,101 @@ function onCoverRemove(): void {
     projectForm.cover_removal = true;
 }
 
+function onLogoChange(file: File | null): void {
+    projectForm.logo = file;
+
+    if (file) {
+        projectForm.logo_removal = false;
+    }
+}
+
+function onLogoRemove(): void {
+    projectForm.logo_removal = true;
+}
+
 function saveProject(): void {
+    projectForm.screenshots = newScreenshots.value.map((screenshot) => screenshot.file);
+    projectForm.screenshots_captions = newScreenshots.value.map((screenshot) => screenshot.caption);
+    projectForm.screenshot_order = existingOrder.value.filter(
+        (id) => !removedScreenshots.value.includes(id),
+    );
+    projectForm.screenshot_captions = existingCaptions.value;
+    projectForm.removed_screenshots = removedScreenshots.value;
+
     projectForm.patch(update(props.project).url, {
         forceFormData: true,
         preserveScroll: true,
     });
+}
+
+const MAX_SCREENSHOTS = 5;
+
+const newScreenshots = ref<{ file: File; caption: string }[]>([]);
+const screenshotInput = ref<HTMLInputElement | null>(null);
+const removedScreenshots = ref<number[]>([]);
+const existingOrder = ref<number[]>(
+    (props.project.screenshots ?? []).map((screenshot: { id: number }) => screenshot.id),
+);
+const existingCaptions = ref<Record<number, string>>(
+    Object.fromEntries(
+        (props.project.screenshots ?? []).map(
+            (screenshot: { id: number; caption: string | null }) => [
+                screenshot.id,
+                screenshot.caption ?? '',
+            ],
+        ),
+    ),
+);
+
+const screenshotMap = computed(() =>
+    Object.fromEntries(
+        (props.project.screenshots ?? []).map((screenshot: any) => [screenshot.id, screenshot]),
+    ),
+);
+
+const visibleExisting = computed(() =>
+    existingOrder.value
+        .filter((id) => !removedScreenshots.value.includes(id))
+        .map((id) => screenshotMap.value[id]),
+);
+
+const canAddScreenshot = computed(
+    () => visibleExisting.value.length + newScreenshots.value.length < MAX_SCREENSHOTS,
+);
+
+function addScreenshots(files: FileList | null): void {
+    if (files === null) {
+        return;
+    }
+
+    for (const file of Array.from(files)) {
+        if (!canAddScreenshot.value) {
+            break;
+        }
+
+        newScreenshots.value.push({ file, caption: '' });
+    }
+}
+
+function removeNewScreenshot(index: number): void {
+    newScreenshots.value.splice(index, 1);
+}
+
+function removeExistingScreenshot(id: number): void {
+    removedScreenshots.value.push(id);
+}
+
+function moveExistingScreenshot(id: number, direction: -1 | 1): void {
+    const index = existingOrder.value.indexOf(id);
+    const target = index + direction;
+
+    if (target < 0 || target >= existingOrder.value.length) {
+        return;
+    }
+
+    const next = [...existingOrder.value];
+    [next[index], next[target]] = [next[target], next[index]];
+    existingOrder.value = next;
 }
 function submitRelease(): void {
     if (isScheduled.value && !releaseForm.published_at) {
@@ -175,14 +295,17 @@ function handleFiled(event: Event): void {
     const detail = (event as CustomEvent).detail as {
         filed_serial?: string;
     } | undefined;
+
     if (!detail?.filed_serial) {
         return;
     }
 
     filedSerial.value = detail.filed_serial;
+
     if (filedTimeout) {
         clearTimeout(filedTimeout);
     }
+
     filedTimeout = setTimeout(() => {
         filedSerial.value = null;
     }, 3000);
@@ -191,6 +314,7 @@ function handleFiled(event: Event): void {
 onMounted(() => window.addEventListener('shipped:filed', handleFiled));
 onUnmounted(() => {
     window.removeEventListener('shipped:filed', handleFiled);
+
     if (filedTimeout) {
         clearTimeout(filedTimeout);
     }
@@ -202,25 +326,19 @@ onUnmounted(() => {
         <section
             class="page-enter mx-auto w-full max-w-[90rem] min-w-0 border-x border-b border-foreground"
         >
-            <div
-                class="grid border-b border-foreground p-5 sm:grid-cols-[.45fr_1.55fr] sm:p-8"
+            <SectionHeader
+                :label="`Creator studio / ${project.is_public ? 'Public record' : 'Private draft'}`"
             >
-                <p class="technical-label text-primary">
-                    Creator studio /
-                    {{ project.is_public ? 'Public record' : 'Private draft' }}
+                <h1
+                    class="display-type mt-12 text-[clamp(3rem,7vw,7rem)] sm:mt-0"
+                >
+                    {{ project.name }}
+                </h1>
+                <p class="mt-6 text-muted-foreground">
+                    Shape the identity, then write a release people can
+                    discover.
                 </p>
-                <div>
-                    <h1
-                        class="display-type mt-12 text-[clamp(3rem,7vw,7rem)] sm:mt-0"
-                    >
-                        {{ project.name }}
-                    </h1>
-                    <p class="mt-6 text-muted-foreground">
-                        Shape the identity, then write a release people can
-                        discover.
-                    </p>
-                </div>
-            </div>
+            </SectionHeader>
             <div class="grid gap-px bg-foreground xl:grid-cols-[1.1fr_.9fr]">
                 <section class="bg-background p-5 sm:p-8">
                     <p class="technical-label text-primary">Project record</p>
@@ -248,10 +366,8 @@ onUnmounted(() => {
                         ><Field
                             ><FieldLabel for="description"
                                 >The fuller story</FieldLabel
-                            ><Textarea
-                                id="description"
-                                v-model="projectForm.description"
-                                required /></Field
+                            ><RichTextEditor
+                                v-model="projectForm.description" /></Field
                         ><Field
                             ><FieldLabel for="category">Category</FieldLabel
                             ><Select v-model="projectForm.category_id"
@@ -290,6 +406,183 @@ onUnmounted(() => {
                                     :error="projectForm.errors.cover_image"
                                     @update:model-value="onCoverChange"
                                     @remove-existing="onCoverRemove" /></Field
+                        ><Field
+                            ><FieldLabel>Logo</FieldLabel
+                            ><FileUpload
+                                :model-value="projectForm.logo"
+                                kind="logo"
+                                :existing-url="
+                                    project.logo_url ? project.logo_url : null
+                                "
+                                :error="projectForm.errors.logo"
+                                @update:model-value="onLogoChange"
+                                @remove-existing="onLogoRemove"
+                            /></Field
+                        ><Field
+                            ><FieldLabel>Screenshots</FieldLabel>
+                            <p class="text-xs text-muted-foreground">
+                                Up to {{ MAX_SCREENSHOTS }} images, JPG/PNG/WebP,
+                                up to 5 MB each.
+                            </p>
+                            <div class="grid gap-3">
+                                <div
+                                    v-for="screenshot in visibleExisting"
+                                    :key="screenshot.id"
+                                    class="flex items-start gap-3 border border-foreground p-3"
+                                >
+                                    <img
+                                        :src="screenshot.url"
+                                        class="h-20 w-32 object-cover"
+                                        alt=""
+                                    />
+                                    <div class="grid flex-1 gap-2">
+                                        <Input
+                                            :model-value="existingCaptions[screenshot.id]"
+                                            placeholder="Caption (optional)"
+                                            @update:model-value="
+                                                (value: string | number) =>
+                                                    (existingCaptions[screenshot.id] = String(value))
+                                            "
+                                        />
+                                        <div class="flex gap-2">
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                @click="moveExistingScreenshot(screenshot.id, -1)"
+                                            >
+                                                Up
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                @click="moveExistingScreenshot(screenshot.id, 1)"
+                                            >
+                                                Down
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                @click="removeExistingScreenshot(screenshot.id)"
+                                            >
+                                                Remove
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div
+                                    v-for="(screenshot, index) in newScreenshots"
+                                    :key="`new-${index}`"
+                                    class="flex items-start gap-3 border border-dashed border-foreground p-3"
+                                >
+                                    <div
+                                        class="flex h-20 w-32 items-center justify-center bg-muted text-xs"
+                                    >
+                                        {{ screenshot.file.name }}
+                                    </div>
+                                    <div class="grid flex-1 gap-2">
+                                        <Input
+                                            v-model="screenshot.caption"
+                                            placeholder="Caption (optional)"
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            @click="removeNewScreenshot(index)"
+                                        >
+                                            Remove
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <input
+                                    ref="screenshotInput"
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    multiple
+                                    class="sr-only"
+                                    tabindex="-1"
+                                    data-test="project-screenshots"
+                                    @change="
+                                        addScreenshots(
+                                            ($event.target as HTMLInputElement)
+                                                .files,
+                                        );
+                                        ($event.target as HTMLInputElement).value =
+                                            '';
+                                    "
+                                />
+                                <Button
+                                    v-if="canAddScreenshot"
+                                    type="button"
+                                    variant="outline"
+                                    @click="screenshotInput?.click()"
+                                >
+                                    <ImagePlus class="size-4" />
+                                    Add screenshots
+                                </Button>
+                            </div>
+                            <FieldError
+                                v-if="projectForm.errors.screenshots"
+                                >{{ projectForm.errors.screenshots }}</FieldError
+                            ></Field
+                        ><Field
+                            ><FieldLabel for="pricing">Pricing</FieldLabel
+                            ><Select v-model="projectForm.pricing"
+                                ><SelectTrigger
+                                    id="pricing"
+                                    class="h-10 w-full rounded-none border-foreground"
+                                    ><SelectValue /></SelectTrigger
+                                ><SelectContent
+                                    ><SelectItem
+                                        v-for="option in pricingOptions"
+                                        :key="option.value"
+                                        :value="option.value"
+                                        >{{ option.label }}</SelectItem
+                                    ></SelectContent
+                                ></Select
+                            ><FieldError v-if="projectForm.errors.pricing">{{
+                                projectForm.errors.pricing
+                            }}</FieldError></Field
+                        ><Field
+                            ><FieldLabel for="launch_date"
+                                >Launch date</FieldLabel
+                            ><DatePicker
+                                id="launch_date"
+                                v-model="projectForm.launch_date"
+                                placeholder="Pick a launch date"
+                            /><FieldError
+                                v-if="projectForm.errors.launch_date"
+                                >{{
+                                    projectForm.errors.launch_date
+                                }}</FieldError
+                            ></Field
+                        ><Field
+                            ><FieldLabel for="tags">Tags</FieldLabel
+                            ><Input
+                                id="tags"
+                                v-model="projectForm.tags"
+                                placeholder="laravel, vue, indie"
+                                data-test="project-tags"
+                            />
+                            <div class="mt-2 flex flex-wrap gap-2">
+                                <button
+                                    v-for="tag in suggestedTags"
+                                    :key="tag"
+                                    type="button"
+                                    class="technical-label border border-foreground px-2 py-1 hover:bg-secondary"
+                                    @click="appendSuggestedTag(tag)"
+                                >
+                                    {{ tag }}
+                                </button>
+                            </div>
+                            <FieldError v-if="projectForm.errors.tags">{{
+                                projectForm.errors.tags
+                            }}</FieldError></Field
                         ><Button
                             type="submit"
                             :disabled="projectForm.processing"

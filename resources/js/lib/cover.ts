@@ -6,7 +6,7 @@ import { project as coverProject } from '@/routes/cover';
  * so the fallback reads as an intentional record, not a missing image.
  */
 export function defaultCoverUrl(project: {
-    creator: { handle: string };
+    creator: { username: string };
     slug: string;
 }): string {
     return coverProject.url({ creator: project.creator, project });

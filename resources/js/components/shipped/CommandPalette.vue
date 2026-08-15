@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
+import { usePage } from '@inertiajs/vue3';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import {
     CommandDialog,
@@ -10,9 +11,8 @@ import {
     CommandList,
     CommandSeparator,
 } from '@/components/ui/command';
-import { usePage } from '@inertiajs/vue3';
-import { create } from '@/routes/projects';
 import { dashboard, discover, register } from '@/routes';
+import { create } from '@/routes/projects';
 
 const page = usePage();
 const open = ref(false);

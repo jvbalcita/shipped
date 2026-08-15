@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
+import { Form, Head, useForm } from '@inertiajs/vue3';
 import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
@@ -9,15 +9,46 @@ import type { Props as ManageTwoFactorProps } from '@/components/ManageTwoFactor
 import ManageTwoFactor from '@/components/ManageTwoFactor.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { link as linkOauth, unlink as unlinkOauth } from '@/routes/oauth';
 import { edit } from '@/routes/security';
+import { update as updateEmail } from '@/routes/user-email';
 
 type Props = {
     passwordRules: string;
+    email: string;
+    linkedProviders: string[];
 } & ManagePasskeysProps &
     ManageTwoFactorProps;
 
 const props = defineProps<Props>();
+
+const emailForm = useForm({
+    email: props.email,
+});
+
+const submitEmail = (): void => {
+    emailForm.patch(updateEmail.url(), {
+        preserveScroll: true,
+        onSuccess: () => {
+            emailForm.email = props.email;
+        },
+    });
+};
+
+const providers = [
+    { key: 'github', label: 'GitHub' },
+    { key: 'google', label: 'Google' },
+];
+
+const isLinked = (key: string): boolean => props.linkedProviders.includes(key);
+
+const unlinkProvider = (key: string): void => {
+    useForm({}).delete(unlinkOauth.url({ provider: key }), {
+        preserveScroll: true,
+    });
+};
 
 defineOptions({
     layout: {
@@ -37,6 +68,41 @@ defineOptions({
     <h1 class="sr-only">Security settings</h1>
 
     <div class="space-y-6">
+        <Heading
+            variant="small"
+            title="Email address"
+            description="The email address used for sign-in and notifications"
+        />
+
+        <form class="space-y-6" @submit.prevent="submitEmail">
+            <div class="grid gap-2">
+                <Label for="email">Email address</Label>
+                <Input
+                    id="email"
+                    v-model="emailForm.email"
+                    type="email"
+                    class="mt-1 block w-full"
+                    required
+                    autocomplete="username"
+                    placeholder="Email address"
+                    data-test="security-email"
+                />
+                <InputError class="mt-2" :message="emailForm.errors.email" />
+            </div>
+
+            <div class="flex items-center gap-4">
+                <Button
+                    type="submit"
+                    :disabled="emailForm.processing"
+                    data-test="update-email-button"
+                >
+                    Save
+                </Button>
+            </div>
+        </form>
+    </div>
+
+    <div class="mt-8 space-y-6 border-t border-foreground pt-6">
         <Heading
             variant="small"
             title="Update password"
@@ -104,6 +170,41 @@ defineOptions({
                 </Button>
             </div>
         </Form>
+    </div>
+
+    <div class="mt-8 space-y-4 border-t border-foreground pt-6">
+        <Heading
+            variant="small"
+            title="Connected providers"
+            description="Link a Google or GitHub account to sign in without a password"
+        />
+
+        <div class="grid gap-3">
+            <div
+                v-for="provider in providers"
+                :key="provider.key"
+                class="flex items-center justify-between border border-foreground p-3"
+            >
+                <span class="font-medium">{{ provider.label }}</span>
+                <Button
+                    v-if="isLinked(provider.key)"
+                    variant="outline"
+                    size="sm"
+                    :data-test="`unlink-${provider.key}`"
+                    @click="unlinkProvider(provider.key)"
+                >
+                    Unlink
+                </Button>
+                <a
+                    v-else
+                    :href="linkOauth({ provider: provider.key })"
+                    class="inline-flex h-9 items-center justify-center border border-foreground bg-background px-3 text-sm font-medium transition-colors hover:bg-muted"
+                    :data-test="`link-${provider.key}`"
+                >
+                    Link
+                </a>
+            </div>
+        </div>
     </div>
 
     <ManageTwoFactor

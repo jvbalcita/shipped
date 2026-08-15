@@ -1,0 +1,5 @@
+# Store project descriptions as curated TipTap HTML
+
+The `projects.description` text column stores HTML produced by a TipTap editor restricted to a curated extension set — bold, italic, bullet list, ordered list, numbered list, link, and blockquote — chosen to fit the Swiss Industrial Print aesthetic. Headings, images, tables, mention, strikethrough, underline, text color, and highlight are explicitly disabled.
+
+Descriptions render with `v-html` plus a scoped prose stylesheet, and are sanitized at render time to strip `<script>` tags and event-handler attributes so stored HTML cannot execute scripts. Storing HTML rather than TipTap JSON was picked because the read path is the common path on a showcase and rendering JSON would add machinery with no current benefit; the trade-off is that future Rich Text Storage (collaboration, non-HTML export) would require a migration of existing content.

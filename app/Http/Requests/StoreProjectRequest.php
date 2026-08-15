@@ -2,8 +2,11 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\ProjectPricing;
+use App\Rules\SquareImage;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreProjectRequest extends FormRequest
 {
@@ -29,7 +32,15 @@ class StoreProjectRequest extends FormRequest
             'category_id' => ['required', 'integer', 'exists:categories,id'],
             'live_url' => ['nullable', 'url', 'max:255'],
             'github_url' => ['nullable', 'url', 'max:255'],
+            'pricing' => ['nullable', Rule::enum(ProjectPricing::class)],
+            'launch_date' => ['nullable', 'date'],
+            'tags' => ['nullable', 'string', 'max:500'],
             'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:6144', new SquareImage(256)],
+            'screenshots' => ['nullable', 'array', 'max:5'],
+            'screenshots.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'screenshots_captions' => ['nullable', 'array', 'max:5'],
+            'screenshots_captions.*' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

@@ -162,6 +162,61 @@
         line-height: 1.2;
         text-transform: uppercase;
     }
+    .rich-text {
+        font-family: var(--font-prose);
+        font-size: 1.0625rem;
+        line-height: 1.75;
+        color: var(--foreground);
+    }
+    .rich-text > :first-child {
+        margin-top: 0;
+    }
+    .rich-text p {
+        margin: 0;
+    }
+    .rich-text p + p {
+        margin-top: 1rem;
+    }
+    .rich-text ul,
+    .rich-text ol {
+        margin: 1rem 0;
+        padding-left: 1.5rem;
+    }
+    .rich-text ul {
+        list-style: square;
+    }
+    .rich-text ol {
+        list-style: decimal;
+    }
+    .rich-text li {
+        margin: 0.35rem 0;
+    }
+    .rich-text li::marker {
+        color: var(--primary);
+    }
+    .rich-text blockquote {
+        margin: 1.25rem 0;
+        padding-left: 1rem;
+        border-left: 2px solid var(--foreground);
+        color: var(--muted-foreground);
+        font-style: italic;
+    }
+    .rich-text a {
+        color: var(--primary);
+        text-decoration: underline;
+        text-underline-offset: 3px;
+    }
+    .rich-text strong {
+        font-weight: 700;
+    }
+    .rich-text em {
+        font-style: italic;
+    }
+    .rich-text code {
+        padding: 0.1rem 0.35rem;
+        background: var(--secondary);
+        font-family: var(--font-sans);
+    }
     .launch-name {
         overflow-wrap: anywhere;
     }

@@ -1,0 +1,5 @@
+# Make Cheers polymorphic across Project and Comment targets
+
+The `cheers` table is migrated from its single-target `project_id` foreign key to a polymorphic pair `cheerable_type` / `cheerable_id`, so the same model and unique constraint — `(user_id, cheerable_type, cheerable_id)` — serves both project cheers and comment cheers. This avoids a parallel `comment_cheers` table that would duplicate the concept, and keeps the canonical "Cheer" glossary term the single source of truth for the community's reversible appreciation action.
+
+The trade-off over two dedicated tables is the loss of a database-enforced foreign key per target; that risk is bounded because cheers are always created through typed controllers (`ProjectCheerController`, and the comment cheer controller) that resolve the target from a route-bound model, never from raw request input.

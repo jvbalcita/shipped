@@ -20,8 +20,9 @@ class CheerFactory extends Factory
     public function definition(): array
     {
         return [
-            'project_id' => Project::factory(),
             'user_id' => User::factory(),
+            'cheerable_type' => 'project',
+            'cheerable_id' => Project::factory(),
         ];
     }
 }

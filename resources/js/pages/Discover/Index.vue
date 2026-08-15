@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { Link, router } from '@inertiajs/vue3';
 import { Search } from '@lucide/vue';
+import { X } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import ProjectCard from '@/components/shipped/ProjectCard.vue';
 import ProjectCardSkeleton from '@/components/shipped/ProjectCardSkeleton.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
+import SectionHeader from '@/components/shipped/SectionHeader.vue';
 import { Button } from '@/components/ui/button';
 import {
     Empty,
@@ -31,7 +33,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { X } from '@lucide/vue';
 import { discover } from '@/routes';
 
 const props = defineProps<{
@@ -44,11 +45,18 @@ const props = defineProps<{
         to?: number;
     };
     categories: any[];
+    pricingOptions: { value: string; label: string }[];
     activeCategory: { id: number; name: string; slug: string } | null;
-    filters: { q?: string; category?: string; sort?: string };
+    filters: {
+        q?: string;
+        category?: string;
+        pricing?: string;
+        sort?: string;
+    };
 }>();
 const search = ref(props.filters.q ?? '');
 const category = ref(props.filters.category ?? 'all');
+const pricing = ref(props.filters.pricing ?? 'all');
 const sort = ref(props.filters.sort ?? 'latest');
 const loading = ref(false);
 const totalPages = computed(() => props.projects.last_page);
@@ -61,8 +69,15 @@ const projectGridClass = computed(() => {
 });
 const resultsLabel = computed(() => {
     const { total, from, to } = props.projects;
-    if (total === 0) return 'No records';
-    if (total === 1) return '1 record';
+
+    if (total === 0) {
+return 'No records';
+}
+
+    if (total === 1) {
+return '1 record';
+}
+
     return `${from}–${to} of ${total} records`;
 });
 
@@ -73,6 +88,7 @@ function applyFilters(page = 1) {
         {
             q: search.value || undefined,
             category: category.value === 'all' ? undefined : category.value,
+            pricing: pricing.value === 'all' ? undefined : pricing.value,
             sort: sort.value === 'latest' ? undefined : sort.value,
             page,
         },
@@ -96,6 +112,11 @@ function clearCategory() {
     category.value = 'all';
     applyFilters();
 }
+
+function clearPricing() {
+    pricing.value = 'all';
+    applyFilters();
+}
 </script>
 
 <template>
@@ -103,28 +124,21 @@ function clearCategory() {
         <section
             class="page-enter mx-auto w-full max-w-[90rem] min-w-0 border-x border-b border-foreground"
         >
-            <div
-                class="grid border-b border-foreground p-5 sm:grid-cols-[.45fr_1.55fr] sm:p-8"
-            >
-                <p class="technical-label text-primary">
-                    Public registry / Browse
+            <SectionHeader label="Public registry / Browse">
+                <h1
+                    class="display-type mt-12 max-w-4xl text-[clamp(3.25rem,6.5vw,6.75rem)] sm:mt-0"
+                >
+                    Explore launches.
+                </h1>
+                <p
+                    class="mt-6 max-w-xl text-sm leading-6 text-muted-foreground"
+                >
+                    Public records from Laravel builders, searchable by name
+                    and category.
                 </p>
-                <div>
-                    <h1
-                        class="display-type mt-12 max-w-4xl text-[clamp(3.25rem,6.5vw,6.75rem)] sm:mt-0"
-                    >
-                        Explore launches.
-                    </h1>
-                    <p
-                        class="mt-6 max-w-xl text-sm leading-6 text-muted-foreground"
-                    >
-                        Public records from Laravel builders, searchable by name
-                        and category.
-                    </p>
-                </div>
-            </div>
+            </SectionHeader>
             <div
-                class="grid border-b border-foreground bg-transparent md:grid-cols-[1fr_15rem_auto]"
+                class="grid border-b border-foreground bg-transparent md:grid-cols-[1fr_12rem_12rem_auto]"
             >
                 <InputGroup class="h-10 bg-background"
                     ><InputGroupAddon
@@ -150,6 +164,22 @@ function clearCategory() {
                             :key="item.id"
                             :value="item.slug"
                             >{{ item.name }}</SelectItem
+                        ></SelectContent
+                    ></Select
+                >
+                <Select v-model="pricing" @update:model-value="applyFilters()"
+                    ><SelectTrigger
+                        class="h-10 w-full rounded-none border-foreground bg-background text-foreground"
+                        data-test="discover-pricing-filter"
+                        ><SelectValue
+                            placeholder="All pricing" /></SelectTrigger
+                    ><SelectContent
+                        ><SelectItem value="all">All pricing</SelectItem
+                        ><SelectItem
+                            v-for="option in pricingOptions"
+                            :key="option.value"
+                            :value="option.value"
+                            >{{ option.label }}</SelectItem
                         ></SelectContent
                     ></Select
                 >
@@ -194,6 +224,24 @@ function clearCategory() {
                             <X class="size-3" aria-hidden="true" />
                         </button>
                     </span>
+                    <span
+                        v-if="pricing !== 'all'"
+                        class="inline-flex items-center gap-1.5 border border-foreground bg-background px-2 py-1 font-mono text-[10px] uppercase tracking-[.08em]"
+                    >
+                        {{
+                            pricingOptions.find(
+                                (option) => option.value === pricing,
+                            )?.label ?? pricing
+                        }}
+                        <button
+                            type="button"
+                            aria-label="Clear pricing filter"
+                            class="text-primary"
+                            @click="clearPricing"
+                        >
+                            <X class="size-3" aria-hidden="true" />
+                        </button>
+                    </span>
                 </div>
                 <Select v-model="sort" @update:model-value="applyFilters()"
                     ><SelectTrigger
@@ -203,6 +251,7 @@ function clearCategory() {
                     ><SelectContent>
                         <SelectItem value="latest">Latest</SelectItem>
                         <SelectItem value="cheered">Most cheered</SelectItem>
+                        <SelectItem value="launch_date">Launch date</SelectItem>
                     </SelectContent></Select
                 >
             </div>

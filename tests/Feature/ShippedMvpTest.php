@@ -72,7 +72,7 @@ test('a creator can open the studio after creating a private draft', function ()
 });
 
 test('a public project appears in discovery and its creator profile', function () {
-    $creator = User::factory()->create(['handle' => 'taylor']);
+    $creator = User::factory()->create(['username' => 'taylor']);
     $project = Project::factory()->public()->for($creator, 'creator')->create();
     Release::factory()->for($project)->create(['published_at' => now()]);
 
@@ -80,9 +80,9 @@ test('a public project appears in discovery and its creator profile', function (
     expect($creator->projects()->public()->count())->toBe(1);
 });
 
-test('a public project resolves only under its actual creator handle', function () {
-    $creator = User::factory()->create(['handle' => 'maker']);
-    $otherCreator = User::factory()->create(['handle' => 'other-maker']);
+test('a public project resolves only under its actual creator username', function () {
+    $creator = User::factory()->create(['username' => 'maker']);
+    $otherCreator = User::factory()->create(['username' => 'other_maker']);
     $project = Project::factory()->public()->for($creator, 'creator')->create();
     Release::factory()->for($project)->create(['published_at' => now()]);
 
@@ -100,7 +100,6 @@ test('only the project owner can edit it and a cheer is unique per member', func
         ->patch(route('projects.update', $project), ['name' => 'Not mine'])
         ->assertForbidden();
 
-    $this->actingAs($member)->post(route('projects.cheers.store', $project))->assertRedirect();
     $this->actingAs($member)->post(route('projects.cheers.store', $project))->assertRedirect();
 
     expect($project->cheers()->count())->toBe(1);
@@ -286,8 +285,8 @@ test('discovery sorts by most cheered when requested', function () {
 
     $cheered = Project::factory()->public()->for($creator, 'creator')->for($category)->create(['name' => 'Beloved Kit']);
     Release::factory()->for($cheered)->create(['published_at' => now()]);
-    Cheer::factory()->for($cheered)->for(User::factory())->create();
-    Cheer::factory()->for($cheered)->for(User::factory())->create();
+    Cheer::factory()->create(['cheerable_id' => $cheered->id, 'user_id' => User::factory()]);
+    Cheer::factory()->create(['cheerable_id' => $cheered->id, 'user_id' => User::factory()]);
 
     $lonely = Project::factory()->public()->for($creator, 'creator')->for($category)->create(['name' => 'Lonely Kit']);
     Release::factory()->for($lonely)->create(['published_at' => now()]);
@@ -376,7 +375,7 @@ test('a project keeps its dispatch number if toggled private and public again', 
 });
 
 test('the homepage surfaces a live snapshot of the registry', function () {
-    $creator = User::factory()->create(['handle' => 'maker']);
+    $creator = User::factory()->create(['username' => 'maker']);
     $project = Project::factory()->filed()->public()->for($creator, 'creator')->create();
     Release::factory()->for($project)->create(['published_at' => now()]);
     Cache::forget('shipped:registry:stats');
@@ -391,7 +390,7 @@ test('the homepage surfaces a live snapshot of the registry', function () {
 });
 
 test('a filed launch renders a branded social preview image', function () {
-    $creator = User::factory()->create(['handle' => 'maker']);
+    $creator = User::factory()->create(['username' => 'maker']);
     $project = Project::factory()->filed()->public()->for($creator, 'creator')->create(['name' => 'Registry Kit']);
     Release::factory()->for($project)->create(['published_at' => now()]);
 
@@ -404,7 +403,7 @@ test('a filed launch renders a branded social preview image', function () {
 });
 
 test('a coverless project renders a typographic default cover bearing its name', function () {
-    $creator = User::factory()->create(['handle' => 'maker']);
+    $creator = User::factory()->create(['username' => 'maker']);
     $project = Project::factory()->filed()->public()->for($creator, 'creator')->create(['name' => 'Registry Kit', 'cover_image_path' => null]);
     Release::factory()->for($project)->create(['published_at' => now()]);
 
@@ -416,7 +415,7 @@ test('a coverless project renders a typographic default cover bearing its name',
 });
 
 test('a private draft has no default cover for the public', function () {
-    $creator = User::factory()->create(['handle' => 'maker']);
+    $creator = User::factory()->create(['username' => 'maker']);
     $project = Project::factory()->for($creator, 'creator')->create(['name' => 'Stealth Kit']);
 
     $this->get(route('cover.project', ['creator' => $creator, 'project' => $project]))
@@ -424,7 +423,7 @@ test('a private draft has no default cover for the public', function () {
 });
 
 test('the launch page publishes open-graph metadata for crawlers', function () {
-    $creator = User::factory()->create(['handle' => 'maker']);
+    $creator = User::factory()->create(['username' => 'maker']);
     $project = Project::factory()->filed()->public()->for($creator, 'creator')->create(['name' => 'Registry Kit', 'tagline' => 'A durable record.']);
     Release::factory()->for($project)->create(['published_at' => now()]);
 
@@ -436,7 +435,7 @@ test('the launch page publishes open-graph metadata for crawlers', function () {
 });
 
 test('a private draft has no social preview image', function () {
-    $creator = User::factory()->create(['handle' => 'maker']);
+    $creator = User::factory()->create(['username' => 'maker']);
     $project = Project::factory()->for($creator, 'creator')->create(['name' => 'Stealth Kit']);
 
     $this->get(route('og.project', ['creator' => $creator, 'project' => $project]))

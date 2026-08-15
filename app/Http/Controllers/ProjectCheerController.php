@@ -10,7 +10,7 @@ class ProjectCheerController extends Controller
     public function store(Project $project): RedirectResponse
     {
         abort_unless($project->is_public, 404);
-        $project->cheers()->firstOrCreate(['user_id' => request()->user()->id]);
+        $project->toggleCheer(request()->user());
 
         return back();
     }

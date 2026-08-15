@@ -26,7 +26,10 @@ class UserFactory extends Factory
     {
         return [
             'name' => fake()->name(),
-            'handle' => fake()->unique()->userName(),
+            'username' => fake()->unique()->regexify('[a-z][a-z0-9_]{2,19}'),
+            'title' => 'Creator',
+            'location' => null,
+            'links' => null,
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),

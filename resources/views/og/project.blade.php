@@ -1,6 +1,6 @@
 @php
     $name = strtoupper(mb_substr($project->name, 0, 46));
-    $handle = '@'.$project->creator->handle;
+    $username = '@'.$project->creator->username;
     $category = strtoupper($project->category?->name ?? 'Launch');
     $tagline = mb_substr($project->tagline ?? '', 0, 110);
     $serial = $project->filed_serial;
@@ -31,8 +31,8 @@
         <text x="94" y="468" font-family="Arial, Helvetica, sans-serif" font-size="32" fill="#585852">{{ $tagline }}</text>
     @endif
 
-    {{-- Bottom rule + creator handle --}}
+    {{-- Bottom rule + creator username --}}
     <path d="M92 528 H1108" stroke="#050505" stroke-width="2"/>
-    <text x="92" y="566" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" letter-spacing="1" fill="#050505">{{ strtoupper($handle) }}</text>
+    <text x="92" y="566" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" letter-spacing="1" fill="#050505">{{ strtoupper($username) }}</text>
     <text x="1108" y="566" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" letter-spacing="2" fill="#050505">SHIPPED</text>
 </svg>

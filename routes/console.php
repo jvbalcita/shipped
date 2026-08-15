@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('shipped:refresh-cloud-verifications')->daily();
 Schedule::command('shipped:publish-scheduled-releases')->everyMinute();
+Schedule::command('shipped:purge-reserved-usernames')->daily();

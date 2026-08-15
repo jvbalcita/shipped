@@ -20,8 +20,11 @@ return new class extends Migration
             $table->string('tagline', 160);
             $table->text('description');
             $table->string('cover_image_path')->nullable();
+            $table->string('logo_path')->nullable();
             $table->string('live_url')->nullable();
             $table->string('github_url')->nullable();
+            $table->string('pricing')->default('free')->index();
+            $table->date('launch_date')->nullable();
             $table->boolean('is_public')->default(false)->index();
             $table->string('verification_status')->default('unverified')->index();
             $table->timestamp('verified_at')->nullable();
