@@ -31,7 +31,7 @@ class PublishScheduledReleases extends Command
             ->whereHas('releases', fn (Builder $query) => $query
                 ->whereIn($release->qualifyColumn('id'), $latestRelease)
                 ->where($release->qualifyColumn('published_at'), '<=', now()))
-            ->update(['is_public' => true]);
+            ->each(fn (Project $project) => $project->forceFill(['is_public' => true])->save());
 
         return self::SUCCESS;
     }

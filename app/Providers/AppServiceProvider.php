@@ -2,11 +2,16 @@
 
 namespace App\Providers;
 
+use App\Models\Cheer;
 use App\Models\Comment;
 use App\Models\Project;
 use App\Models\Release;
 use App\Models\Review;
 use App\Models\User;
+use App\Observers\CheerObserver;
+use App\Observers\ProjectObserver;
+use App\Observers\ReleaseObserver;
+use App\Observers\ReviewObserver;
 use App\Policies\FollowPolicy;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -32,6 +37,18 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->registerObservers();
+    }
+
+    /**
+     * Activity feed observers: cheap, idempotent writes on model events.
+     */
+    protected function registerObservers(): void
+    {
+        Project::observe(ProjectObserver::class);
+        Release::observe(ReleaseObserver::class);
+        Review::observe(ReviewObserver::class);
+        Cheer::observe(CheerObserver::class);
     }
 
     /**
