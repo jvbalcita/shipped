@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\Cheerable;
+use App\Concerns\Followable;
 use App\Enums\ProjectPricing;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -23,7 +24,7 @@ use Illuminate\Support\Facades\Storage;
  */
 class Project extends Model
 {
-    use Cheerable;
+    use Cheerable, Followable;
 
     /** @use HasFactory<ProjectFactory> */
     use HasFactory;
