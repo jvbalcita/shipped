@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\OAuthController;
+use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\CloudConnectionController;
 use App\Http\Controllers\CommentCheerController;
 use App\Http\Controllers\ConnectedEnvironmentController;
@@ -70,5 +71,7 @@ Route::get('/og/@{creator:username}/{project:slug}', [OgController::class, 'proj
 Route::get('/covers/@{creator:username}/{project:slug}', [OgController::class, 'cover'])
     ->scopeBindings()
     ->name('cover.project');
+
+Route::get('/badges/{project}.svg', [BadgeController::class, 'show'])->name('badges.show');
 
 require __DIR__.'/settings.php';
