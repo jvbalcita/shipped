@@ -13,7 +13,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Toaster } from '@/components/ui/sonner';
 import UserMenuContent from '@/components/UserMenuContent.vue';
 import { useInitials } from '@/composables/useInitials';
-import { dashboard, discover, login, logout, register } from '@/routes';
+import { dashboard, discover, feed, login, logout, register } from '@/routes';
 import { edit as profileEdit } from '@/routes/profile';
 import { create } from '@/routes/projects';
 import { edit as securityEdit } from '@/routes/security';
@@ -62,6 +62,13 @@ const handleLogout = (): void => {
                 >
                     <Button as-child variant="ghost" class="h-auto border-y-0"
                         ><Link :href="discover()">Discover</Link></Button
+                    >
+                    <Button
+                        v-if="page.props.auth.user"
+                        as-child
+                        variant="ghost"
+                        class="h-auto border-y-0"
+                        ><Link :href="feed()">Following</Link></Button
                     >
                     <Button
                         v-if="page.props.auth.user"
@@ -182,6 +189,13 @@ const handleLogout = (): void => {
                                 ><Link :href="discover()"
                                     >Discover</Link
                                 ></Button
+                            >
+                            <Button
+                                v-if="page.props.auth.user"
+                                as-child
+                                variant="ghost"
+                                class="justify-start"
+                                ><Link :href="feed()">Following</Link></Button
                             >
                             <Button
                                 v-if="page.props.auth.user"
