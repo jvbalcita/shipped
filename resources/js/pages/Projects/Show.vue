@@ -12,6 +12,7 @@ import {
     Trash2,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import FollowButton from '@/components/shipped/FollowButton.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
 import SectionHeader from '@/components/shipped/SectionHeader.vue';
 import {
@@ -36,6 +37,7 @@ import {
     store as storeComment,
     update as updateComment,
 } from '@/routes/projects/comments';
+import { destroy as destroyFollow, store as storeFollow } from '@/routes/projects/follow';
 import {
     destroy as destroyReview,
     store as storeReview,
@@ -329,6 +331,16 @@ function cheerProject(project: any): void {
                             ><Heart class="size-4" />Cheer /
                             {{ project.cheers_count }}</Button
                         >
+                        <FollowButton
+                            :key="`project-follow-${project.id}`"
+                            :count="project.followers_count"
+                            :following="project.followed_by_viewer"
+                            :action="
+                                project.followed_by_viewer
+                                    ? { ...destroyFollow(project), method: 'delete' as const }
+                                    : { ...storeFollow(project), method: 'post' as const }
+                            "
+                        />
                     </div>
                     <p class="technical-label mt-12">
                         Made by
@@ -336,6 +348,15 @@ function cheerProject(project: any): void {
                             :href="creatorShow(project.creator)"
                             class="text-primary underline underline-offset-4"
                             >@{{ project.creator.username }}</Link
+                        >
+                        <span class="text-muted-foreground">
+                            /
+                            {{ project.followers_count }}
+                            {{
+                                project.followers_count === 1
+                                    ? 'follower'
+                                    : 'followers'
+                            }}</span
                         >
                     </p>
                 </div>

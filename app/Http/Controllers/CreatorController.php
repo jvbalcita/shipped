@@ -11,12 +11,17 @@ class CreatorController extends Controller
 {
     public function show(User $creator): Response
     {
+        $creator->loadCount('followers');
+        $viewer = request()->user();
+
         return Inertia::render('Creators/Show', [
             'creator' => [
                 ...$creator->only('name', 'username', 'title', 'location', 'bio', 'avatar_path', 'links'),
                 'avatar_url' => $creator->avatar_path === null
                     ? null
                     : Storage::disk()->url($creator->avatar_path),
+                'followers_count' => $creator->followers_count,
+                'followed_by_viewer' => $viewer !== null && $creator->isFollowedBy($viewer),
             ],
             'projects' => $creator->projects()->discoverable()->with(['creator', 'category', 'tags'])->withCount('cheers')->latest()->get(),
             'ogTitle' => $creator->name.' — Shipped',
