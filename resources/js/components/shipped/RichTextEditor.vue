@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import { Bold, Italic, Link as LinkIcon, List, ListOrdered, Quote } from '@lucide/vue';
 import { Link } from '@tiptap/extension-link';
 import StarterKit from '@tiptap/starter-kit';
 import { EditorContent, useEditor } from '@tiptap/vue-3';
-import { Bold, Italic, Link as LinkIcon, List, ListOrdered, Quote } from '@lucide/vue';
 import { onBeforeUnmount, watch } from 'vue';
 
 const props = defineProps<{
@@ -74,6 +74,7 @@ function setLink(): void {
 
     if (url === '') {
         editor.value.chain().focus().extendMarkRange('link').unsetLink().run();
+
         return;
     }
 

@@ -17,17 +17,31 @@ defineProps<{
 
 const latestDispatchLabel = computed((): string => {
     const props = (page.props as { latestDispatchAt?: string | null }).latestDispatchAt;
-    if (!props) return 'Awaiting first dispatch';
+
+    if (!props) {
+return 'Awaiting first dispatch';
+}
 
     const then = new Date(props).getTime();
     const minutes = Math.round((Date.now() - then) / 60000);
     const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
 
-    if (minutes < 1) return 'Filed just now';
-    if (minutes < 60) return `Filed ${rtf.format(-minutes, 'minute')}`;
+    if (minutes < 1) {
+return 'Filed just now';
+}
+
+    if (minutes < 60) {
+return `Filed ${rtf.format(-minutes, 'minute')}`;
+}
+
     const hours = Math.round(minutes / 60);
-    if (hours < 24) return `Filed ${rtf.format(-hours, 'hour')}`;
+
+    if (hours < 24) {
+return `Filed ${rtf.format(-hours, 'hour')}`;
+}
+
     const days = Math.round(hours / 24);
+
     return `Filed ${rtf.format(-days, 'day')}`;
 });
 </script>

@@ -14,7 +14,6 @@ import {
 import { computed, ref } from 'vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
 import SectionHeader from '@/components/shipped/SectionHeader.vue';
-import { Textarea } from '@/components/ui/textarea';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -27,9 +26,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { defaultCoverUrl } from '@/lib/cover';
-import { show as creatorShow } from '@/routes/creators';
 import { store as storeCommentCheer } from '@/routes/comments/cheers';
+import { show as creatorShow } from '@/routes/creators';
 import { store as cheer } from '@/routes/projects/cheers';
 import {
     destroy as destroyComment,
@@ -143,6 +143,7 @@ function saveEdit(comment: any): void {
 
 function deleteComment(): void {
     const comment = commentPendingDelete.value;
+
     if (!comment) {
         return;
     }

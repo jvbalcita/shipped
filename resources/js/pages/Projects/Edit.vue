@@ -2,8 +2,8 @@
 import { router, useForm } from '@inertiajs/vue3';
 import { CalendarClock, Check, Eye, EyeOff, ImagePlus, Send } from '@lucide/vue';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-import DateTimePicker from '@/components/shipped/DateTimePicker.vue';
 import DatePicker from '@/components/shipped/DatePicker.vue';
+import DateTimePicker from '@/components/shipped/DateTimePicker.vue';
 import FileUpload from '@/components/shipped/FileUpload.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
 import RichTextEditor from '@/components/shipped/RichTextEditor.vue';
@@ -26,7 +26,6 @@ import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Spinner } from '@/components/ui/spinner';
 import {
     Select,
     SelectContent,
@@ -34,6 +33,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { update } from '@/routes/projects';
 import { store as releaseStore } from '@/routes/projects/releases';
@@ -74,6 +74,7 @@ function appendSuggestedTag(tag: string): void {
         .split(',')
         .map((value: string) => value.trim())
         .filter(Boolean);
+
     if (!current.includes(tag)) {
         current.push(tag);
         projectForm.tags = current.join(', ');
@@ -98,6 +99,7 @@ const hasPublishedRelease = computed(() =>
 
 function onCoverChange(file: File | null): void {
     projectForm.cover_image = file;
+
     // A fresh upload supersedes any pending removal of the old cover.
     if (file) {
         projectForm.cover_removal = false;
@@ -110,6 +112,7 @@ function onCoverRemove(): void {
 
 function onLogoChange(file: File | null): void {
     projectForm.logo = file;
+
     if (file) {
         projectForm.logo_removal = false;
     }
@@ -292,14 +295,17 @@ function handleFiled(event: Event): void {
     const detail = (event as CustomEvent).detail as {
         filed_serial?: string;
     } | undefined;
+
     if (!detail?.filed_serial) {
         return;
     }
 
     filedSerial.value = detail.filed_serial;
+
     if (filedTimeout) {
         clearTimeout(filedTimeout);
     }
+
     filedTimeout = setTimeout(() => {
         filedSerial.value = null;
     }, 3000);
@@ -308,6 +314,7 @@ function handleFiled(event: Event): void {
 onMounted(() => window.addEventListener('shipped:filed', handleFiled));
 onUnmounted(() => {
     window.removeEventListener('shipped:filed', handleFiled);
+
     if (filedTimeout) {
         clearTimeout(filedTimeout);
     }
@@ -419,7 +426,7 @@ onUnmounted(() => {
                             </p>
                             <div class="grid gap-3">
                                 <div
-                                    v-for="(screenshot, index) in visibleExisting"
+                                    v-for="screenshot in visibleExisting"
                                     :key="screenshot.id"
                                     class="flex items-start gap-3 border border-foreground p-3"
                                 >

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link, router } from '@inertiajs/vue3';
 import { Search } from '@lucide/vue';
+import { X } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import ProjectCard from '@/components/shipped/ProjectCard.vue';
 import ProjectCardSkeleton from '@/components/shipped/ProjectCardSkeleton.vue';
@@ -32,7 +33,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { X } from '@lucide/vue';
 import { discover } from '@/routes';
 
 const props = defineProps<{
@@ -69,8 +69,15 @@ const projectGridClass = computed(() => {
 });
 const resultsLabel = computed(() => {
     const { total, from, to } = props.projects;
-    if (total === 0) return 'No records';
-    if (total === 1) return '1 record';
+
+    if (total === 0) {
+return 'No records';
+}
+
+    if (total === 1) {
+return '1 record';
+}
+
     return `${from}–${to} of ${total} records`;
 });
 

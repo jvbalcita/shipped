@@ -11,9 +11,9 @@ import PasswordInput from '@/components/PasswordInput.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { link as linkOauth, unlink as unlinkOauth } from '@/routes/oauth';
 import { edit } from '@/routes/security';
 import { update as updateEmail } from '@/routes/user-email';
-import { link as linkOauth, unlink as unlinkOauth } from '@/routes/oauth';
 
 type Props = {
     passwordRules: string;

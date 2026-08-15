@@ -5,6 +5,7 @@ import { computed, ref } from 'vue';
 import DatePicker from '@/components/shipped/DatePicker.vue';
 import FileUpload from '@/components/shipped/FileUpload.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
+import RichTextEditor from '@/components/shipped/RichTextEditor.vue';
 import SectionHeader from '@/components/shipped/SectionHeader.vue';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -25,7 +26,6 @@ import {
     StepperTitle,
     StepperTrigger,
 } from '@/components/ui/stepper';
-import RichTextEditor from '@/components/shipped/RichTextEditor.vue';
 import { index, store } from '@/routes/projects';
 
 const props = defineProps<{
@@ -82,6 +82,7 @@ function appendSuggestedTag(tag: string): void {
         .split(',')
         .map((value) => value.trim())
         .filter(Boolean);
+
     if (!current.includes(tag)) {
         current.push(tag);
         form.tags = current.join(', ');

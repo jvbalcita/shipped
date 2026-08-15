@@ -61,6 +61,7 @@ const removeLink = (index: number): void => {
 
 const onAvatarChange = (file: File | null): void => {
     form.avatar = file;
+
     if (file) {
         form.avatar_removal = false;
     }
