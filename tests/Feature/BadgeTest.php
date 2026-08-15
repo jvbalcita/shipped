@@ -3,6 +3,7 @@
 use App\Models\Project;
 use App\Models\Release;
 use App\Models\User;
+use Inertia\Testing\AssertableInertia;
 
 function badgeableDemoProject(string $verificationStatus): Project
 {
@@ -66,4 +67,42 @@ test('private and unpublished projects return 404 for their badge', function () 
 
 test('an unknown slug returns 404', function () {
     $this->get('/badges/does-not-exist.svg')->assertNotFound();
+});
+
+test('creator studio exposes the badge markdown snippet built from the app URL', function () {
+    $creator = verifiedUser();
+    $project = Project::factory()->public()->for($creator, 'creator')->create();
+    Release::factory()->for($project)->create(['published_at' => now()]);
+
+    $this->actingAs($creator)
+        ->get(route('projects.edit', $project))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where(
+                'badgeMarkdown',
+                sprintf(
+                    '[![Shipped](%s/badges/%s.svg)](%s/@%s/%s)',
+                    rtrim(config('app.url'), '/'),
+                    $project->slug,
+                    rtrim(config('app.url'), '/'),
+                    $creator->username,
+                    $project->slug,
+                ),
+            ));
+});
+
+test('creator studio hides the badge snippet for non-discoverable projects', function () {
+    $creator = verifiedUser();
+    $project = Project::factory()->for($creator, 'creator')->create(['is_public' => false]);
+
+    $this->actingAs($creator)
+        ->get(route('projects.edit', $project))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('badgeMarkdown', null));
+});
+
+test('a guest cannot reach the studio badge affordance', function () {
+    $project = Project::factory()->public()->for(User::factory(), 'creator')->create();
+    Release::factory()->for($project)->create(['published_at' => now()]);
+
+    $this->get(route('projects.edit', $project))
+        ->assertRedirect(route('login'));
 });

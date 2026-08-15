@@ -2,6 +2,7 @@
 import { router, useForm } from '@inertiajs/vue3';
 import { CalendarClock, Check, Eye, EyeOff, ImagePlus, Send } from '@lucide/vue';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import BadgeSnippet from '@/components/shipped/BadgeSnippet.vue';
 import DatePicker from '@/components/shipped/DatePicker.vue';
 import DateTimePicker from '@/components/shipped/DateTimePicker.vue';
 import FileUpload from '@/components/shipped/FileUpload.vue';
@@ -46,6 +47,7 @@ const props = defineProps<{
     pricingOptions: { value: string; label: string }[];
     suggestedTags: string[];
     connectedEnvironments: ConnectedEnvironmentSummary[];
+    badgeMarkdown: string | null;
 }>();
 const projectForm = useForm({
     name: props.project.name,
@@ -762,6 +764,7 @@ onUnmounted(() => {
                 :project="project"
                 :environments="connectedEnvironments"
             />
+            <BadgeSnippet v-if="badgeMarkdown" :markdown="badgeMarkdown" />
             <section class="border-t border-foreground">
                 <div class="grid p-5 sm:grid-cols-[.45fr_1.55fr] sm:p-8">
                     <p class="technical-label text-primary">Release archive</p>
