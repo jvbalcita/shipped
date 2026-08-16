@@ -60,6 +60,11 @@ class HandleInertiaRequests extends Middleware
                     'avatar_path' => $user->avatar_path,
                 ],
             ],
+            // Re-evaluated on every Inertia request, so the bell badge
+            // refreshes on navigation without polling.
+            'unreadNotificationsCount' => $user === null
+                ? 0
+                : $user->unreadNotifications()->count(),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }
