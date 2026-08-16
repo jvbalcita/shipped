@@ -13,11 +13,11 @@ class CommentObserver
     {
         if ($comment->parent_id !== null) {
             // A reply notifies the parent comment's author.
-            $parent = $comment->parent;
+            $parentAuthor = $comment->parent?->user;
 
-            if ($parent !== null && $parent->user_id !== null) {
+            if ($parentAuthor !== null) {
                 $this->notifications->record(
-                    $parent->user,
+                    $parentAuthor,
                     'reply',
                     $comment->user,
                     $comment->project,

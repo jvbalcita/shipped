@@ -61,7 +61,7 @@ class NotificationController extends Controller
         // Viewing the page marks the displayed rows read; the mapping above
         // already captured the unread styling for this render.
         $user->notifications()
-            ->whereIn('id', $rows->modelKeys())
+            ->whereIn('id', $rows->pluck('id')->all())
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
 
