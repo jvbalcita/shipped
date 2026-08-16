@@ -6,6 +6,7 @@
 [![Vue 3](https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs&logoColor=white)](https://vuejs.org)
 [![Tailwind CSS 4](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![Tests](https://github.com/jvbalcita/shipped/actions/workflows/tests.yml/badge.svg)](https://github.com/jvbalcita/shipped/actions/workflows/tests.yml)
+[![Shipped](http://localhost:8087/badges/test.svg)](http://localhost:8087/@jvbalcita/test)
 
 **Shipped** is a public registry for independent Laravel launches. Creators record a project, write its release story, verify its Laravel Cloud deployment, and publish a shareable page the community can discover and cheer.
 
@@ -15,6 +16,8 @@
 - Publishes release notes immediately or on a schedule.
 - Verifies a live URL against a connected Laravel Cloud environment before public listing.
 - Provides a searchable public registry, creator profiles, launch pages, and one-cheer-per-member support.
+- Builds community loops: polymorphic cheers, reviews, comments, follows, and a private activity feed.
+- Ships a live **verification badge** (above) that creators drop into their READMEs.
 - Uses a responsive Swiss industrial print interface across the public site, Studio, Composer, and auth flows.
 
 ## Stack
@@ -59,6 +62,9 @@ composer run dev
 
 Open the URL reported by Laravel. The seeded demo launches make the public registry immediately explorable.
 
+> Running under Laravel Sail instead? Use `./vendor/bin/sail npm run dev` — the
+> Sail container owns the Vite port, so a host-side `npm run dev` will conflict.
+
 ## Project cover storage
 
 Shipped deliberately uses Laravel's **default filesystem disk** for every project cover. There is no application-specific disk setting to keep in sync.
@@ -80,7 +86,7 @@ Installations include `league/flysystem-aws-s3-v3`, so use Laravel Cloud Object 
 ```dotenv
 FILESYSTEM_DISK=s3
 AWS_ACCESS_KEY_ID=...
-AWS_SECRET_ACCESS_KEY=...
+AWS_SECRET_ACCESS_KEY=***
 AWS_DEFAULT_REGION=...
 AWS_BUCKET=...
 AWS_ENDPOINT=...
@@ -100,6 +106,15 @@ AWS_USE_PATH_STYLE_ENDPOINT=false
 6. Run a queue worker and scheduler if you enable scheduled release processing in your environment.
 
 Laravel Cloud API tokens supplied by creators are encrypted at rest, never displayed after submission, and Shipped uses them only for read-only Cloud requests. Their actual scope remains controlled by Laravel Cloud.
+
+## The verification badge
+
+Every discoverable project gets a self-hosted SVG badge (`GET /badges/{slug}.svg`)
+that reflects live verification status — VERIFIED LIVE, STALE, VERIFICATION
+FAILED, or UNVERIFIED. Grab the copy-ready markdown from Creator Studio. The
+markdown is built from `APP_URL`, so it points at your real domain in
+production (locally it uses `shipped.test:8087`, which only resolves on this
+machine).
 
 ## Quality checks
 
@@ -128,6 +143,14 @@ php artisan test --compact
 | `/projects/create`      | Guided launch composer            |
 | `/@{creator}/{project}` | Public project launch page        |
 | `/@{creator}`           | Creator profile                   |
+| `/feed`                 | Private activity feed             |
+| `/badges/{slug}.svg`    | Verification badge                |
+
+## Docs
+
+- [Vision & roadmap](docs/superpowers/plans/2026-07-13-laravel-cloud-verification-mvp.md) — product direction
+- [Implementation plans](docs/superpowers/plans/) — follow/feed, badge, manifest, notifications
+- [ADRs](docs/adr/) — architecture decision records
 
 ## Contributing
 
