@@ -6,10 +6,14 @@ use App\Models\Cheer;
 use App\Models\Comment;
 use App\Models\Project;
 use App\Services\ActivityRecorder;
+use App\Services\NotificationRecorder;
 
 class CheerObserver
 {
-    public function __construct(private ActivityRecorder $activities) {}
+    public function __construct(
+        private ActivityRecorder $activities,
+        private NotificationRecorder $notifications,
+    ) {}
 
     public function created(Cheer $cheer): void
     {
@@ -19,6 +23,13 @@ class CheerObserver
             $this->activities->record('cheered', $cheer->user, $cheerable, $cheer->created_at, [
                 'cheerable' => 'project',
             ]);
+
+            $this->notifications->record(
+                $cheerable->creator,
+                'cheer',
+                $cheer->user,
+                $cheerable,
+            );
 
             return;
         }
