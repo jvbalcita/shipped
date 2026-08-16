@@ -9,6 +9,7 @@ use App\Http\Controllers\CreatorController;
 use App\Http\Controllers\DiscoverController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\ManifestController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OgController;
 use App\Http\Controllers\ProjectCheerController;
 use App\Http\Controllers\ProjectCommentController;
@@ -36,6 +37,8 @@ Route::get('oauth/{provider}/callback', [OAuthController::class, 'callback'])
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [ProjectController::class, 'index'])->name('dashboard');
     Route::get('feed', FeedController::class)->name('feed');
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
     Route::post('cloud-connection', [CloudConnectionController::class, 'store'])->name('cloud-connection.store');
     Route::delete('cloud-connection', [CloudConnectionController::class, 'destroy'])->name('cloud-connection.destroy');
     Route::get('cloud-connection/environments', [ConnectedEnvironmentController::class, 'index'])->name('cloud-connection.environments');

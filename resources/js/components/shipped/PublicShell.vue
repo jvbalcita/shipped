@@ -2,6 +2,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { ArrowUpRight, LogOut, Menu, Settings, ShieldCheck } from '@lucide/vue';
 import CommandPalette from '@/components/shipped/CommandPalette.vue';
+import NotificationBell from '@/components/shipped/NotificationBell.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -89,6 +90,10 @@ const handleLogout = (): void => {
                             :href="page.props.auth.user ? create() : register()"
                             >Ship yours <ArrowUpRight class="size-3" /></Link
                     ></Button>
+                    <NotificationBell
+                        v-if="page.props.auth.user"
+                        class="my-2"
+                    />
                     <DropdownMenu v-if="page.props.auth.user" :modal="false">
                         <DropdownMenuTrigger as-child>
                             <Button
@@ -197,6 +202,15 @@ const handleLogout = (): void => {
                                 class="justify-start"
                                 ><Link :href="feed()">Following</Link></Button
                             >
+                            <div
+                                v-if="page.props.auth.user"
+                                class="flex items-center justify-between"
+                            >
+                                <span class="text-sm text-muted-foreground"
+                                    >Notifications</span
+                                >
+                                <NotificationBell />
+                            </div>
                             <Button
                                 v-if="page.props.auth.user"
                                 as-child

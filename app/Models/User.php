@@ -92,6 +92,18 @@ class User extends Authenticatable implements PasskeyUser
         return $candidate;
     }
 
+    /** @return HasMany<Notification, $this> */
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(Notification::class);
+    }
+
+    /** @return HasMany<Notification, $this> */
+    public function unreadNotifications(): HasMany
+    {
+        return $this->notifications()->whereNull('read_at');
+    }
+
     /** @return HasOne<CloudConnection, $this> */
     public function cloudConnection(): HasOne
     {

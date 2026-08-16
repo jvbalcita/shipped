@@ -4,11 +4,14 @@ namespace App\Providers;
 
 use App\Models\Cheer;
 use App\Models\Comment;
+use App\Models\Follow;
 use App\Models\Project;
 use App\Models\Release;
 use App\Models\Review;
 use App\Models\User;
 use App\Observers\CheerObserver;
+use App\Observers\CommentObserver;
+use App\Observers\FollowObserver;
 use App\Observers\ProjectObserver;
 use App\Observers\ReleaseObserver;
 use App\Observers\ReviewObserver;
@@ -41,7 +44,8 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Activity feed observers: cheap, idempotent writes on model events.
+     * Observer hooks: activity feed events plus in-app notifications,
+     * both cheap, idempotent writes on model events.
      */
     protected function registerObservers(): void
     {
@@ -49,6 +53,8 @@ class AppServiceProvider extends ServiceProvider
         Release::observe(ReleaseObserver::class);
         Review::observe(ReviewObserver::class);
         Cheer::observe(CheerObserver::class);
+        Comment::observe(CommentObserver::class);
+        Follow::observe(FollowObserver::class);
     }
 
     /**
