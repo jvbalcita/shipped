@@ -5,6 +5,7 @@ use App\Models\Project;
 use App\Models\Release;
 use App\Models\Tag;
 use App\Models\User;
+use Inertia\Testing\AssertableInertia;
 
 function manifestableProject(): Project
 {
@@ -89,4 +90,20 @@ test('a manifest for another creators slug combination returns 404', function ()
     $other = User::factory()->create();
 
     $this->get(route('manifests.show', [$other, $project]))->assertNotFound();
+});
+
+test('the launch page exposes the manifest url only for discoverable projects', function () {
+    $project = manifestableProject();
+
+    $this->get(route('projects.show', [$project->creator, $project]))
+        ->assertSuccessful()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('manifestUrl', route('manifests.show', [$project->creator, $project])));
+
+    $draft = Project::factory()->for(User::factory(), 'creator')->create(['is_public' => false]);
+
+    $this->actingAs($draft->creator)
+        ->get(route('projects.show', [$draft->creator, $draft]))
+        ->assertSuccessful()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('manifestUrl', null));
 });

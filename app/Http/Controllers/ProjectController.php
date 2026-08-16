@@ -106,7 +106,8 @@ class ProjectController extends Controller
     public function show(User $creator, Project $project): Response
     {
         abort_unless($project->creator->is($creator), 404);
-        abort_unless(request()->user()?->is($project->creator) || Project::query()->discoverable()->whereKey($project)->exists(), 404);
+        $isDiscoverable = Project::query()->discoverable()->whereKey($project)->exists();
+        abort_unless(request()->user()?->is($project->creator) || $isDiscoverable, 404);
 
         $project->load([
             'creator:id,name,username',
@@ -208,6 +209,9 @@ class ProjectController extends Controller
             'ogTitle' => $project->name.' — Shipped',
             'ogDescription' => $project->tagline,
             'ogImage' => route('og.project', ['creator' => $creator, 'project' => $project]),
+            'manifestUrl' => $isDiscoverable
+                ? route('manifests.show', ['creator' => $creator, 'project' => $project])
+                : null,
         ]);
     }
 
