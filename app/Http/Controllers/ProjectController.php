@@ -226,13 +226,20 @@ class ProjectController extends Controller
             : $connection->connectedEnvironments;
 
         return Inertia::render('Projects/Edit', [
-            'project' => $project->load(['releases', 'connectedEnvironment', 'tags', 'screenshots']),
+            'project' => $project->load(['releases', 'connectedEnvironment', 'tags', 'screenshots', 'creator']),
             'categories' => Category::query()->orderBy('name')->get(),
             'pricingOptions' => collect(ProjectPricing::cases())->map(fn (ProjectPricing $pricing) => [
                 'value' => $pricing->value,
                 'label' => $pricing->label(),
             ])->values(),
             'suggestedTags' => config('shipped.suggested_tags', []),
+            'badgeMarkdown' => $project->isPubliclyDiscoverable()
+                ? sprintf(
+                    '[![Shipped](%s)](%s)',
+                    route('badges.show', $project),
+                    route('projects.show', [$project->creator, $project]),
+                )
+                : null,
             'connectedEnvironments' => $environments->map(fn ($environment) => [
                 'id' => $environment->id,
                 'application_name' => $environment->application_name,
