@@ -8,6 +8,7 @@ use App\Http\Controllers\ConnectedEnvironmentController;
 use App\Http\Controllers\CreatorController;
 use App\Http\Controllers\DiscoverController;
 use App\Http\Controllers\FeedController;
+use App\Http\Controllers\ManifestController;
 use App\Http\Controllers\OgController;
 use App\Http\Controllers\ProjectCheerController;
 use App\Http\Controllers\ProjectCommentController;
@@ -71,6 +72,10 @@ Route::get('/og/@{creator:username}/{project:slug}', [OgController::class, 'proj
 Route::get('/covers/@{creator:username}/{project:slug}', [OgController::class, 'cover'])
     ->scopeBindings()
     ->name('cover.project');
+
+Route::get('/manifests/{creator:username}/{project:slug}.svg', [ManifestController::class, 'show'])
+    ->scopeBindings()
+    ->name('manifests.show');
 
 Route::get('/badges/{project}.svg', [BadgeController::class, 'show'])->name('badges.show');
 

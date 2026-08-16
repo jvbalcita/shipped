@@ -2,9 +2,11 @@
 import { Link, useForm } from '@inertiajs/vue3';
 import {
     CornerUpLeft,
+    Download,
     ExternalLink,
     GitFork,
     Heart,
+    Link2,
     MessageSquare,
     Pencil,
     ShieldCheck,
@@ -12,6 +14,7 @@ import {
     Trash2,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import { toast } from 'vue-sonner';
 import FollowButton from '@/components/shipped/FollowButton.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
 import SectionHeader from '@/components/shipped/SectionHeader.vue';
@@ -45,7 +48,7 @@ import {
 } from '@/routes/projects/reviews';
 import { show as releaseShow } from '@/routes/releases';
 
-const props = defineProps<{ project: any }>();
+const props = defineProps<{ project: any; manifestUrl: string | null }>();
 const form = useForm({});
 
 const reviewForm = useForm({
@@ -180,6 +183,19 @@ function cheerProject(project: any): void {
         preserveScroll: true,
         preserveState: true,
     });
+}
+
+async function copyManifestLink(): Promise<void> {
+    if (props.manifestUrl === null) {
+        return;
+    }
+
+    try {
+        await navigator.clipboard.writeText(props.manifestUrl);
+        toast.success('Manifest link copied.');
+    } catch {
+        toast('Copy the manifest link from your browser.');
+    }
 }
 </script>
 
@@ -341,6 +357,25 @@ function cheerProject(project: any): void {
                                     : { ...storeFollow(project), method: 'post' as const }
                             "
                         />
+                        <Button
+                            v-if="manifestUrl"
+                            as-child
+                            variant="outline"
+                        >
+                            <a
+                                :href="manifestUrl"
+                                :download="`${project.slug}-manifest.svg`"
+                                data-test="save-manifest"
+                                ><Download class="size-4" />Save manifest</a
+                            >
+                        </Button>
+                        <Button
+                            v-if="manifestUrl"
+                            variant="outline"
+                            data-test="copy-manifest-link"
+                            @click="copyManifestLink"
+                            ><Link2 class="size-4" />Copy link</Button
+                        >
                     </div>
                     <p class="technical-label mt-12">
                         Made by
