@@ -1,11 +1,14 @@
 <?php
 
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\Cheer;
 use App\Models\Comment;
 use App\Models\Notification;
 use App\Models\Project;
 use App\Models\Review;
 use App\Models\User;
+use Illuminate\Http\Request;
+use Inertia\Testing\AssertableInertia;
 
 function projectFor(User $creator): Project
 {
@@ -115,4 +118,101 @@ test('self-actions never notify', function () {
     Comment::factory()->for($project)->for($owner, 'user')->create(['parent_id' => $parent->id]);
 
     expect(Notification::query()->count())->toBe(0);
+});
+
+test('the shared unread count matches unread notifications only', function () {
+    $owner = User::factory()->create();
+    $project = projectFor($owner);
+    $member = User::factory()->create();
+
+    Cheer::factory()->create(['user_id' => $member->id, 'cheerable_type' => 'project', 'cheerable_id' => $project->id]);
+    Review::factory()->for($project)->for($member, 'user')->create();
+    Notification::query()->first()->forceFill(['read_at' => now()])->save();
+
+    $this->actingAs($owner)
+        ->get(route('dashboard'))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('unreadNotificationsCount', 1));
+});
+
+test('viewing the notifications page renders rows and marks them read', function () {
+    $owner = User::factory()->create();
+    $project = projectFor($owner);
+    $member = User::factory()->create();
+    Cheer::factory()->create(['user_id' => $member->id, 'cheerable_type' => 'project', 'cheerable_id' => $project->id]);
+
+    $this->actingAs($owner)
+        ->get(route('notifications.index'))
+        ->assertSuccessful()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Notifications/Index')
+            ->has('notifications.items', 1)
+            ->where('notifications.items.0.type', 'cheer')
+            ->where('notifications.items.0.read', false)
+            ->where('notifications.items.0.actor.username', $member->username)
+            ->where('notifications.items.0.project.slug', (string) $project->slug));
+
+    expect($owner->unreadNotifications()->count())->toBe(0);
+});
+
+test('mark all read clears every unread notification', function () {
+    $owner = User::factory()->create();
+    $project = projectFor($owner);
+    $member = User::factory()->create();
+    Cheer::factory()->create(['user_id' => $member->id, 'cheerable_type' => 'project', 'cheerable_id' => $project->id]);
+    Review::factory()->for($project)->for($member, 'user')->create();
+
+    $this->actingAs($owner)
+        ->post(route('notifications.read-all'))
+        ->assertRedirect();
+
+    expect($owner->unreadNotifications()->count())->toBe(0)
+        ->and(Notification::query()->whereNotNull('read_at')->count())->toBe(2);
+});
+
+test('an empty inbox renders the empty state', function () {
+    $this->actingAs(verifiedUser())
+        ->get(route('notifications.index'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('notifications.items', 0)
+            ->where('notifications.next_cursor', null));
+});
+
+test('a guest visiting notifications is redirected to login', function () {
+    $this->get(route('notifications.index'))->assertRedirect(route('login'));
+    $this->post(route('notifications.read-all'))->assertRedirect(route('login'));
+});
+
+test('the notifications page paginates twenty rows at a time', function () {
+    $owner = User::factory()->create();
+    $project = projectFor($owner);
+    $member = User::factory()->create();
+
+    foreach (range(1, 25) as $i) {
+        Notification::query()->create([
+            'user_id' => $owner->id,
+            'type' => 'cheer',
+            'actor_type' => 'user',
+            'actor_id' => $member->id,
+            'subject_type' => 'project',
+            'subject_id' => $project->id,
+            'data' => null,
+            'read_at' => now(),
+            'created_at' => now()->subMinutes(50 - $i),
+        ]);
+    }
+
+    $version = (new HandleInertiaRequests)->version(new Request);
+
+    $pageOne = $this->actingAs($owner)
+        ->get(route('notifications.index'), ['X-Inertia' => 'true', 'X-Inertia-Version' => $version])
+        ->json('props.notifications');
+
+    expect($pageOne['items'])->toHaveCount(20)
+        ->and($pageOne['next_cursor'])->toBeString();
+
+    $pageTwo = $this->actingAs($owner)
+        ->get(route('notifications.index', ['cursor' => $pageOne['next_cursor']]), ['X-Inertia' => 'true', 'X-Inertia-Version' => $version])
+        ->json('props.notifications');
+
+    expect($pageTwo['items'])->toHaveCount(5);
 });
