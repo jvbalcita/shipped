@@ -15,6 +15,7 @@ import {
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import { toast } from 'vue-sonner';
+import CheerWall from '@/components/shipped/CheerWall.vue';
 import FollowButton from '@/components/shipped/FollowButton.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
 import SectionHeader from '@/components/shipped/SectionHeader.vue';
@@ -34,7 +35,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { defaultCoverUrl } from '@/lib/cover';
 import { store as storeCommentCheer } from '@/routes/comments/cheers';
 import { show as creatorShow } from '@/routes/creators';
-import { store as cheer } from '@/routes/projects/cheers';
 import {
     destroy as destroyComment,
     store as storeComment,
@@ -48,8 +48,18 @@ import {
 } from '@/routes/projects/reviews';
 import { show as releaseShow } from '@/routes/releases';
 
-const props = defineProps<{ project: any; manifestUrl: string | null }>();
-const form = useForm({});
+const props = defineProps<{
+    project: any;
+    manifestUrl: string | null;
+    cheers: {
+        name: string | null;
+        username: string | null;
+        avatar_url: string | null;
+        cheered_at: string | null;
+    }[] | null;
+    hasCheered: boolean;
+    canCheer: boolean;
+}>();
 
 const reviewForm = useForm({
     rating: props.project.user_review?.rating ?? 5,
@@ -176,13 +186,6 @@ function requestDelete(comment: any): void {
 
 function cheerComment(comment: any): void {
     useForm({}).post(storeCommentCheer(comment).url, { preserveScroll: true });
-}
-
-function cheerProject(project: any): void {
-    form.post(cheer(project).url, {
-        preserveScroll: true,
-        preserveState: true,
-    });
 }
 
 async function copyManifestLink(): Promise<void> {
@@ -339,14 +342,6 @@ async function copyManifestLink(): Promise<void> {
                                 ><GitFork class="size-4" />Source</a
                             ></Button
                         >
-                        <Button
-                            v-if="$page.props.auth.user"
-                            variant="outline"
-                            :disabled="form.processing"
-                            @click="cheerProject(project)"
-                            ><Heart class="size-4" />Cheer /
-                            {{ project.cheers_count }}</Button
-                        >
                         <FollowButton
                             :key="`project-follow-${project.id}`"
                             :count="project.followers_count"
@@ -396,6 +391,12 @@ async function copyManifestLink(): Promise<void> {
                     </p>
                 </div>
             </div>
+            <CheerWall
+                :cheers="cheers"
+                :has-cheered="hasCheered"
+                :can-cheer="canCheer"
+                :project="project"
+            />
             <SectionHeader label="Release chronology">
                 <ol
                     class="mt-10 divide-y divide-foreground border-y border-foreground sm:mt-0"

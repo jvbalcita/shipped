@@ -212,6 +212,27 @@ class ProjectController extends Controller
             'manifestUrl' => $isDiscoverable
                 ? route('manifests.show', ['creator' => $creator, 'project' => $project])
                 : null,
+            // The cheer wall is public social proof — only discoverable
+            // launches expose cheer data (same rule as manifest + badge).
+            'cheers' => $isDiscoverable
+                ? $project->cheers()
+                    ->with('user:id,name,username,avatar_path')
+                    ->oldest('created_at')
+                    ->get()
+                    ->map(fn (Cheer $cheer): array => [
+                        'name' => $cheer->user?->name,
+                        'username' => $cheer->user?->username,
+                        'avatar_url' => $cheer->user?->avatar_path !== null
+                            ? Storage::disk()->url($cheer->user->avatar_path)
+                            : null,
+                        'cheered_at' => $cheer->created_at?->toIso8601String(),
+                    ])
+                    ->values()
+                    ->all()
+                : null,
+            'hasCheered' => $viewer !== null
+                && $project->cheers()->where('user_id', $viewer->id)->exists(),
+            'canCheer' => $viewer !== null && $isDiscoverable,
         ]);
     }
 
