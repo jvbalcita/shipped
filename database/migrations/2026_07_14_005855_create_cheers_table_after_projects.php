@@ -17,10 +17,10 @@ return new class extends Migration
 
         Schema::create('cheers', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('project_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->morphs('cheerable', 'cheers_cheerable_idx');
             $table->timestamps();
-            $table->unique(['project_id', 'user_id']);
+            $table->unique(['user_id', 'cheerable_type', 'cheerable_id'], 'cheers_user_cheerable_unq');
         });
     }
 
