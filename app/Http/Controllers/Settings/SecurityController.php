@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Enums\OAuthProvider;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\EmailUpdateRequest;
 use App\Http\Requests\Settings\PasswordUpdateRequest;
@@ -29,6 +30,8 @@ class SecurityController extends Controller
         $props = [
             'email' => $user->email,
             'linkedProviders' => $linkedProviders,
+            'oauthProviders' => OAuthProvider::configured(),
+            'hasPassword' => $user->password !== null,
             'canManageTwoFactor' => Features::canManageTwoFactorAuthentication(),
             'canManagePasskeys' => Features::canManagePasskeys(),
             'passkeys' => Features::canManagePasskeys()

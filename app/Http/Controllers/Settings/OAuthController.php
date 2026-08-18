@@ -42,6 +42,16 @@ class OAuthController extends Controller
 
         $user = $request->user();
 
+        $hasAlternativeSignIn = $user->password !== null
+            || $user->passkeys()->exists()
+            || $user->oauthAccounts()->where('provider', '!=', $providerEnum->value)->exists();
+
+        if (! $hasAlternativeSignIn) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => __('Set a password before removing your last sign-in method.')]);
+
+            return Redirect::route('security.edit');
+        }
+
         $user->oauthAccounts()
             ->where('provider', $providerEnum->value)
             ->delete();

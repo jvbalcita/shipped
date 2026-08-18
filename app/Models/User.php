@@ -22,6 +22,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property int $id
  * @property string $name
  * @property string $username
+ * @property Carbon|null $username_claimed_at
  * @property string $title
  * @property string|null $location
  * @property string $email
@@ -38,7 +39,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'username', 'title', 'location', 'email', 'bio', 'avatar_path', 'links', 'password'])]
+#[Fillable(['name', 'username', 'username_claimed_at', 'title', 'location', 'email', 'bio', 'avatar_path', 'links', 'password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
@@ -70,6 +71,9 @@ class User extends Authenticatable implements PasskeyUser
 
     /**
      * Build a unique username from a seed, slugified to the allowed pattern.
+     *
+     * Skips usernames already taken or held by a reservation, and stays
+     * within the public 3-30 character handle rules.
      */
     public static function generateUniqueUsername(string $seed): string
     {
@@ -81,10 +85,16 @@ class User extends Authenticatable implements PasskeyUser
         }
 
         $base = substr($base, 0, 24);
+
+        if (strlen($base) < 3) {
+            $base = str_pad($base, 3, '_');
+        }
+
         $candidate = $base;
         $attempt = 1;
 
-        while (static::where('username', $candidate)->exists()) {
+        while (static::where('username', $candidate)->exists()
+            || ReservedUsername::active()->where('username', $candidate)->exists()) {
             $candidate = substr($base, 0, 20).'_'.$attempt;
             $attempt++;
         }
@@ -119,6 +129,7 @@ class User extends Authenticatable implements PasskeyUser
     {
         return [
             'email_verified_at' => 'datetime',
+            'username_claimed_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
             'links' => 'array',

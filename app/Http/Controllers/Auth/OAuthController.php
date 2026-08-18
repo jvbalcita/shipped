@@ -23,7 +23,7 @@ class OAuthController extends Controller
     {
         $providerEnum = $this->resolveProvider($provider);
 
-        if ($providerEnum === null) {
+        if ($providerEnum === null || ! $providerEnum->isConfigured()) {
             abort(404);
         }
 
@@ -83,6 +83,7 @@ class OAuthController extends Controller
 
         if ($account !== null) {
             Auth::login($account->user);
+            $request->session()->put('auth.password_confirmed_at', time());
 
             return redirect()->intended(route('dashboard'));
         }
@@ -103,8 +104,11 @@ class OAuthController extends Controller
             'username' => User::generateUniqueUsername($socialiteUser->getNickname() ?? $email ?? 'creator'),
             'email' => $email ?? $socialiteUser->getId().'@'.$providerEnum->value.'.shipped.local',
             'title' => 'Creator',
-            'password' => Str::random(40),
+            'password' => null,
         ]);
+
+        $user->email_verified_at = now();
+        $user->save();
 
         $user->oauthAccounts()->create([
             'provider' => $providerEnum->value,
@@ -118,8 +122,9 @@ class OAuthController extends Controller
         $this->importAvatarIfMissing($user, $socialiteUser->getAvatar());
 
         Auth::login($user);
+        $request->session()->put('auth.password_confirmed_at', time());
 
-        return redirect()->intended(route('dashboard'));
+        return redirect()->route('username.welcome');
     }
 
     private function importAvatarIfMissing(User $user, ?string $avatarUrl): void

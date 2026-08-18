@@ -11,6 +11,7 @@ use App\Http\Controllers\FeedController;
 use App\Http\Controllers\ManifestController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OgController;
+use App\Http\Controllers\Onboarding\UsernameController as OnboardingUsernameController;
 use App\Http\Controllers\ProjectCheerController;
 use App\Http\Controllers\ProjectCommentController;
 use App\Http\Controllers\ProjectController;
@@ -33,6 +34,13 @@ Route::get('oauth/{provider}', [OAuthController::class, 'redirect'])
 Route::get('oauth/{provider}/callback', [OAuthController::class, 'callback'])
     ->name('oauth.callback')
     ->whereIn('provider', ['google', 'github']);
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('welcome/username', [OnboardingUsernameController::class, 'edit'])->name('username.welcome');
+    Route::patch('welcome/username', [OnboardingUsernameController::class, 'update'])
+        ->middleware('throttle:10,1')
+        ->name('username.claim');
+});
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [ProjectController::class, 'index'])->name('dashboard');

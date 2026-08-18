@@ -3,9 +3,9 @@ import type { UrlMethodPair } from '@inertiajs/core';
 import { router } from '@inertiajs/vue3';
 import { usePasskeyVerify } from '@laravel/passkeys/vue';
 import { KeyRound } from '@lucide/vue';
+import AuthDivider from '@/components/AuthDivider.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
 
 type Props = {
@@ -59,15 +59,6 @@ const { verify, isLoading, error, isSupported } = usePasskeyVerify({
             </div>
         </div>
 
-        <div class="relative my-6">
-            <div class="absolute inset-0 flex items-center">
-                <Separator class="w-full" />
-            </div>
-            <div class="relative flex justify-center text-xs uppercase">
-                <span class="bg-background px-2 text-muted-foreground">
-                    {{ props.separator ?? 'Or continue with email' }}
-                </span>
-            </div>
-        </div>
+        <AuthDivider :label="props.separator ?? 'Or continue with email'" />
     </div>
 </template>
