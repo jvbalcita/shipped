@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Inertia\DeferredProp;
+use Inertia\DeferProp;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -381,7 +381,7 @@ class ProjectController extends Controller
      * repository list is deferred so a slow or unreachable GitHub never
      * blocks the form; a null list means "fall back to a URL input".
      *
-     * @return array{githubLinked: bool, githubRepos: DeferredProp}
+     * @return array{githubLinked: bool, githubRepos: DeferProp}
      */
     private function githubRepositoryProps(User $user): array
     {
