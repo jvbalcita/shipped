@@ -8,6 +8,7 @@ use App\Models\OAuthAccount;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -107,7 +108,7 @@ class OAuthController extends Controller
             'password' => null,
         ]);
 
-        $user->email_verified_at = now();
+        $user->email_verified_at = Carbon::now();
         $user->save();
 
         $user->oauthAccounts()->create([
