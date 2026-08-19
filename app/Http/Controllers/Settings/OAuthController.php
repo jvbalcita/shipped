@@ -9,14 +9,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 use Laravel\Socialite\Facades\Socialite;
-use Symfony\Component\HttpFoundation\RedirectResponse as SymfonyRedirectResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class OAuthController extends Controller
 {
     /**
      * Begin linking a provider to the authenticated creator.
      */
-    public function link(Request $request, string $provider): SymfonyRedirectResponse
+    public function link(Request $request, string $provider): Response
     {
         $providerEnum = OAuthProvider::tryFrom($provider);
 
@@ -26,7 +26,9 @@ class OAuthController extends Controller
 
         $request->session()->put('oauth_link_intent', true);
 
-        return Socialite::driver($providerEnum->value)->redirect();
+        // An XHR cannot follow the cross-origin redirect to the provider, so
+        // hand the authorize URL back to Inertia for a full-page navigation.
+        return Inertia::location(Socialite::driver($providerEnum->value)->redirect());
     }
 
     /**
