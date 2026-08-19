@@ -6,16 +6,17 @@
 [![Vue 3](https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs&logoColor=white)](https://vuejs.org)
 [![Tailwind CSS 4](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![Tests](https://github.com/jvbalcita/shipped/actions/workflows/tests.yml/badge.svg)](https://github.com/jvbalcita/shipped/actions/workflows/tests.yml)
-[![Shipped](http://localhost:8087/badges/test.svg)](http://localhost:8087/@jvbalcita/test)
 
 **Shipped** is a public registry for independent Laravel launches. Creators record a project, write its release story, verify its Laravel Cloud deployment, and publish a shareable page the community can discover and cheer.
 
 ## What it does
 
-- Creates private launch records with cover images, live URLs, source links, and categories.
+- Creates private launch records with real evidence: cover image, screenshots with captions, and a live or source URL are required before a record exists.
+- Offers sign-in and account linking through GitHub and Google alongside email, passkeys, and two-factor authentication.
+- Lets GitHub-linked creators pick their repository from a searchable dropdown of their public repos while composing a launch.
 - Publishes release notes immediately or on a schedule.
 - Verifies a live URL against a connected Laravel Cloud environment before public listing.
-- Provides a searchable public registry, creator profiles, launch pages, and one-cheer-per-member support.
+- Provides a searchable public registry, creator profiles, and launch pages with a screenshot gallery and fullscreen preview.
 - Builds community loops: polymorphic cheers, reviews, comments, follows, and a private activity feed.
 - Ships a live **verification badge** (above) that creators drop into their READMEs.
 - Uses a responsive Swiss industrial print interface across the public site, Studio, Composer, and auth flows.
@@ -27,7 +28,7 @@
 | Backend       | Laravel 13, PHP 8.4.1+                                                       |
 | Frontend      | Inertia v3, Vue 3, TypeScript, Tailwind CSS 4                                |
 | UI primitives | shadcn-vue / Reka UI                                                         |
-| Auth          | Laravel Fortify, passkeys, two-factor authentication                         |
+| Auth          | Laravel Fortify, passkeys, two-factor, GitHub/Google OAuth via Socialite      |
 | Storage       | Laravel Filesystem with local public storage or S3-compatible Object Storage |
 | Tests         | Pest 4, PHPStan, Pint, ESLint, Prettier                                      |
 
@@ -101,9 +102,15 @@ AWS_USE_PATH_STYLE_ENDPOINT=false
 1. Create a Laravel Cloud application from this repository and attach a database.
 2. Add the production `APP_*`, `DB_*`, mail, queue, cache, and Object Storage variables in Laravel Cloud.
 3. Set `FILESYSTEM_DISK=s3` and the standard `AWS_*` values shown above if covers should use Object Storage.
-4. Build frontend assets during deployment with `npm ci && npm run build`.
-5. Run `php artisan migrate --force` as a deploy command.
-6. Run a queue worker and scheduler if you enable scheduled release processing in your environment.
+4. To enable OAuth sign-in and the GitHub repository picker, set `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` / `GITHUB_REDIRECT_URI` (and the `GOOGLE_*` equivalents) for your Socialite apps. Providers without credentials are hidden automatically.
+5. Build frontend assets during deployment with `npm ci && npm run build`.
+6. Run `php artisan migrate --force` as a deploy command.
+7. Seed the curated categories once — the launch composer's category dropdown is empty until this runs:
+   ```bash
+   php artisan db:seed --class=CategorySeeder --force
+   ```
+   A bare `db:seed --force` is equally safe: `DatabaseSeeder` only runs production-safe seeders, and demo content is limited to local/testing environments.
+8. Run a queue worker and scheduler if you enable scheduled release processing in your environment.
 
 Laravel Cloud API tokens supplied by creators are encrypted at rest, never displayed after submission, and Shipped uses them only for read-only Cloud requests. Their actual scope remains controlled by Laravel Cloud.
 

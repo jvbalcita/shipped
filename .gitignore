@@ -31,3 +31,14 @@ yarn-error.log
 /.vscode
 /.zcode
 /.zed
+
+# Local planning artifacts and agent tooling — never share publicly
+/.scratch
+/.superpowers
+/.agents
+/.claude
+/.codex
+/.cursor
+
+# Local databases
+/database/*.sqlite
