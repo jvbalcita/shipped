@@ -21,13 +21,13 @@ return [
     'github' => [
         'client_id' => env('GITHUB_CLIENT_ID'),
         'client_secret' => env('GITHUB_CLIENT_SECRET'),
-        'redirect' => env('GITHUB_REDIRECT_URI', 'https://shipped.test/oauth/github/callback'),
+        'redirect' => env('GITHUB_REDIRECT_URI', 'http://shipped.test:8087/oauth/github/callback'),
     ],
 
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-        'redirect' => env('GOOGLE_REDIRECT_URI', 'https://shipped.test/oauth/google/callback'),
+        'redirect' => env('GOOGLE_REDIRECT_URI', 'http://shipped.test:8087/oauth/google/callback'),
     ],
 
     'resend' => [

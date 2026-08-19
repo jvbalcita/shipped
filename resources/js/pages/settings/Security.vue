@@ -19,6 +19,8 @@ type Props = {
     passwordRules: string;
     email: string;
     linkedProviders: string[];
+    oauthProviders: string[];
+    hasPassword: boolean;
 } & ManagePasskeysProps &
     ManageTwoFactorProps;
 
@@ -37,12 +39,23 @@ const submitEmail = (): void => {
     });
 };
 
-const providers = [
-    { key: 'github', label: 'GitHub' },
-    { key: 'google', label: 'Google' },
-];
+const providerLabels: Record<string, string> = {
+    github: 'GitHub',
+    google: 'Google',
+};
+
+const providers = props.oauthProviders.map((key) => ({
+    key,
+    label: providerLabels[key] ?? key,
+}));
 
 const isLinked = (key: string): boolean => props.linkedProviders.includes(key);
+
+const linkProvider = (key: string): void => {
+    useForm({}).post(linkOauth.url({ provider: key }), {
+        preserveScroll: true,
+    });
+};
 
 const unlinkProvider = (key: string): void => {
     useForm({}).delete(unlinkOauth.url({ provider: key }), {
@@ -105,8 +118,12 @@ defineOptions({
     <div class="mt-8 space-y-6 border-t border-foreground pt-6">
         <Heading
             variant="small"
-            title="Update password"
-            description="Ensure your account is using a long, random password to stay secure"
+            :title="props.hasPassword ? 'Update password' : 'Set a password'"
+            :description="
+                props.hasPassword
+                    ? 'Ensure your account is using a long, random password to stay secure'
+                    : 'Set a password to also sign in with email'
+            "
         />
 
         <Form
@@ -123,7 +140,7 @@ defineOptions({
             class="space-y-6"
             v-slot="{ errors, processing }"
         >
-            <div class="grid gap-2">
+            <div v-if="props.hasPassword" class="grid gap-2">
                 <Label for="current_password">Current password</Label>
                 <PasswordInput
                     id="current_password"
@@ -195,14 +212,15 @@ defineOptions({
                 >
                     Unlink
                 </Button>
-                <a
+                <Button
                     v-else
-                    :href="linkOauth({ provider: provider.key })"
-                    class="inline-flex h-9 items-center justify-center border border-foreground bg-background px-3 text-sm font-medium transition-colors hover:bg-muted"
+                    variant="outline"
+                    size="sm"
                     :data-test="`link-${provider.key}`"
+                    @click="linkProvider(provider.key)"
                 >
                     Link
-                </a>
+                </Button>
             </div>
         </div>
     </div>

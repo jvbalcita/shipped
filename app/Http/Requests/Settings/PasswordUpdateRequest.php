@@ -13,13 +13,21 @@ class PasswordUpdateRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
+     * Passwordless creators (OAuth-only sign-up) have no current password to
+     * provide when setting one for the first time.
+     *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
-        return [
-            'current_password' => $this->currentPasswordRules(),
+        $rules = [
             'password' => $this->passwordRules(),
         ];
+
+        if ($this->user()->password !== null) {
+            $rules['current_password'] = $this->currentPasswordRules();
+        }
+
+        return $rules;
     }
 }

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import AuthDivider from '@/components/AuthDivider.vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import TextLink from '@/components/TextLink.vue';
@@ -11,9 +12,15 @@ import { login } from '@/routes';
 import { redirect as oauthRedirect } from '@/routes/oauth';
 import { store } from '@/routes/register';
 
-defineProps<{
+const props = defineProps<{
     passwordRules: string;
+    oauthProviders: string[];
 }>();
+
+const providerLabels: Record<string, string> = {
+    github: 'GitHub',
+    google: 'Google',
+};
 
 defineOptions({
     layout: {
@@ -26,27 +33,22 @@ defineOptions({
 <template>
     <Head title="Register" />
 
-    <div class="grid gap-3">
+    <div v-if="props.oauthProviders.length > 0" class="grid gap-3">
         <a
-            :href="oauthRedirect({ provider: 'github' })"
+            v-for="provider in props.oauthProviders"
+            :key="provider"
+            :href="oauthRedirect.url({ provider })"
             class="inline-flex h-9 w-full items-center justify-center gap-2 border border-foreground bg-background text-sm font-medium transition-colors hover:bg-muted"
-            data-test="oauth-github"
+            :data-test="`oauth-${provider}`"
         >
-            Continue with GitHub
-        </a>
-        <a
-            :href="oauthRedirect({ provider: 'google' })"
-            class="inline-flex h-9 w-full items-center justify-center gap-2 border border-foreground bg-background text-sm font-medium transition-colors hover:bg-muted"
-            data-test="oauth-google"
-        >
-            Continue with Google
+            Continue with {{ providerLabels[provider] ?? provider }}
         </a>
     </div>
 
-    <div class="relative text-center text-sm">
-        <span class="relative z-10 bg-background px-2 text-muted-foreground">Or register with email</span>
-        <div class="absolute inset-x-0 top-1/2 -z-0 h-px bg-border"></div>
-    </div>
+    <AuthDivider
+        v-if="props.oauthProviders.length > 0"
+        label="Or register with email"
+    />
 
     <Form
         v-bind="store.form()"

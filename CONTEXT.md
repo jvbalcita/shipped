@@ -9,7 +9,7 @@ The individual user, identified by a chosen public username, who owns a project 
 _Avoid_: Owner, account
 
 **Username**:
-A unique, user-chosen public identifier selected at registration, used for login routing (`/@{creator:username}`) and community identity. Changeable after registration with a reservation hold-window that releases the old username so it cannot be immediately squatted.
+A unique, user-chosen public identifier, used for public routing (`/@{creator:username}`) and community identity. Chosen at registration, or **claimed** once during provider sign-up onboarding — an auto-assigned handle stays unclaimed until the creator first picks one. Changeable after claiming, with a reservation hold-window that releases the old username so it cannot be immediately squatted.
 _Avoid_: Handle, login, screen name
 
 **Title**:

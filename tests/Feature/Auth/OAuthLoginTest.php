@@ -4,6 +4,7 @@ use App\Models\OAuthAccount;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Inertia\Testing\AssertableInertia;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
 
@@ -21,6 +22,8 @@ function oauthFakeUser(array $overrides = []): SocialiteUser
 }
 
 test('oauth redirect sends the visitor to the provider', function () {
+    config(['services.github.client_id' => 'test-client-id']);
+
     Socialite::fake('github');
 
     $response = $this->get(route('oauth.redirect', ['provider' => 'github']));
@@ -33,16 +36,42 @@ test('unknown provider returns 404 on redirect', function () {
         ->assertNotFound();
 });
 
+test('unconfigured provider returns 404 on redirect', function () {
+    config(['services.google.client_id' => null]);
+
+    $this->get(route('oauth.redirect', ['provider' => 'google']))
+        ->assertNotFound();
+});
+
+test('login and register pages only offer configured providers', function () {
+    config([
+        'services.github.client_id' => 'test-client-id',
+        'services.google.client_id' => null,
+    ]);
+
+    $login = $this->get(route('login'));
+
+    $login->assertOk();
+    $login->assertInertia(fn (AssertableInertia $page) => $page->where('oauthProviders', ['github']));
+
+    $register = $this->get(route('register'));
+
+    $register->assertOk();
+    $register->assertInertia(fn (AssertableInertia $page) => $page->where('oauthProviders', ['github']));
+});
+
 test('new oauth user is created and logged in', function () {
     Socialite::fake('github', oauthFakeUser());
 
     $response = $this->get(route('oauth.callback', ['provider' => 'github']));
 
-    $response->assertRedirect(route('dashboard'));
+    $response->assertRedirect(route('username.welcome'));
     $this->assertAuthenticated();
 
     $user = Auth::user();
     expect($user->email)->toBe('octo@example.com');
+    expect($user->email_verified_at)->not->toBeNull();
+    expect($user->password)->toBeNull();
     expect(OAuthAccount::where('provider', 'github')->where('provider_id', 'provider-id-123')->exists())->toBeTrue();
 });
 
@@ -100,7 +129,7 @@ test('oauth registration imports the provider avatar once', function () {
     ]));
 
     $this->get(route('oauth.callback', ['provider' => 'github']))
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('username.welcome'));
 
     $user = User::where('email', 'octo@example.com')->first();
 
