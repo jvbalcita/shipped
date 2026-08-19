@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import { ref } from 'vue';
 import AuthDivider from '@/components/AuthDivider.vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
@@ -22,6 +23,10 @@ const providerLabels: Record<string, string> = {
     google: 'Google',
 };
 
+// The anchors perform a full-page navigation to the provider, so the pending
+// state only needs to hold until the browser leaves the page.
+const pendingProvider = ref<string | null>(null);
+
 defineOptions({
     layout: {
         title: 'Create an account',
@@ -39,8 +44,12 @@ defineOptions({
             :key="provider"
             :href="oauthRedirect.url({ provider })"
             class="inline-flex h-9 w-full items-center justify-center gap-2 border border-foreground bg-background text-sm font-medium transition-colors hover:bg-muted"
+            :class="{ 'pointer-events-none opacity-60': pendingProvider !== null }"
+            :aria-disabled="pendingProvider !== null"
             :data-test="`oauth-${provider}`"
+            @click="pendingProvider = provider"
         >
+            <Spinner v-if="pendingProvider === provider" />
             Continue with {{ providerLabels[provider] ?? provider }}
         </a>
     </div>

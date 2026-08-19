@@ -13,6 +13,7 @@ use Illuminate\Support\Carbon;
  * @property int $user_id
  * @property string $provider
  * @property string $provider_id
+ * @property string|null $provider_nickname
  * @property string|null $provider_token
  * @property string|null $provider_refresh_token
  * @property Carbon|null $token_expires_at
@@ -32,6 +33,7 @@ class OAuthAccount extends Model
         'user_id',
         'provider',
         'provider_id',
+        'provider_nickname',
         'provider_token',
         'provider_refresh_token',
         'token_expires_at',

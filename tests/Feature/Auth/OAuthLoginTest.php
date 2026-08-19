@@ -73,6 +73,7 @@ test('new oauth user is created and logged in', function () {
     expect($user->email_verified_at)->not->toBeNull();
     expect($user->password)->toBeNull();
     expect(OAuthAccount::where('provider', 'github')->where('provider_id', 'provider-id-123')->exists())->toBeTrue();
+    expect($user->oauthAccounts()->first()->provider_nickname)->toBe('octocat');
 });
 
 test('existing provider link logs the user in without creating a duplicate', function () {

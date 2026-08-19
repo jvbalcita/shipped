@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\EmailUpdateRequest;
 use App\Http\Requests\Settings\PasswordUpdateRequest;
 use App\Http\Requests\Settings\TwoFactorAuthenticationRequest;
+use App\Models\OAuthAccount;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rules\Password;
@@ -23,13 +24,18 @@ class SecurityController extends Controller
     {
         $user = $request->user();
 
-        $linkedProviders = $user->oauthAccounts()
-            ->pluck('provider')
+        $linkedAccounts = $user->oauthAccounts()
+            ->get(['provider', 'provider_nickname'])
+            ->map(fn (OAuthAccount $account) => [
+                'provider' => $account->provider,
+                'nickname' => $account->provider_nickname,
+            ])
+            ->values()
             ->all();
 
         $props = [
             'email' => $user->email,
-            'linkedProviders' => $linkedProviders,
+            'linkedAccounts' => $linkedAccounts,
             'oauthProviders' => OAuthProvider::configured(),
             'hasPassword' => $user->password !== null,
             'canManageTwoFactor' => Features::canManageTwoFactorAuthentication(),
