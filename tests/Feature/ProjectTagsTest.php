@@ -5,19 +5,19 @@ use App\Models\Project;
 use App\Models\Release;
 use App\Models\Tag;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 
 test('a creator can attach comma-separated tags when creating a project', function () {
+    Storage::fake();
+
     $creator = User::factory()->create();
     $category = Category::factory()->create();
 
     $this->actingAs($creator)
-        ->post(route('projects.store'), [
+        ->post(route('projects.store'), validProjectPayload($category, [
             'name' => 'Tagged Launch',
-            'tagline' => 'A one-liner.',
-            'description' => 'Description body.',
-            'category_id' => $category->id,
             'tags' => 'Laravel, vue, laravel, open-source',
-        ])
+        ]))
         ->assertSessionHasNoErrors()
         ->assertRedirect();
 

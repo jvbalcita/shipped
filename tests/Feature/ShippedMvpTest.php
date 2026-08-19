@@ -12,18 +12,19 @@ use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
 test('a creator can publish a project after creating its first release', function () {
+    Storage::fake();
+
     $creator = User::factory()->create();
     $category = Category::factory()->create();
 
     $this->actingAs($creator)
-        ->post(route('projects.store'), [
+        ->post(route('projects.store'), validProjectPayload($category, [
             'name' => 'Queue Pilot',
             'tagline' => 'A calm command centre for Laravel queues.',
             'description' => 'A polished queue visibility tool for busy Laravel teams.',
-            'category_id' => $category->id,
             'live_url' => 'https://queue-pilot.test',
             'github_url' => 'https://github.com/example/queue-pilot',
-        ])
+        ]))
         ->assertRedirect();
 
     $project = Project::firstOrFail();
@@ -52,15 +53,16 @@ test('a creator can publish a project after creating its first release', functio
 });
 
 test('a creator can open the studio after creating a private draft', function () {
+    Storage::fake();
+
     $creator = User::factory()->create();
     $category = Category::factory()->create();
 
-    $response = $this->actingAs($creator)->post(route('projects.store'), [
+    $response = $this->actingAs($creator)->post(route('projects.store'), validProjectPayload($category, [
         'name' => 'Studio-ready draft',
         'tagline' => 'A draft that is ready for its release story.',
         'description' => 'This draft verifies the redirect into the owner-only project studio.',
-        'category_id' => $category->id,
-    ]);
+    ]));
 
     $project = Project::query()->firstOrFail();
 
@@ -112,13 +114,12 @@ test('project cover uploads use the configured default disk', function () {
     $category = Category::factory()->create();
 
     $this->actingAs($creator)
-        ->post(route('projects.store'), [
+        ->post(route('projects.store'), validProjectPayload($category, [
             'name' => 'Shipped',
             'tagline' => 'A community showcase for Laravel Cloud.',
             'description' => 'A community-powered launch feed for Laravel Cloud creators.',
-            'category_id' => $category->id,
             'cover_image' => UploadedFile::fake()->image('cover.png'),
-        ])
+        ]))
         ->assertRedirect();
 
     $project = Project::firstOrFail();

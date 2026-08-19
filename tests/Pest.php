@@ -1,7 +1,9 @@
 <?php
 
+use App\Models\Category;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 /*
@@ -48,4 +50,24 @@ expect()->extend('toBeOne', function () {
 function verifiedUser(): User
 {
     return User::factory()->create(['email_verified_at' => now()]);
+}
+
+/**
+ * A payload satisfying every StoreProjectRequest requirement: cover
+ * image, at least one screenshot, and a live URL.
+ *
+ * @param  array<string, mixed>  $overrides
+ * @return array<string, mixed>
+ */
+function validProjectPayload(Category $category, array $overrides = []): array
+{
+    return array_merge([
+        'name' => 'Test Launch',
+        'tagline' => 'A one-liner.',
+        'description' => 'Description body.',
+        'category_id' => $category->id,
+        'live_url' => 'https://example.test',
+        'cover_image' => UploadedFile::fake()->image('cover.png'),
+        'screenshots' => [UploadedFile::fake()->image('shot.png')],
+    ], $overrides);
 }

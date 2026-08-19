@@ -77,7 +77,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('follow', fn (User $user, User|Project $followable): bool => (new FollowPolicy)->follow($user, $followable));
 
         DB::prohibitDestructiveCommands(
-            app()->isProduction(),
+            app()->isProduction() && ! config('shipped.allow_destructive_commands'),
         );
 
         Password::defaults(fn (): ?Password => app()->isProduction()
