@@ -23,6 +23,7 @@ const emit = defineEmits<{
 }>();
 const input = ref<InstanceType<typeof Input> | null>(null);
 const isDragging = ref(false);
+const typeError = ref('');
 const showExisting = ref(!!props.existingUrl);
 const previewUrl = computed(() =>
     props.modelValue
@@ -49,8 +50,18 @@ const hint = computed(() => {
 });
 
 function selectFile(file?: File): void {
+    typeError.value = '';
+
     if (file && ['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
         emit('update:modelValue', file);
+
+        return;
+    }
+
+    // Unsupported types (SVG and HEIC logos especially) must not be
+    // silently dropped — the save would quietly continue without them.
+    if (file) {
+        typeError.value = 'Only PNG, JPG, and WebP images are supported — SVG and HEIC files must be exported first.';
     }
 }
 
@@ -144,9 +155,9 @@ function removeFile(): void {
                 ><Trash2 class="size-4" /> Remove</Button
             >
         </div>
-        <Alert v-if="error" variant="destructive"
+        <Alert v-if="error || typeError" variant="destructive"
             ><AlertTitle>{{ noun }} rejected</AlertTitle
-            ><AlertDescription>{{ error }}</AlertDescription></Alert
+            ><AlertDescription>{{ error || typeError }}</AlertDescription></Alert
         >
     </div>
 </template>
