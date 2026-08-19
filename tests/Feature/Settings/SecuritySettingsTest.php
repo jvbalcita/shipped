@@ -1,16 +1,19 @@
 <?php
 
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\OAuthAccount;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
 
-test('security page exposes email and linked providers', function () {
+test('security page exposes email and linked accounts with nicknames', function () {
     $user = User::factory()->create(['email_verified_at' => now()]);
     $user->oauthAccounts()->create([
         'provider' => 'github',
         'provider_id' => 'gh-1',
+        'provider_nickname' => 'octocat',
         'linked_at' => now(),
     ]);
 
@@ -21,7 +24,9 @@ test('security page exposes email and linked providers', function () {
         ->assertInertia(fn ($page) => $page
             ->component('settings/Security')
             ->where('email', $user->email)
-            ->where('linkedProviders', ['github']));
+            ->where('linkedAccounts', [
+                ['provider' => 'github', 'nickname' => 'octocat'],
+            ]));
 });
 
 test('email can be updated from the security tab', function () {
@@ -65,6 +70,7 @@ test('profile update no longer changes email', function () {
 test('oauth provider can be linked from the security tab', function () {
     Socialite::fake('github', (new SocialiteUser)->map([
         'id' => 'link-id-1',
+        'nickname' => 'linker-handle',
         'email' => 'linker@example.com',
         'token' => 'tok',
     ]));
@@ -80,7 +86,27 @@ test('oauth provider can be linked from the security tab', function () {
         ->assertRedirect(route('security.edit'));
 
     expect($user->refresh()->oauthAccounts()->where('provider', 'github')->exists())->toBeTrue();
+    expect($user->oauthAccounts()->first()->provider_nickname)->toBe('linker-handle');
     $this->assertAuthenticatedAs($user);
+});
+
+test('link initiation answers inertia requests with an external location redirect', function () {
+    Socialite::fake('github');
+
+    $user = User::factory()->create(['email_verified_at' => now()]);
+    $version = (new HandleInertiaRequests)->version(new Request);
+
+    // A plain 302 to the provider cannot be followed by an XHR (CORS), so
+    // Inertia requests must receive the 409 + X-Inertia-Location contract.
+    $response = $this->actingAs($user)
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->post(route('oauth.link', ['provider' => 'github']), [], [
+            'X-Inertia' => 'true',
+            'X-Inertia-Version' => $version,
+        ]);
+
+    $response->assertStatus(409);
+    expect($response->headers->get('X-Inertia-Location'))->toContain('socialite.fake/github');
 });
 
 test('linking a provider already attached to another account is refused', function () {
@@ -105,7 +131,13 @@ test('linking a provider already attached to another account is refused', functi
         ->assertRedirect();
 
     $this->get(route('oauth.callback', ['provider' => 'github']))
-        ->assertRedirect(route('security.edit'));
+        ->assertRedirect(route('security.edit'))
+        ->assertSessionHas('inertia.flash_data', [
+            'toast' => [
+                'type' => 'error',
+                'message' => 'This provider is already linked to another account.',
+            ],
+        ]);
 
     expect($user->refresh()->oauthAccounts()->count())->toBe(0);
 });

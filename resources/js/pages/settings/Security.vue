@@ -8,6 +8,7 @@ import ManagePasskeys from '@/components/ManagePasskeys.vue';
 import type { Props as ManageTwoFactorProps } from '@/components/ManageTwoFactor.vue';
 import ManageTwoFactor from '@/components/ManageTwoFactor.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
+import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,10 +16,15 @@ import { link as linkOauth, unlink as unlinkOauth } from '@/routes/oauth';
 import { edit } from '@/routes/security';
 import { update as updateEmail } from '@/routes/user-email';
 
+type LinkedAccount = {
+    provider: string;
+    nickname: string | null;
+};
+
 type Props = {
     passwordRules: string;
     email: string;
-    linkedProviders: string[];
+    linkedAccounts: LinkedAccount[];
     oauthProviders: string[];
     hasPassword: boolean;
 } & ManagePasskeysProps &
@@ -49,16 +55,25 @@ const providers = props.oauthProviders.map((key) => ({
     label: providerLabels[key] ?? key,
 }));
 
-const isLinked = (key: string): boolean => props.linkedProviders.includes(key);
+const isLinked = (key: string): boolean =>
+    props.linkedAccounts.some((account) => account.provider === key);
+
+const nicknameFor = (key: string): string | null =>
+    props.linkedAccounts.find((account) => account.provider === key)
+        ?.nickname ?? null;
+
+const linkForm = useForm({});
 
 const linkProvider = (key: string): void => {
-    useForm({}).post(linkOauth.url({ provider: key }), {
+    linkForm.post(linkOauth.url({ provider: key }), {
         preserveScroll: true,
     });
 };
 
+const unlinkForm = useForm({});
+
 const unlinkProvider = (key: string): void => {
-    useForm({}).delete(unlinkOauth.url({ provider: key }), {
+    unlinkForm.delete(unlinkOauth.url({ provider: key }), {
         preserveScroll: true,
     });
 };
@@ -202,23 +217,36 @@ defineOptions({
                 :key="provider.key"
                 class="flex items-center justify-between border border-foreground p-3"
             >
-                <span class="font-medium">{{ provider.label }}</span>
+                <div class="flex min-w-0 items-center gap-2">
+                    <span class="font-medium">{{ provider.label }}</span>
+                    <span
+                        v-if="nicknameFor(provider.key)"
+                        class="truncate font-mono text-xs text-muted-foreground"
+                        :data-test="`linked-${provider.key}-nickname`"
+                    >
+                        @{{ nicknameFor(provider.key) }}
+                    </span>
+                </div>
                 <Button
                     v-if="isLinked(provider.key)"
                     variant="outline"
                     size="sm"
+                    :disabled="unlinkForm.processing"
                     :data-test="`unlink-${provider.key}`"
                     @click="unlinkProvider(provider.key)"
                 >
+                    <Spinner v-if="unlinkForm.processing" />
                     Unlink
                 </Button>
                 <Button
                     v-else
                     variant="outline"
                     size="sm"
+                    :disabled="linkForm.processing"
                     :data-test="`link-${provider.key}`"
                     @click="linkProvider(provider.key)"
                 >
+                    <Spinner v-if="linkForm.processing" />
                     Link
                 </Button>
             </div>

@@ -56,14 +56,16 @@ class OAuthController extends Controller
                 ->exists();
 
             if ($conflicting) {
-                return redirect()->route('security.edit')
-                    ->withErrors(['email' => __('This provider is already linked to another account.')]);
+                Inertia::flash('toast', ['type' => 'error', 'message' => __('This provider is already linked to another account.')]);
+
+                return redirect()->route('security.edit');
             }
 
             if (! $user->oauthAccounts()->where('provider', $providerEnum->value)->exists()) {
                 $user->oauthAccounts()->create([
                     'provider' => $providerEnum->value,
                     'provider_id' => $socialiteUser->getId(),
+                    'provider_nickname' => $socialiteUser->getNickname(),
                     'provider_token' => $socialiteUser->token,
                     'provider_refresh_token' => $socialiteUser->refreshToken,
                     'token_expires_at' => $socialiteUser->expiresIn ? now()->addSeconds($socialiteUser->expiresIn) : null,
@@ -114,6 +116,7 @@ class OAuthController extends Controller
         $user->oauthAccounts()->create([
             'provider' => $providerEnum->value,
             'provider_id' => $socialiteUser->getId(),
+            'provider_nickname' => $socialiteUser->getNickname(),
             'provider_token' => $socialiteUser->token,
             'provider_refresh_token' => $socialiteUser->refreshToken,
             'token_expires_at' => $socialiteUser->expiresIn ? now()->addSeconds($socialiteUser->expiresIn) : null,
