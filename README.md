@@ -6,7 +6,6 @@
 [![Vue 3](https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs&logoColor=white)](https://vuejs.org)
 [![Tailwind CSS 4](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![Tests](https://github.com/jvbalcita/shipped/actions/workflows/tests.yml/badge.svg)](https://github.com/jvbalcita/shipped/actions/workflows/tests.yml)
-[![Shipped](https://larashipped.laravel.cloud/badges/logbytes.svg)](https://larashipped.laravel.cloud/@jvbalcita/logbytes)
 
 **Shipped** is a public registry for independent Laravel launches. Creators record a project, write its release story, verify its Laravel Cloud deployment, and publish a shareable page the community can discover and cheer.
 
