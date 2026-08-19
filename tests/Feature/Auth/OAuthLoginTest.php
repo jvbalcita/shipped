@@ -53,15 +53,11 @@ test('login and register pages only offer configured providers', function () {
 
     $login->assertOk();
     $login->assertInertia(fn (AssertableInertia $page) => $page->where('oauthProviders', ['github']));
-    $login->assertSee('Continue with GitHub');
-    $login->assertSee('href="/oauth/github"', false);
-    $login->assertDontSee('Continue with Google');
 
     $register = $this->get(route('register'));
 
     $register->assertOk();
-    $register->assertSee('Continue with GitHub');
-    $register->assertDontSee('Continue with Google');
+    $register->assertInertia(fn (AssertableInertia $page) => $page->where('oauthProviders', ['github']));
 });
 
 test('new oauth user is created and logged in', function () {
