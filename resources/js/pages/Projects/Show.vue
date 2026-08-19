@@ -18,6 +18,7 @@ import { toast } from 'vue-sonner';
 import CheerWall from '@/components/shipped/CheerWall.vue';
 import FollowButton from '@/components/shipped/FollowButton.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
+import ScreenshotLightbox from '@/components/shipped/ScreenshotLightbox.vue';
 import SectionHeader from '@/components/shipped/SectionHeader.vue';
 import {
     AlertDialog,
@@ -76,6 +77,7 @@ const editForm = useForm({ body: '' });
 // the dialog first, then fires the handler).
 const deleteDialogOpen = ref(false);
 const commentPendingDelete = ref<any>(null);
+const activeScreenshot = ref<number | null>(null);
 
 function formatTimestamp(iso: string | null): string {
     if (!iso) {
@@ -302,26 +304,40 @@ async function copyManifestLink(): Promise<void> {
                     ></div>
                     <div
                         v-if="project.screenshots && project.screenshots.length"
-                        class="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2"
+                        class="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4"
                     >
-                        <figure
-                            v-for="screenshot in project.screenshots"
+                        <button
+                            v-for="(screenshot, index) in project.screenshots"
                             :key="screenshot.id"
-                            class="border border-foreground"
+                            type="button"
+                            class="border border-foreground text-left hover:bg-secondary"
+                            data-test="screenshot-thumb"
+                            :aria-label="
+                                screenshot.caption
+                                    ? `Open preview: ${screenshot.caption}`
+                                    : 'Open screenshot preview'
+                            "
+                            @click="activeScreenshot = index"
                         >
                             <img
                                 :src="screenshot.url"
                                 :alt="screenshot.caption ?? ''"
-                                class="w-full object-cover"
+                                class="aspect-[4/3] w-full object-cover"
+                                loading="lazy"
+                                decoding="async"
                             />
-                            <figcaption
-                                v-if="screenshot.caption"
-                                class="border-t border-foreground px-3 py-2 text-sm"
+                            <span
+                                class="block border-t border-foreground px-3 py-2 text-xs"
                             >
-                                {{ screenshot.caption }}
-                            </figcaption>
-                        </figure>
+                                Fig. {{ String(index + 1).padStart(2, '0')
+                                }}{{ screenshot.caption ? ` — ${screenshot.caption}` : '' }}
+                            </span>
+                        </button>
                     </div>
+                    <ScreenshotLightbox
+                        v-model="activeScreenshot"
+                        :screenshots="project.screenshots ?? []"
+                    />
                     <div class="mt-10 flex flex-wrap gap-2">
                         <Button v-if="project.live_url" as-child
                             ><a

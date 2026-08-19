@@ -4,21 +4,22 @@ use App\Models\Category;
 use App\Models\Project;
 use App\Models\Release;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia;
 
 test('a project description can store rich text markup', function () {
+    Storage::fake();
+
     $creator = User::factory()->create();
     $category = Category::factory()->create();
 
     $description = '<p>Built with <strong>Laravel</strong> and <em>Vue</em>.</p><ul><li>Fast</li><li>Open</li></ul>';
 
     $this->actingAs($creator)
-        ->post(route('projects.store'), [
+        ->post(route('projects.store'), validProjectPayload($category, [
             'name' => 'Rich Project',
-            'tagline' => 'A rich launch.',
             'description' => $description,
-            'category_id' => $category->id,
-        ])
+        ]))
         ->assertSessionHasNoErrors()
         ->assertRedirect();
 

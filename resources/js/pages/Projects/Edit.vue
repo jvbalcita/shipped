@@ -6,6 +6,7 @@ import BadgeSnippet from '@/components/shipped/BadgeSnippet.vue';
 import DatePicker from '@/components/shipped/DatePicker.vue';
 import DateTimePicker from '@/components/shipped/DateTimePicker.vue';
 import FileUpload from '@/components/shipped/FileUpload.vue';
+import GitHubRepoPicker from '@/components/shipped/GitHubRepoPicker.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
 import RichTextEditor from '@/components/shipped/RichTextEditor.vue';
 import SectionHeader from '@/components/shipped/SectionHeader.vue';
@@ -48,6 +49,8 @@ const props = defineProps<{
     suggestedTags: string[];
     connectedEnvironments: ConnectedEnvironmentSummary[];
     badgeMarkdown: string | null;
+    githubLinked?: boolean;
+    githubRepos?: { name: string; url: string }[] | null;
 }>();
 const projectForm = useForm({
     name: props.project.name,
@@ -55,6 +58,7 @@ const projectForm = useForm({
     description: props.project.description,
     category_id: String(props.project.category_id),
     live_url: props.project.live_url ?? '',
+    github_url: props.project.github_url ?? '',
     pricing: props.project.pricing ?? 'free',
     launch_date: props.project.launch_date
         ? String(props.project.launch_date).slice(0, 10)
@@ -395,6 +399,39 @@ onUnmounted(() => {
                                 placeholder="https://your-project.com"
                             /><FieldError v-if="projectForm.errors.live_url">{{
                                 projectForm.errors.live_url
+                            }}</FieldError></Field
+                        ><Field
+                            ><FieldLabel for="github_url"
+                                >GitHub URL</FieldLabel
+                            >
+                            <div
+                                v-if="githubRepos === undefined"
+                                class="h-10 w-full animate-pulse border border-dashed border-foreground/40"
+                                aria-hidden="true"
+                            ></div>
+                            <GitHubRepoPicker
+                                v-else-if="githubRepos !== null"
+                                v-model="projectForm.github_url"
+                                :repos="githubRepos"
+                            />
+                            <template v-else>
+                                <Input
+                                    id="github_url"
+                                    v-model="projectForm.github_url"
+                                    type="url"
+                                    placeholder="https://github.com/you/project"
+                                />
+                                <p class="text-xs text-muted-foreground">
+                                    {{
+                                        githubLinked
+                                            ? 'We could not load your repositories — paste the URL instead.'
+                                            : 'Link GitHub in Settings → Security to pick from your repositories.'
+                                    }}
+                                </p>
+                            </template>
+                            <FieldError
+                                v-if="projectForm.errors.github_url">{{
+                                projectForm.errors.github_url
                             }}</FieldError></Field
                         ><Field
                             ><FieldLabel>Cover image</FieldLabel

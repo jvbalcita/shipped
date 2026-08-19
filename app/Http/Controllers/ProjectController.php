@@ -13,17 +13,23 @@ use App\Models\ProjectScreenshot;
 use App\Models\Review;
 use App\Models\Tag;
 use App\Models\User;
+use App\Services\GitHub\Exceptions\GitHubApiUnavailable;
+use App\Services\GitHub\GitHubClient;
 use App\Services\HtmlSanitizer;
 use App\Services\LaravelCloud\ProjectVerificationService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Inertia\DeferredProp;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ProjectController extends Controller
 {
+    public function __construct(private readonly GitHubClient $github) {}
+
     /**
      * Display a listing of the resource.
      */
@@ -72,6 +78,7 @@ class ProjectController extends Controller
                 'label' => $pricing->label(),
             ])->values(),
             'suggestedTags' => config('shipped.suggested_tags', []),
+            ...$this->githubRepositoryProps($this->currentUser()),
         ]);
     }
 
@@ -258,6 +265,7 @@ class ProjectController extends Controller
                 'label' => $pricing->label(),
             ])->values(),
             'suggestedTags' => config('shipped.suggested_tags', []),
+            ...$this->githubRepositoryProps($this->currentUser()),
             'badgeMarkdown' => $project->isPubliclyDiscoverable()
                 ? sprintf(
                     '[![Shipped](%s)](%s)',
@@ -366,6 +374,39 @@ class ProjectController extends Controller
         }
 
         return $slug;
+    }
+
+    /**
+     * Props for the launch composer's GitHub repository picker. The
+     * repository list is deferred so a slow or unreachable GitHub never
+     * blocks the form; a null list means "fall back to a URL input".
+     *
+     * @return array{githubLinked: bool, githubRepos: DeferredProp}
+     */
+    private function githubRepositoryProps(User $user): array
+    {
+        $account = $user->oauthAccounts()
+            ->where('provider', 'github')
+            ->first();
+
+        return [
+            'githubLinked' => $account !== null,
+            'githubRepos' => Inertia::defer(function () use ($user, $account): ?array {
+                if ($account?->provider_token === null) {
+                    return null;
+                }
+
+                try {
+                    return Cache::remember(
+                        "shipped:github:repos:{$user->id}",
+                        now()->addMinutes(5),
+                        fn (): array => $this->github->listRepositories($account->provider_token),
+                    );
+                } catch (GitHubApiUnavailable) {
+                    return null;
+                }
+            }),
+        ];
     }
 
     private function storeScreenshots(Project $project, StoreProjectRequest|UpdateProjectRequest $request): void

@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, Check, ImagePlus, Send } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import DatePicker from '@/components/shipped/DatePicker.vue';
 import FileUpload from '@/components/shipped/FileUpload.vue';
+import GitHubRepoPicker from '@/components/shipped/GitHubRepoPicker.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
 import RichTextEditor from '@/components/shipped/RichTextEditor.vue';
 import SectionHeader from '@/components/shipped/SectionHeader.vue';
@@ -32,6 +33,8 @@ const props = defineProps<{
     categories: { id: number; name: string }[];
     pricingOptions: { value: string; label: string }[];
     suggestedTags: string[];
+    githubLinked?: boolean;
+    githubRepos?: { name: string; url: string }[] | null;
 }>();
 const step = ref(1);
 const form = useForm({
@@ -130,6 +133,18 @@ function validateCurrentStep(): boolean {
 
         if (!form.category_id) {
             errors.category_id = 'Choose a category.';
+        }
+
+        if (!form.cover_image) {
+            errors.cover_image = 'Add a cover image.';
+        }
+
+        if (newScreenshots.value.length === 0) {
+            errors.screenshots = 'Add at least one screenshot.';
+        }
+
+        if (!form.live_url && !form.github_url) {
+            errors.live_url = 'Add a live URL or a GitHub URL.';
         }
 
         if (form.live_url && !isValidUrl(form.live_url)) {
@@ -455,12 +470,35 @@ function continueComposer(): void {
                                 ><Field
                                     ><FieldLabel for="github_url"
                                         >GitHub URL</FieldLabel
-                                    ><Input
-                                        id="github_url"
+                                    >
+                                    <div
+                                        v-if="githubRepos === undefined"
+                                        class="h-10 w-full animate-pulse border border-dashed border-foreground/40"
+                                        aria-hidden="true"
+                                    ></div>
+                                    <GitHubRepoPicker
+                                        v-else-if="githubRepos !== null"
                                         v-model="form.github_url"
-                                        type="url"
-                                        placeholder="https://github.com/you/project"
-                                    /><FieldError
+                                        :repos="githubRepos"
+                                    />
+                                    <template v-else>
+                                        <Input
+                                            id="github_url"
+                                            v-model="form.github_url"
+                                            type="url"
+                                            placeholder="https://github.com/you/project"
+                                        />
+                                        <p
+                                            class="text-xs text-muted-foreground"
+                                        >
+                                            {{
+                                                githubLinked
+                                                    ? 'We could not load your repositories — paste the URL instead.'
+                                                    : 'Link GitHub in Settings → Security to pick from your repositories.'
+                                            }}
+                                        </p>
+                                    </template>
+                                    <FieldError
                                         v-if="form.errors.github_url"
                                         >{{
                                             form.errors.github_url
@@ -519,7 +557,7 @@ function continueComposer(): void {
                                 step === 1
                                     ? 'Name, line, story'
                                     : step === 2
-                                      ? 'Category'
+                                      ? 'Category, cover, screenshot, link'
                                       : 'Review'
                             }}
                         </p>

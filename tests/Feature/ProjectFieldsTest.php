@@ -16,15 +16,14 @@ test('a creator can store pricing logo and launch date on a project', function (
     $logo = UploadedFile::fake()->image('logo.png', 256, 256);
 
     $this->actingAs($creator)
-        ->post(route('projects.store'), [
+        ->post(route('projects.store'), validProjectPayload($category, [
             'name' => 'Northstar',
             'tagline' => 'A calm maintainer home.',
             'description' => 'Longer story about the launch.',
-            'category_id' => $category->id,
             'pricing' => ProjectPricing::Freemium->value,
             'launch_date' => '2026-08-01',
             'logo' => $logo,
-        ])
+        ]))
         ->assertSessionHasNoErrors()
         ->assertRedirect();
 
@@ -35,6 +34,68 @@ test('a creator can store pricing logo and launch date on a project', function (
     expect($project->launch_date?->toDateString())->toBe('2026-08-01');
     expect($project->logo_path)->not->toBeNull();
     Storage::assertExists($project->logo_path);
+});
+
+test('storing a project requires a cover image', function () {
+    Storage::fake();
+
+    $creator = User::factory()->create();
+    $category = Category::factory()->create();
+
+    $this->actingAs($creator)
+        ->post(route('projects.store'), validProjectPayload($category, ['cover_image' => null]))
+        ->assertSessionHasErrors('cover_image');
+});
+
+test('storing a project requires at least one screenshot', function () {
+    Storage::fake();
+
+    $creator = User::factory()->create();
+    $category = Category::factory()->create();
+
+    $this->actingAs($creator)
+        ->post(route('projects.store'), validProjectPayload($category, ['screenshots' => []]))
+        ->assertSessionHasErrors('screenshots');
+});
+
+test('storing a project requires a live URL or a GitHub URL', function () {
+    Storage::fake();
+
+    $creator = User::factory()->create();
+    $category = Category::factory()->create();
+
+    $this->actingAs($creator)
+        ->post(route('projects.store'), validProjectPayload($category, ['live_url' => null, 'github_url' => null]))
+        ->assertSessionHasErrors(['live_url', 'github_url']);
+});
+
+test('a project can be stored with only a GitHub URL or only a live URL', function () {
+    Storage::fake();
+
+    $creator = User::factory()->create();
+    $category = Category::factory()->create();
+
+    $this->actingAs($creator)
+        ->post(route('projects.store'), validProjectPayload($category, ['live_url' => null, 'github_url' => 'https://github.com/example/app']))
+        ->assertSessionHasNoErrors();
+
+    $this->actingAs($creator)
+        ->post(route('projects.store'), validProjectPayload($category, ['name' => 'Live Only']))
+        ->assertSessionHasNoErrors();
+});
+
+test('a creator can set the github url from the studio', function () {
+    $creator = User::factory()->create();
+    $project = Project::factory()->for($creator, 'creator')->create();
+
+    $this->actingAs($creator)
+        ->patch(route('projects.update', $project), [
+            'github_url' => 'https://github.com/maker/queue-pilot',
+        ])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+
+    expect($project->fresh()->github_url)->toBe('https://github.com/maker/queue-pilot');
 });
 
 test('project logo must be square and large enough', function () {

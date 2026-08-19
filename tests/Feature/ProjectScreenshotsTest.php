@@ -20,14 +20,11 @@ test('store attaches up to five screenshots', function () {
     ];
 
     $response = $this->actingAs($user)
-        ->post(route('projects.store'), [
+        ->post(route('projects.store'), validProjectPayload($category, [
             'name' => 'My App',
-            'tagline' => 'A tagline',
-            'description' => 'A description',
-            'category_id' => $category->id,
             'screenshots' => $files,
             'screenshots_captions' => ['First shot', 'Second shot'],
-        ]);
+        ]));
 
     $response->assertSessionHasNoErrors();
 
