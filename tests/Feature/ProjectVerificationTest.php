@@ -68,6 +68,100 @@ test('a HEAD rejection falls back to a bounded GET when the origin answers 405',
     ]);
 });
 
+test('a same-origin redirect is accepted as reachable deployment evidence', function () {
+    Http::preventStrayRequests();
+    Http::fake([
+        'https://my-app-main.laravel.cloud' => Http::response('', 302, [
+            'Location' => 'https://my-app-main.laravel.cloud/login',
+        ]),
+    ]);
+
+    $creator = User::factory()->create();
+    $project = Project::factory()->for($creator, 'creator')->create([
+        'live_url' => 'https://my-app-main.com',
+    ]);
+
+    $this->actingAs($creator)
+        ->post(route('projects.verification.store', $project), [
+            'laravel_cloud_url' => 'https://my-app-main.laravel.cloud',
+        ])
+        ->assertRedirect(route('projects.edit', $project));
+
+    expect($project->fresh())
+        ->verification_status->toBe('verified')
+        ->verification_failure_reason->toBeNull();
+});
+
+test('a cross-origin redirect remains rejected', function () {
+    Http::preventStrayRequests();
+    Http::fake([
+        'https://my-app-main.laravel.cloud' => Http::response('', 302, [
+            'Location' => 'https://another-project.com/login',
+        ]),
+    ]);
+
+    $creator = User::factory()->create();
+    $project = Project::factory()->for($creator, 'creator')->create([
+        'live_url' => 'https://my-app-main.com',
+    ]);
+
+    $this->actingAs($creator)
+        ->post(route('projects.verification.store', $project), [
+            'laravel_cloud_url' => 'https://my-app-main.laravel.cloud',
+        ])
+        ->assertRedirect(route('projects.edit', $project));
+
+    expect($project->fresh())
+        ->verification_status->toBe('failed')
+        ->verification_failure_reason->toBe('The Laravel Cloud URL rejected the verification request.');
+});
+
+test('a Cloud URL with a matching project name verifies against a custom live domain', function (string $cloudUrl) {
+    Http::preventStrayRequests();
+    Http::fake([$cloudUrl => Http::response('', 200)]);
+
+    $creator = User::factory()->create();
+    $project = Project::factory()->for($creator, 'creator')->create([
+        'live_url' => 'https://artisanbizops.com',
+    ]);
+
+    $this->actingAs($creator)
+        ->post(route('projects.verification.store', $project), [
+            'laravel_cloud_url' => $cloudUrl,
+        ])
+        ->assertRedirect(route('projects.edit', $project));
+
+    expect($project->fresh())
+        ->verification_status->toBe('verified')
+        ->laravel_cloud_url->toBe($cloudUrl)
+        ->verification_failure_reason->toBeNull();
+})->with([
+    'hyphenated Cloud slug' => 'https://artisan-bizops-x1233.laravel.cloud',
+    'suffixed Cloud slug' => 'https://artisanbizops-app.laravel.cloud',
+]);
+
+test('a Cloud URL with only a project name prefix is rejected', function () {
+    Http::preventStrayRequests();
+    Http::fake(['https://artisanbizopsfake.laravel.cloud' => Http::response('', 200)]);
+
+    $creator = User::factory()->create();
+    $project = Project::factory()->for($creator, 'creator')->create([
+        'live_url' => 'https://artisanbizops.com',
+    ]);
+
+    $this->actingAs($creator)
+        ->post(route('projects.verification.store', $project), [
+            'laravel_cloud_url' => 'https://artisanbizopsfake.laravel.cloud',
+        ])
+        ->assertRedirect(route('projects.edit', $project));
+
+    expect($project->fresh())
+        ->verification_status->toBe('failed')
+        ->verification_failure_reason->toBe('The Laravel Cloud URL name does not match the project live URL name.');
+
+    Http::assertSentCount(0);
+});
+
 test('a definitive Cloud response fails verification and withdraws the project', function (int $status) {
     Http::preventStrayRequests();
     Http::fake(['https://my-app-main.laravel.cloud' => Http::response('', $status)]);
@@ -297,23 +391,23 @@ test('an unrelated edit does not disturb verification', function () {
 
 test('a reachable Cloud URL cannot verify a project with an unrelated live URL', function () {
     Http::preventStrayRequests();
-    Http::fake(['https://example-main.laravel.cloud' => Http::response('', 200)]);
+    Http::fake(['https://other-app.laravel.cloud' => Http::response('', 200)]);
 
     $creator = User::factory()->create(['username' => 'creator']);
     $project = Project::factory()->for($creator, 'creator')->create([
-        'live_url' => 'https://example.com',
+        'live_url' => 'https://artisanbizops.com',
         'laravel_cloud_url' => null,
     ]);
     $this->actingAs($creator)
         ->post(route('projects.verification.store', $project), [
-            'laravel_cloud_url' => 'https://example-main.laravel.cloud',
+            'laravel_cloud_url' => 'https://other-app.laravel.cloud',
         ])
         ->assertRedirect(route('projects.edit', $project));
 
     expect($project->fresh())
         ->verification_status->toBe('failed')
         ->is_public->toBeFalse()
-        ->verification_failure_reason->toBe('The Laravel Cloud URL does not match the project live URL.');
+        ->verification_failure_reason->toBe('The Laravel Cloud URL name does not match the project live URL name.');
 
     Http::assertSentCount(0);
 });

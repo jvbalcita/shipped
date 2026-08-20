@@ -35,7 +35,7 @@ final class ProjectVerificationService
      */
     public function verify(Project $project, LaravelCloudUrl $url): Project
     {
-        if (! $this->matchesProjectLiveUrl($project, $url)) {
+        if (! $this->matchesProjectName($project, $url)) {
             return $this->rejectMismatchedUrl($project, $url);
         }
 
@@ -54,7 +54,7 @@ final class ProjectVerificationService
             return $project;
         }
 
-        if (! $this->matchesProjectLiveUrl($project, $url)) {
+        if (! $this->matchesProjectName($project, $url)) {
             return $this->rejectMismatchedUrl($project, $url);
         }
 
@@ -100,14 +100,63 @@ final class ProjectVerificationService
         ]);
     }
 
-    private function matchesProjectLiveUrl(Project $project, LaravelCloudUrl $url): bool
+    /**
+     * Match the normalized project name in the live hostname against the
+     * Laravel Cloud environment slug without using a Cloud API token.
+     *
+     * A custom domain may use `artisanbizops.com` while Cloud adds a
+     * deployment suffix such as `artisan-bizops-x1233.laravel.cloud`.
+     */
+    private function matchesProjectName(Project $project, LaravelCloudUrl $url): bool
     {
-        $projectHost = $project->live_url === null
+        $projectName = $project->live_url === null
             ? null
-            : HostnameNormalizer::normalize($project->live_url);
+            : $this->normalizedProjectName($project->live_url);
+        $cloudHost = HostnameNormalizer::normalize($url->host());
+        $cloudName = $cloudHost === null ? null : $this->normalizedProjectName($cloudHost);
 
-        return $projectHost !== null
-            && $projectHost === HostnameNormalizer::normalize($url->host());
+        if ($projectName === null || $cloudName === null) {
+            return false;
+        }
+
+        if ($cloudName === $projectName) {
+            return true;
+        }
+
+        if (! str_starts_with($cloudName, $projectName)) {
+            return false;
+        }
+
+        $cloudLabel = explode('.', $cloudHost, 2)[0];
+        $normalizedCharacters = 0;
+
+        foreach (str_split($cloudLabel) as $index => $character) {
+            if ($character === '-') {
+                continue;
+            }
+
+            $normalizedCharacters++;
+
+            if ($normalizedCharacters === strlen($projectName)) {
+                return ($cloudLabel[$index + 1] ?? null) === '-';
+            }
+        }
+
+        return false;
+    }
+
+    private function normalizedProjectName(string $urlOrHost): ?string
+    {
+        $host = HostnameNormalizer::normalize($urlOrHost);
+
+        if ($host === null) {
+            return null;
+        }
+
+        $label = explode('.', $host, 2)[0];
+        $name = preg_replace('/[^a-z0-9]/', '', mb_strtolower($label));
+
+        return is_string($name) && $name !== '' ? $name : null;
     }
 
     private function rejectMismatchedUrl(Project $project, LaravelCloudUrl $url): Project
@@ -117,7 +166,7 @@ final class ProjectVerificationService
             'verification_method' => 'cloud_url',
             'verification_status' => 'failed',
             'verification_checked_at' => now(),
-            'verification_failure_reason' => 'The Laravel Cloud URL does not match the project live URL.',
+            'verification_failure_reason' => 'The Laravel Cloud URL name does not match the project live URL name.',
             'is_public' => false,
         ]);
     }

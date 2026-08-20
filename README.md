@@ -15,7 +15,7 @@
 - Offers sign-in and account linking through GitHub and Google alongside email, passkeys, and two-factor authentication.
 - Lets GitHub-linked creators pick their repository from a searchable dropdown of their public repos while composing a launch.
 - Publishes release notes immediately or on a schedule.
-- Verifies a live URL by requiring a reachable Laravel Cloud URL with the same normalized hostname before public listing.
+- Verifies a live URL by requiring a reachable Laravel Cloud URL whose normalized project name matches the live hostname before public listing.
 - Provides a searchable public registry, creator profiles, and launch pages with a screenshot gallery and fullscreen preview.
 - Builds community loops: polymorphic cheers, reviews, comments, follows, and a private activity feed.
 - Ships a live **verification badge** (above) that creators drop into their READMEs.

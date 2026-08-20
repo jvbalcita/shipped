@@ -10,10 +10,12 @@ use Throwable;
 
 /**
  * Probes one Laravel Cloud URL for reachability without following
- * redirects. Every resolved address is checked against the public-address
- * allowlist before the request is sent, the body is streamed and discarded
- * under a byte ceiling, and no credentials or cookies are attached. The
- * probe never retries on its own: temporal retries belong to the scheduler.
+ * redirects to another origin. Same-origin redirects are accepted as
+ * reachable evidence without being followed. Every resolved address is
+ * checked against the public-address allowlist before the request is sent,
+ * the body is streamed and discarded under a byte ceiling, and no
+ * credentials or cookies are attached. The probe never retries on its own:
+ * temporal retries belong to the scheduler.
  */
 class LaravelCloudUrlProbe
 {
@@ -64,12 +66,21 @@ class LaravelCloudUrlProbe
         }
 
         try {
-            $status = $this->client()->head($url->url())->status();
+            $response = $this->client()->head($url->url());
+            $status = $response->status();
+
+            if ($this->isSameOriginRedirect($response, $url)) {
+                return $this->result(CloudUrlProbeOutcome::Reachable, $status, null, $startedAt);
+            }
 
             if ($status === 405 || $status === 501) {
                 $response = $this->client(stream: true)->get($url->url());
                 $this->discardBody($response);
                 $status = $response->status();
+
+                if ($this->isSameOriginRedirect($response, $url)) {
+                    return $this->result(CloudUrlProbeOutcome::Reachable, $status, null, $startedAt);
+                }
             }
         } catch (ConnectionException $exception) {
             return $this->result(
@@ -89,6 +100,38 @@ class LaravelCloudUrlProbe
             $status >= 500 => $this->result(CloudUrlProbeOutcome::RetryableFailure, $status, 'server_error', $startedAt),
             default => $this->result(CloudUrlProbeOutcome::DefinitiveFailure, $status, 'http_rejected', $startedAt),
         };
+    }
+
+    private function isSameOriginRedirect(Response $response, LaravelCloudUrl $url): bool
+    {
+        if ($response->status() < 300 || $response->status() >= 400) {
+            return false;
+        }
+
+        $location = $response->header('Location');
+
+        if (! is_string($location) || $location === '') {
+            return false;
+        }
+
+        if (str_starts_with($location, '/') && ! str_starts_with($location, '//')) {
+            return true;
+        }
+
+        $parts = parse_url($location);
+
+        if ($parts === false || ! isset($parts['scheme'], $parts['host'])) {
+            return false;
+        }
+
+        if (
+            strcasecmp((string) $parts['scheme'], 'https') !== 0
+            || isset($parts['user'], $parts['pass'], $parts['port'])
+        ) {
+            return false;
+        }
+
+        return mb_strtolower(rtrim((string) $parts['host'], '.')) === $url->host();
     }
 
     private function client(bool $stream = false): PendingRequest

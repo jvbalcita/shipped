@@ -153,9 +153,10 @@ function verify(): void {
                         </FieldError>
                         <FieldDescription>
                             Copy the HTTPS URL from Laravel Cloud under Network
-                            → Domains. It must use the same hostname as the
-                            project's Live URL; this URL is checked as deployment
-                            evidence, and Shipped never asks for an API token.
+                            → Domains. Its project name must match the project's
+                            Live URL name, even when Laravel Cloud adds a suffix;
+                            this URL is checked as deployment evidence, and
+                            Shipped never asks for an API token.
                         </FieldDescription>
                     </Field>
                     <div class="flex flex-wrap gap-3">
