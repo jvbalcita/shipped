@@ -15,7 +15,7 @@
 - Offers sign-in and account linking through GitHub and Google alongside email, passkeys, and two-factor authentication.
 - Lets GitHub-linked creators pick their repository from a searchable dropdown of their public repos while composing a launch.
 - Publishes release notes immediately or on a schedule.
-- Verifies a live URL against a connected Laravel Cloud environment before public listing.
+- Verifies a live URL by requiring a reachable Laravel Cloud URL whose normalized project name matches the live hostname before public listing.
 - Provides a searchable public registry, creator profiles, and launch pages with a screenshot gallery and fullscreen preview.
 - Builds community loops: polymorphic cheers, reviews, comments, follows, and a private activity feed.
 - Ships a live **verification badge** (above) that creators drop into their READMEs.
@@ -110,9 +110,15 @@ AWS_USE_PATH_STYLE_ENDPOINT=false
    php artisan db:seed --class=CategorySeeder --force
    ```
    A bare `db:seed --force` is equally safe: `DatabaseSeeder` only runs production-safe seeders, and demo content is limited to local/testing environments.
-8. Run a queue worker and scheduler if you enable scheduled release processing in your environment.
+8. When upgrading an installation with legacy token-backed verification, preview and apply the URL evidence backfill before enabling the new scheduled recheck:
+   ```bash
+   php artisan shipped:backfill-cloud-verification-urls --dry-run
+   php artisan shipped:backfill-cloud-verification-urls --apply --verify
+   ```
+   Review the manual-required and failed project IDs. Those projects remain private until a creator submits a matching Laravel Cloud URL; `--apply` never preserves old public verification by itself.
+9. Run a queue worker and scheduler if you enable scheduled release processing in your environment.
 
-Laravel Cloud API tokens supplied by creators are encrypted at rest, never displayed after submission, and Shipped uses them only for read-only Cloud requests. Their actual scope remains controlled by Laravel Cloud.
+Legacy Laravel Cloud API tokens are encrypted at rest, never displayed after submission, and remain available only for read-only environment backfill. New URL verification does not request an API token. The URL probe rejects redirects, non-public DNS destinations, and oversized fallback bodies, and it is rate-limited per creator/project.
 
 ## The verification badge
 

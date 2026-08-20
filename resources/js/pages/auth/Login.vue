@@ -2,6 +2,7 @@
 import { Form, Head } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import AuthDivider from '@/components/AuthDivider.vue';
+import BrandIcon from '@/components/BrandIcon.vue';
 import InputError from '@/components/InputError.vue';
 import PasskeyVerify from '@/components/PasskeyVerify.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
@@ -69,6 +70,16 @@ const pendingProvider = ref<string | null>(null);
             @click="pendingProvider = provider"
         >
             <Spinner v-if="pendingProvider === provider" />
+            <BrandIcon
+                v-else-if="provider === 'github'"
+                brand="github"
+                class="size-4"
+            />
+            <BrandIcon
+                v-else-if="provider === 'google'"
+                brand="google"
+                class="size-4"
+            />
             Continue with {{ providerLabels[provider] ?? provider }}
         </a>
     </div>

@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { ArrowUpRight, LogOut, Menu, Settings, ShieldCheck } from '@lucide/vue';
+import {
+    ArrowUpRight,
+    Flame,
+    LogOut,
+    Menu,
+    Settings,
+    ShieldCheck,
+} from '@lucide/vue';
 import CommandPalette from '@/components/shipped/CommandPalette.vue';
 import NotificationBell from '@/components/shipped/NotificationBell.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -297,8 +304,11 @@ const handleLogout = (): void => {
                 <p class="bg-background px-4 py-5 text-sm">
                     A public home for launches worth sharing.
                 </p>
-                <p class="bg-background px-4 py-5 text-sm sm:text-right">
-                    For Laravel builders.
+                <p
+                    class="inline-flex items-center gap-2 bg-background px-4 py-5 text-sm sm:justify-end"
+                >
+                    <Flame class="size-4 text-[#ff2d20]" aria-hidden="true" />
+                    For Laravel Builders
                 </p>
             </div>
         </footer>

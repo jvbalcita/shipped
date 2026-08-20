@@ -53,12 +53,16 @@ class ProjectFactory extends Factory
         return $this->state(fn () => [
             'verification_status' => 'unverified',
             'verified_at' => null,
+            'laravel_cloud_url' => null,
+            'verification_method' => null,
         ]);
     }
 
     public function verified(): static
     {
         return $this->state(fn () => [
+            'laravel_cloud_url' => 'https://'.str($this->faker->unique()->domainWord()).'-main.laravel.cloud',
+            'verification_method' => 'cloud_url',
             'verification_status' => 'verified',
             'verified_at' => now(),
         ]);
@@ -67,6 +71,8 @@ class ProjectFactory extends Factory
     public function failed(): static
     {
         return $this->state(fn () => [
+            'laravel_cloud_url' => 'https://'.str($this->faker->unique()->domainWord()).'-main.laravel.cloud',
+            'verification_method' => 'cloud_url',
             'verification_status' => 'failed',
             'verified_at' => null,
         ]);
@@ -75,6 +81,8 @@ class ProjectFactory extends Factory
     public function stale(): static
     {
         return $this->state(fn () => [
+            'laravel_cloud_url' => 'https://'.str($this->faker->unique()->domainWord()).'-main.laravel.cloud',
+            'verification_method' => 'cloud_url',
             'verification_status' => 'stale',
             'verified_at' => null,
         ]);

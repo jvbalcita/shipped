@@ -2,18 +2,12 @@ export * from './auth';
 export * from './navigation';
 export * from './ui';
 
-export interface CloudConnectionSummary {
-    status: string;
-    last_validated_at: string | null;
-    environment_count: number;
-}
+export type VerificationStatus = 'verified' | 'failed' | 'stale' | 'unverified';
 
-export interface ConnectedEnvironmentSummary {
-    id: number;
-    application_id: string;
-    application_name: string;
-    environment_id: string;
-    environment_name: string;
-    domains: string[];
-    synced_at: string | null;
+export interface ProjectVerification {
+    laravel_cloud_url: string | null;
+    verification_status: VerificationStatus;
+    verification_failure_reason: string | null;
+    verified_at: string | null;
+    verification_checked_at: string | null;
 }

@@ -1,21 +1,35 @@
-# Verify projects through Laravel Cloud
+# Verify projects through Laravel Cloud URL evidence
 
-Shipped will issue Verification by using one creator-provided Laravel Cloud API token to inspect selected Cloud environments and compare their configured domains with a project's normalized live hostname. The hostname must exactly match the environment's primary or custom domain, with `www.`, scheme, paths, queries, and trailing slashes ignored. A creator has one Cloud Connection and each project can bind to one Connected Environment. This is more trustworthy than creator-claimed verification while keeping the MVP read-only and avoiding deployment control.
+Shipped verifies a project through a creator-submitted Laravel Cloud environment URL. The submitted URL must be an HTTPS `*.laravel.cloud` origin, must resolve only to public addresses, must answer the hardened reachability probe with a successful response or same-origin redirect, and must begin with the same normalized project name as the project's live hostname. Normalization lowercases the hostname, removes one leading `www.`, removes a trailing dot, ignores scheme, port, path, query, and fragment, and removes separators from the first hostname label for the name comparison. This allows a custom domain such as `artisanbizops.com` to match Cloud slugs such as `artisan-bizops-x1233.laravel.cloud` or `artisanbizops-app.laravel.cloud`.
 
-The Cloud integration may list and inspect Laravel Cloud resources only. It must not trigger deployments, restart environments, or modify Laravel Cloud settings or resources.
+This direct URL evidence is the active verification contract because it avoids requesting a creator API token during normal project verification. The name comparison is a consistency check, not an independent proof of Laravel Cloud account ownership; the submitted URL must still be reachable and pass the probe safeguards. Verification rejects a name mismatch before making the outbound probe.
 
-Verification runs when a creator binds or rechecks an environment, then runs daily. A failed or stale recheck removes the public verified marker while retaining the last successful verification timestamp for the Creator Studio.
+The Cloud probe is read-only and must not trigger deployments, restart environments, follow redirects to another origin, attach credentials/cookies, contact private or special-use address space, or buffer an unbounded fallback response. Same-origin redirects such as an application redirect from `/` to `/login` count as reachable evidence but are never followed. A `405` or `501` HEAD response may use a streamed GET fallback, but the body is drained only to the configured ceiling and then closed.
+
+Verification runs when a creator submits or rechecks a URL, then runs daily. A failed, stale, mismatched, or legacy-pending recheck makes the project private and stores the last check reason. A successful recheck never republishes automatically; the creator must explicitly publish again.
 
 Public visibility requires both a published Release and a current verified state. Shipped is therefore a verified Laravel Cloud registry, not a general-purpose launch directory.
 
-Changing a Project's live URL or Connected Environment immediately makes it private. A failed or stale daily verification does the same. Shipped retains the Project and its Release history in Creator Studio, but never republishes automatically after later verification succeeds.
+The synchronous verification route is rate-limited per authenticated creator/project because DNS resolution and outbound HTTP probing are expensive. Rate limiting occurs before the probe is invoked.
 
-Cloud Connection is a dedicated one-to-one record owned by a Creator. It holds the encrypted token and connection health, while Projects only retain their selected Connected Environment evidence.
+## Legacy rollout
 
-Connected Environment is a record owned by Cloud Connection, carrying Cloud application/environment identifiers, names, and normalized domains. A Project references one Connected Environment instead of duplicating those values.
+Existing `cloud_connections` and `connected_environments` records are retained during the migration from token-backed evidence. Run the backfill in this order after the additive schema migration:
 
-Disconnect deletes the encrypted token and Connected Environment records, marks every affected Project unverified and private, and preserves the Project and Release history for later reconnection.
+```bash
+php artisan shipped:backfill-cloud-verification-urls --dry-run
+php artisan shipped:backfill-cloud-verification-urls --apply --verify
+php artisan shipped:refresh-cloud-verifications
+```
 
-When a scheduled Release reaches its publication time, Shipped may publish its Project only if the Project has a current verified state. Otherwise it remains private until the Creator restores verification and explicitly republishes.
+`--apply` writes only an unverified, private URL candidate. Only `--verify` can restore verified state after the candidate passes the exact live-host comparison and reachability probe. Zero or multiple Cloud hostname candidates require manual creator input; applying the command withdraws their old public verification. The daily recheck also scans legacy-connected projects and withdraws any project that still lacks URL evidence, so a missed backfill cannot leave stale public verification untouched.
 
-Demo Launches are available only in local and test environments. They have a distinct demo state and label, never a Laravel Cloud verification marker; production discovery accepts only verified Projects.
+Do not delete the legacy connection/environment records until the backfill report has been reviewed and all remaining projects have either been migrated or intentionally remediated. If the migration has already been recorded as applied in production, repair an actual partial schema with a new forward migration rather than editing the deployed migration.
+
+## State and publication rules
+
+Changing a project's live URL or stored Cloud URL immediately makes it private and requires verification again. A failed or stale daily verification does the same. Shipped retains the project and Release history in Creator Studio, but never republishes automatically after later verification succeeds.
+
+When a scheduled Release reaches its publication time, Shipped may publish its project only if the project remains verified. Otherwise the Release remains available in Creator Studio and the project stays private until the creator restores verification and explicitly republishes.
+
+Demo Launches are available only in local and test environments. They have a distinct demo state and label, never a Laravel Cloud verification marker; production discovery accepts only verified projects.

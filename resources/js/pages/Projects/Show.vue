@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link, useForm } from '@inertiajs/vue3';
 import {
+    Cloud,
     CornerUpLeft,
     Download,
     ExternalLink,
@@ -9,7 +10,6 @@ import {
     Link2,
     MessageSquare,
     Pencil,
-    ShieldCheck,
     Star,
     Trash2,
 } from '@lucide/vue';
@@ -237,7 +237,7 @@ async function copyManifestLink(): Promise<void> {
                         <span
                             v-if="project.verification_status === 'verified'"
                             class="technical-label inline-flex items-center gap-1 text-primary"
-                            ><ShieldCheck class="size-4" />Verified Laravel
+                            ><Cloud class="size-4" />Verified Laravel
                             Cloud</span
                         >
                     </div>

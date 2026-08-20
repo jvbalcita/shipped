@@ -1,61 +1,72 @@
 <script setup lang="ts">
-import { Link, useForm } from '@inertiajs/vue3';
-import { CheckCircle2, CloudOff, RefreshCw } from '@lucide/vue';
+import { useForm } from '@inertiajs/vue3';
+import { CheckCircle2, RefreshCw } from '@lucide/vue';
 import { computed, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { dashboard } from '@/routes';
+    Field,
+    FieldDescription,
+    FieldError,
+    FieldLabel,
+} from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
 import { store } from '@/routes/projects/verification';
-import type { ConnectedEnvironmentSummary } from '@/types';
+import type { ProjectVerification, VerificationStatus } from '@/types';
 
 const props = defineProps<{
-    project: {
-        slug: string;
-        connected_environment_id: number | null;
-        verification_status: string;
-        verification_failure_reason: string | null;
-        verified_at: string | null;
-        connected_environment: { environment_name: string } | null;
-    };
-    environments: ConnectedEnvironmentSummary[];
+    project: { slug: string } & ProjectVerification;
 }>();
 
 const form = useForm({
-    connected_environment_id: props.project.connected_environment_id
-        ? String(props.project.connected_environment_id)
-        : '',
+    laravel_cloud_url: props.project.laravel_cloud_url ?? '',
 });
 
 watch(
-    () => props.project.connected_environment_id,
-    (environmentId) => {
-        form.connected_environment_id = environmentId
-            ? String(environmentId)
-            : '';
+    () => props.project.laravel_cloud_url,
+    (url) => {
+        form.laravel_cloud_url = url ?? '';
     },
 );
 
-const hasConnection = computed(() => props.environments.length > 0);
 const isVerified = computed(
     () => props.project.verification_status === 'verified',
 );
 const isStale = computed(() => props.project.verification_status === 'stale');
 const isFailed = computed(() => props.project.verification_status === 'failed');
-const requiresReconnect = computed(
-    () =>
-        isStale.value ||
-        props.project.verification_failure_reason ===
-            'Laravel Cloud credentials are invalid. Reconnect Cloud and verify again.',
-);
+
+const statusTitle = computed<string>(() => {
+    if (isFailed.value) {
+        return 'Verification failed';
+    }
+
+    if (isStale.value) {
+        return 'Verification is stale';
+    }
+
+    return 'Verification required';
+});
+
+const statusDescription = computed<string>(() => {
+    if (isFailed.value || isStale.value) {
+        return (
+            props.project.verification_failure_reason ??
+            'The Laravel Cloud URL could not be verified. Try again.'
+        );
+    }
+
+    return 'Paste the environment URL from Laravel Cloud, then verify the deployment.';
+});
+
+const submitLabel = computed<string>(() => {
+    if (isVerified.value) {
+        return 'Recheck URL';
+    }
+
+    return isFailed.value || isStale.value ? 'Verify again' : 'Verify URL';
+});
+
 const verifiedAt = computed(() => {
     if (!props.project.verified_at) {
         return '';
@@ -72,10 +83,10 @@ function verify(): void {
         preserveScroll: true,
         onSuccess: (page) => {
             const project = page.props.project as
-                { verification_status?: string } | undefined;
+                { verification_status?: VerificationStatus } | undefined;
 
             if (project?.verification_status === 'verified') {
-                toast.success('Verified against Laravel Cloud.');
+                toast.success('Deployed on Laravel Cloud — URL verified.');
             }
         },
     });
@@ -92,113 +103,77 @@ function verify(): void {
 
             <div class="max-w-2xl">
                 <Alert
-                    v-if="!hasConnection"
-                    class="relative rounded-none border-foreground pr-20"
+                    v-if="isVerified"
+                    class="rounded-none border-foreground bg-secondary"
+                    data-test="verification-state"
                 >
-                    <CloudOff class="size-4" />
-                    <AlertTitle>Laravel Cloud is disconnected</AlertTitle>
+                    <CheckCircle2 class="size-4" />
+                    <AlertTitle>Deployed on Laravel Cloud</AlertTitle>
                     <AlertDescription>
-                        Connect Laravel Cloud to verify this project.
+                        {{ project.laravel_cloud_url }} answered the latest
+                        check{{ verifiedAt ? ` on ${verifiedAt}` : '' }}.
+                        Verification is evidence of deployment, not ownership.
                     </AlertDescription>
-                    <Button
-                        as-child
-                        variant="ghost"
-                        class="technical-label absolute top-2 right-2 h-auto px-2 text-primary hover:text-primary"
-                        data-test="connect-cloud"
-                    >
-                        <Link
-                            :href="dashboard()"
-                            aria-label="Connect Laravel Cloud from the dashboard"
-                            >CONNECT</Link
-                        >
-                    </Button>
                 </Alert>
 
                 <Alert
-                    v-else-if="isVerified"
-                    class="rounded-none border-foreground bg-secondary"
+                    v-else
+                    variant="destructive"
+                    class="rounded-none"
+                    data-test="verification-state"
                 >
-                    <CheckCircle2 class="size-4" />
-                    <AlertTitle>Verified</AlertTitle>
-                    <AlertDescription>
-                        Verified against
-                        {{ project.connected_environment?.environment_name }} on
-                        {{ verifiedAt }}.
-                    </AlertDescription>
+                    <AlertTitle>{{ statusTitle }}</AlertTitle>
+                    <AlertDescription>{{ statusDescription }}</AlertDescription>
                 </Alert>
 
-                <Alert v-else variant="destructive" class="rounded-none">
-                    <AlertTitle>{{
-                        isFailed
-                            ? 'Verification failed'
-                            : isStale
-                              ? 'Verification is stale'
-                              : 'Verification required'
-                    }}</AlertTitle>
-                    <AlertDescription>
-                        {{
-                            isFailed || isStale
-                                ? project.verification_failure_reason
-                                : 'Select an environment, then verify the live URL.'
-                        }}
-                    </AlertDescription>
-                </Alert>
-
-                <form
-                    v-if="hasConnection && !isVerified"
-                    class="mt-6 grid gap-4"
-                    @submit.prevent="verify"
-                >
+                <form class="mt-6 grid gap-4" @submit.prevent="verify">
                     <Field>
-                        <FieldLabel for="connected-environment"
-                            >Laravel Cloud environment</FieldLabel
+                        <FieldLabel for="laravel_cloud_url"
+                            >Laravel Cloud environment URL</FieldLabel
                         >
-                        <Select v-model="form.connected_environment_id">
-                            <SelectTrigger
-                                id="connected-environment"
-                                class="h-10 w-full rounded-none border-foreground"
-                            >
-                                <SelectValue
-                                    placeholder="Select an environment"
-                                />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem
-                                    v-for="environment in environments"
-                                    :key="environment.id"
-                                    :value="String(environment.id)"
-                                >
-                                    {{ environment.application_name }} /
-                                    {{ environment.environment_name }}
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <FieldError v-if="form.errors.connected_environment_id">
-                            {{ form.errors.connected_environment_id }}
+                        <Input
+                            id="laravel_cloud_url"
+                            v-model="form.laravel_cloud_url"
+                            type="url"
+                            inputmode="url"
+                            autocomplete="off"
+                            spellcheck="false"
+                            placeholder="https://your-app-main.laravel.cloud"
+                            :disabled="form.processing"
+                            :aria-invalid="
+                                Boolean(form.errors.laravel_cloud_url)
+                            "
+                            data-test="cloud-url-input"
+                            @update:model-value="
+                                form.clearErrors('laravel_cloud_url')
+                            "
+                        />
+                        <FieldError v-if="form.errors.laravel_cloud_url">
+                            {{ form.errors.laravel_cloud_url }}
                         </FieldError>
+                        <FieldDescription>
+                            Copy the HTTPS URL from Laravel Cloud under Network
+                            → Domains. Its project name must match the project's
+                            Live URL name, even when Laravel Cloud adds a suffix;
+                            this URL is checked as deployment evidence, and
+                            Shipped never asks for an API token.
+                        </FieldDescription>
                     </Field>
                     <div class="flex flex-wrap gap-3">
                         <Button
                             type="submit"
-                            :disabled="
-                                form.processing ||
-                                !form.connected_environment_id
+                            :disabled="form.processing"
+                            :data-test="
+                                isFailed || isStale
+                                    ? 'verification-retry'
+                                    : 'verify-cloud-url'
                             "
                         >
-                            <RefreshCw class="size-4" />
-                            {{
-                                isFailed || isStale
-                                    ? 'Verify again'
-                                    : 'Verify live URL'
-                            }}
-                        </Button>
-                        <Button
-                            v-if="requiresReconnect"
-                            as-child
-                            type="button"
-                            variant="outline"
-                        >
-                            <Link :href="dashboard()">Reconnect Cloud</Link>
+                            <RefreshCw
+                                class="size-4"
+                                :class="{ 'animate-spin': form.processing }"
+                            />
+                            {{ submitLabel }}
                         </Button>
                     </div>
                 </form>

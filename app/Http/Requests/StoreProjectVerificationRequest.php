@@ -3,10 +3,9 @@
 namespace App\Http\Requests;
 
 use App\Models\Project;
-use App\Models\User;
+use App\Rules\LaravelCloudUrlRule;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class StoreProjectVerificationRequest extends FormRequest
 {
@@ -22,16 +21,8 @@ class StoreProjectVerificationRequest extends FormRequest
      */
     public function rules(): array
     {
-        $user = $this->user();
-        $connection = $user instanceof User ? $user->cloudConnection()->first() : null;
-        $connectionId = $connection === null ? 0 : $connection->id;
-
         return [
-            'connected_environment_id' => [
-                'required',
-                'integer',
-                Rule::exists('connected_environments', 'id')->where('cloud_connection_id', $connectionId),
-            ],
+            'laravel_cloud_url' => ['required', 'string', 'max:255', new LaravelCloudUrlRule],
         ];
     }
 }
