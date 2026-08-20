@@ -16,11 +16,16 @@ use App\Observers\ProjectObserver;
 use App\Observers\ReleaseObserver;
 use App\Observers\ReviewObserver;
 use App\Policies\FollowPolicy;
+use App\Services\LaravelCloud\CloudHostResolver;
+use App\Services\LaravelCloud\SystemCloudHostResolver;
 use Carbon\CarbonImmutable;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -31,7 +36,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(CloudHostResolver::class, SystemCloudHostResolver::class);
     }
 
     /**
@@ -39,6 +44,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        RateLimiter::for('project-verification', function (Request $request): Limit {
+            $project = $request->route('project');
+
+            return Limit::perMinute(5)
+                ->by($request->user()->getAuthIdentifier().':'.($project instanceof Project ? $project->getKey() : 'unknown'));
+        });
+
         $this->configureDefaults();
         $this->registerObservers();
     }

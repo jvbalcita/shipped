@@ -53,7 +53,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('projects', ProjectController::class)->except(['show']);
     Route::post('projects/{project}/releases', [ProjectReleaseController::class, 'store'])->name('projects.releases.store');
     Route::patch('projects/{project}/visibility', [ProjectVisibilityController::class, 'update'])->name('projects.visibility.update');
-    Route::post('projects/{project}/verification', [ProjectVerificationController::class, 'store'])->name('projects.verification.store');
+    Route::post('projects/{project}/verification', [ProjectVerificationController::class, 'store'])
+        ->middleware('throttle:project-verification')
+        ->name('projects.verification.store');
     Route::post('projects/{project}/cheers', [ProjectCheerController::class, 'store'])->name('projects.cheers.store');
     Route::resource('projects.reviews', ProjectReviewController::class)
         ->only(['store', 'update', 'destroy'])

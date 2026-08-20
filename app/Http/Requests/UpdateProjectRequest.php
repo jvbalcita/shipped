@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use App\Enums\ProjectPricing;
 use App\Models\Project;
-use App\Models\User;
+use App\Rules\LaravelCloudUrlRule;
 use App\Rules\SquareImage;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
@@ -28,17 +28,13 @@ class UpdateProjectRequest extends FormRequest
      */
     public function rules(): array
     {
-        $user = $this->user();
-        $connection = $user instanceof User ? $user->cloudConnection()->first() : null;
-        $connectionId = $connection === null ? 0 : $connection->id;
-
         return [
             'name' => ['sometimes', 'required', 'string', 'max:120'],
             'tagline' => ['sometimes', 'required', 'string', 'max:160'],
             'description' => ['sometimes', 'required', 'string', 'max:2000'],
             'category_id' => ['sometimes', 'required', 'integer', 'exists:categories,id'],
             'live_url' => ['nullable', 'url', 'max:255'],
-            'connected_environment_id' => ['nullable', 'integer', Rule::exists('connected_environments', 'id')->where('cloud_connection_id', $connectionId)],
+            'laravel_cloud_url' => ['nullable', 'string', 'max:255', new LaravelCloudUrlRule],
             'github_url' => ['nullable', 'url', 'max:255'],
             'pricing' => ['sometimes', 'nullable', Rule::enum(ProjectPricing::class)],
             'launch_date' => ['sometimes', 'nullable', 'date'],

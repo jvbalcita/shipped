@@ -2,6 +2,7 @@
 
 use App\Models\Category;
 use App\Models\User;
+use App\Services\LaravelCloud\CloudHostResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
@@ -13,12 +14,23 @@ use Tests\TestCase;
 |
 | The closure you provide to your test functions is always bound to a specific PHPUnit test
 | case class. By default, that class is "PHPUnit\Framework\TestCase". Of course, you may
-| need to change it using the "pest()" function to bind different classes or traits.
-|
+| need to change what classes and traits to use via the "pest()" function to bind different classes, traits.
+
 */
 
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
+    ->beforeEach(function () {
+        // Verification probes resolve DNS through this seam; feature tests
+        // must stay deterministic and never contact a real resolver or URL.
+        $this->app->bind(CloudHostResolver::class, fn () => new class implements CloudHostResolver
+        {
+            public function addresses(string $host): array
+            {
+                return ['93.184.216.34'];
+            }
+        });
+    })
     ->in('Feature');
 
 /*

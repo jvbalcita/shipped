@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Concerns\Cheerable;
 use App\Concerns\Followable;
 use App\Enums\ProjectPricing;
+use App\Services\LaravelCloud\LaravelCloudUrl;
 use Carbon\CarbonInterface;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -41,10 +42,12 @@ class Project extends Model
         'cover_image_path',
         'logo_path',
         'live_url',
+        'laravel_cloud_url',
         'github_url',
         'pricing',
         'launch_date',
         'is_public',
+        'verification_method',
     ];
 
     protected $appends = ['cover_image_url', 'logo_url', 'filed_serial'];
@@ -65,6 +68,15 @@ class Project extends Model
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    public function cloudUrl(): ?LaravelCloudUrl
+    {
+        if ($this->laravel_cloud_url === null) {
+            return null;
+        }
+
+        return LaravelCloudUrl::tryFrom((string) $this->laravel_cloud_url);
     }
 
     /** @return BelongsTo<User, $this> */

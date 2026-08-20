@@ -2,153 +2,63 @@
 
 namespace App\Services\LaravelCloud;
 
-use App\Models\CloudConnection;
-use App\Models\ConnectedEnvironment;
 use App\Models\Project;
-use App\Services\LaravelCloud\Exceptions\CloudApiUnavailable;
-use App\Services\LaravelCloud\Exceptions\InvalidCloudToken;
 
 final class ProjectVerificationService
 {
-    public function __construct(private LaravelCloudClient $client) {}
+    public const string LEGACY_MIGRATION_REASON = 'Legacy verification requires a Laravel Cloud URL recheck.';
 
-    public function verify(Project $project, ConnectedEnvironment $environment): Project
+    /**
+     * Safe creator-facing copy per machine failure code. Values are stored
+     * in verification_failure_reason; codes themselves are diagnostics.
+     *
+     * @var array<string, string>
+     */
+    private const array FAILURE_REASONS = [
+        'dns_unavailable' => 'The Laravel Cloud URL could not be resolved. Try again shortly.',
+        'non_public_address' => 'The Laravel Cloud URL does not resolve to a public address and cannot be verified.',
+        'timeout' => 'The Laravel Cloud URL took too long to respond. Try again shortly.',
+        'tls_error' => 'The Laravel Cloud URL could not establish a secure connection.',
+        'rate_limited' => 'Laravel Cloud rate limited the verification check. Try again shortly.',
+        'server_error' => 'The Laravel Cloud URL returned a server error. Try again shortly.',
+        'http_rejected' => 'The Laravel Cloud URL rejected the verification request.',
+        'connection_failed' => 'The Laravel Cloud URL could not be reached. Try again shortly.',
+        'request_failed' => 'The Laravel Cloud URL could not be verified. Try again shortly.',
+    ];
+
+    public function __construct(private LaravelCloudUrlProbe $probe) {}
+
+    /**
+     * Verify a project through a freshly submitted Cloud URL. A reachable
+     * origin never publishes the project; any non-verified outcome makes
+     * it private.
+     */
+    public function verify(Project $project, LaravelCloudUrl $url): Project
     {
-        try {
-            $cloudEnvironment = $this->refreshEnvironment($environment);
-        } catch (InvalidCloudToken) {
-            return $this->transition($project, [
-                'connected_environment_id' => $environment->id,
-                'is_public' => false,
-                'verification_status' => 'failed',
-                'verification_checked_at' => now(),
-                'verification_failure_reason' => 'Laravel Cloud credentials are invalid. Reconnect Cloud and verify again.',
-            ]);
-        } catch (CloudApiUnavailable) {
-            return $this->transition($project, [
-                'connected_environment_id' => $environment->id,
-                'is_public' => false,
-                'verification_status' => 'stale',
-                'verification_checked_at' => now(),
-                'verification_failure_reason' => 'Laravel Cloud could not be reached.',
-            ]);
+        if (! $this->matchesProjectLiveUrl($project, $url)) {
+            return $this->rejectMismatchedUrl($project, $url);
         }
 
-        return $this->verifyAgainstEnvironment($project, $environment, $cloudEnvironment);
-    }
-
-    public function refresh(CloudConnection $connection): void
-    {
-        $environments = $connection->connectedEnvironments()->get();
-
-        try {
-            foreach ($environments as $environment) {
-                $environment->setRelation('cloudConnection', $connection);
-                $cloudEnvironment = $this->refreshEnvironment($environment);
-
-                Project::query()
-                    ->where('connected_environment_id', $environment->id)
-                    ->where('is_demo', false)
-                    ->each(fn (Project $project) => $this->verifyAgainstEnvironment($project, $environment, $cloudEnvironment));
-            }
-
-            $connection->forceFill([
-                'last_validated_at' => now(),
-                'last_error' => null,
-            ])->save();
-        } catch (InvalidCloudToken) {
-            $this->markConnectionInvalid($connection, $environments->modelKeys());
-        } catch (CloudApiUnavailable) {
-            $this->markConnectionStale($connection, $environments->modelKeys());
-        }
-    }
-
-    private function verifyAgainstEnvironment(Project $project, ConnectedEnvironment $environment, CloudEnvironmentData $cloudEnvironment): Project
-    {
-        if (! HostnameNormalizer::matches((string) $project->live_url, $cloudEnvironment->domains)) {
-            return $this->transition($project, [
-                'connected_environment_id' => $environment->id,
-                'is_public' => false,
-                'verification_status' => 'failed',
-                'verification_checked_at' => now(),
-                'verification_failure_reason' => 'The live URL does not match the selected Laravel Cloud environment.',
-            ]);
-        }
-
-        return $this->transition($project, [
-            'connected_environment_id' => $environment->id,
-            'verification_status' => 'verified',
-            'verified_at' => now(),
-            'verification_checked_at' => now(),
-            'verification_failure_reason' => null,
-        ]);
-    }
-
-    private function refreshEnvironment(ConnectedEnvironment $environment): CloudEnvironmentData
-    {
-        $connection = $environment->cloudConnection;
-        $cloudEnvironment = $this->client->getEnvironment(
-            $connection->api_token,
-            $environment->application_id,
-            $environment->environment_id,
-            $environment->application_name,
-        );
-
-        $environment->update([
-            'application_name' => $cloudEnvironment->applicationName,
-            'environment_name' => $cloudEnvironment->environmentName,
-            'domains' => $cloudEnvironment->domains,
-            'synced_at' => now(),
-        ]);
-
-        return $cloudEnvironment;
+        return $this->applyResult($project, $this->probe->probe($url), $url);
     }
 
     /**
-     * @param  array<int, int>  $environmentIds
+     * Recheck a project through its already-stored Cloud URL. Projects
+     * without URL evidence are returned untouched.
      */
-    private function markConnectionInvalid(CloudConnection $connection, array $environmentIds): void
+    public function refresh(Project $project): Project
     {
-        $connection->forceFill([
-            'status' => 'invalid',
-            'last_error' => 'Laravel Cloud credentials are invalid. Reconnect Cloud and verify again.',
-        ])->save();
+        $url = $project->cloudUrl();
 
-        $this->transitionProjectsForEnvironments($environmentIds, [
-            'is_public' => false,
-            'verification_status' => 'failed',
-            'verification_checked_at' => now(),
-            'verification_failure_reason' => 'Laravel Cloud credentials are invalid. Reconnect Cloud and verify again.',
-        ]);
-    }
+        if ($url === null) {
+            return $project;
+        }
 
-    /**
-     * @param  array<int, int>  $environmentIds
-     */
-    private function markConnectionStale(CloudConnection $connection, array $environmentIds): void
-    {
-        $connection->forceFill([
-            'last_error' => 'Laravel Cloud could not be reached.',
-        ])->save();
+        if (! $this->matchesProjectLiveUrl($project, $url)) {
+            return $this->rejectMismatchedUrl($project, $url);
+        }
 
-        $this->transitionProjectsForEnvironments($environmentIds, [
-            'is_public' => false,
-            'verification_status' => 'stale',
-            'verification_checked_at' => now(),
-            'verification_failure_reason' => 'Laravel Cloud could not be reached.',
-        ]);
-    }
-
-    /**
-     * @param  array<int, int>  $environmentIds
-     * @param  array<string, mixed>  $attributes
-     */
-    private function transitionProjectsForEnvironments(array $environmentIds, array $attributes): void
-    {
-        Project::query()
-            ->whereIn('connected_environment_id', $environmentIds)
-            ->where('is_demo', false)
-            ->update($attributes);
+        return $this->applyResult($project, $this->probe->probe($url), $url);
     }
 
     public function invalidate(Project $project, string $reason): void
@@ -157,8 +67,59 @@ final class ProjectVerificationService
             'is_public' => false,
             'verification_status' => 'unverified',
             'verified_at' => null,
+            'verification_checked_at' => now(),
             'verification_failure_reason' => $reason,
         ])->save();
+    }
+
+    private function applyResult(Project $project, CloudUrlProbeResult $result, LaravelCloudUrl $url): Project
+    {
+        if ($result->isReachable()) {
+            return $this->transition($project, [
+                'laravel_cloud_url' => $url->url(),
+                'verification_method' => 'cloud_url',
+                'verification_status' => 'verified',
+                'verified_at' => now(),
+                'verification_checked_at' => now(),
+                'verification_failure_reason' => null,
+                // Verification never publishes; is_public is left untouched.
+            ]);
+        }
+
+        return $this->transition($project, [
+            'laravel_cloud_url' => $url->url(),
+            'verification_method' => 'cloud_url',
+            'verification_status' => $result->outcome === CloudUrlProbeOutcome::DefinitiveFailure
+                ? 'failed'
+                : 'stale',
+            'verification_checked_at' => now(),
+            // verified_at survives as the last successful verification time.
+            'verification_failure_reason' => self::FAILURE_REASONS[$result->failureCode ?? '']
+                ?? self::FAILURE_REASONS['request_failed'],
+            'is_public' => false,
+        ]);
+    }
+
+    private function matchesProjectLiveUrl(Project $project, LaravelCloudUrl $url): bool
+    {
+        $projectHost = $project->live_url === null
+            ? null
+            : HostnameNormalizer::normalize($project->live_url);
+
+        return $projectHost !== null
+            && $projectHost === HostnameNormalizer::normalize($url->host());
+    }
+
+    private function rejectMismatchedUrl(Project $project, LaravelCloudUrl $url): Project
+    {
+        return $this->transition($project, [
+            'laravel_cloud_url' => $url->url(),
+            'verification_method' => 'cloud_url',
+            'verification_status' => 'failed',
+            'verification_checked_at' => now(),
+            'verification_failure_reason' => 'The Laravel Cloud URL does not match the project live URL.',
+            'is_public' => false,
+        ]);
     }
 
     /**

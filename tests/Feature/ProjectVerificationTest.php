@@ -5,195 +5,210 @@ use App\Models\ConnectedEnvironment;
 use App\Models\Project;
 use App\Models\Release;
 use App\Models\User;
+use App\Services\LaravelCloud\CloudUrlProbeOutcome;
+use App\Services\LaravelCloud\CloudUrlProbeResult;
+use App\Services\LaravelCloud\LaravelCloudUrl;
+use App\Services\LaravelCloud\LaravelCloudUrlProbe;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Inertia\Testing\AssertableInertia as Assert;
+use Mockery\MockInterface;
 
-function environmentPayload(array $domains): array
-{
-    return [
-        'data' => [
-            'id' => 'env-1',
-            'attributes' => ['name' => 'Production'],
-            'relationships' => [
-                'primaryDomain' => ['data' => ['id' => 'domain-1']],
-            ],
-        ],
-        'included' => [
-            ['id' => 'domain-1', 'attributes' => ['name' => $domains[0]]],
-        ],
-    ];
-}
+test('a reachable Cloud URL verifies a project without publishing it and without calling the Cloud API', function () {
+    Http::preventStrayRequests();
+    Http::fake(['https://my-app-main.laravel.cloud' => Http::response('', 200)]);
 
-test('a matching Cloud hostname verifies a project but does not publish it', function () {
     $creator = User::factory()->create();
-    $connection = CloudConnection::factory()->for($creator)->create(['api_token' => 'secret-token']);
-    $environment = ConnectedEnvironment::factory()->for($connection)->create([
-        'application_id' => 'app-1',
-        'environment_id' => 'env-1',
-        'domains' => ['old.shipped.test'],
-    ]);
-    $project = Project::factory()->for($creator, 'creator')->create(['live_url' => 'https://shipped.test']);
-
-    Http::fake([
-        'https://cloud.laravel.com/api/environments/env-1*' => Http::response(environmentPayload(['shipped.test'])),
+    $project = Project::factory()->for($creator, 'creator')->create([
+        'is_public' => false,
+        'live_url' => 'https://WWW.My-App-Main.Laravel.Cloud./launch?source=creator#top',
     ]);
 
     $this->actingAs($creator)
         ->post(route('projects.verification.store', $project), [
-            'connected_environment_id' => $environment->id,
+            'laravel_cloud_url' => 'https://My-App-Main.Laravel.Cloud/',
         ])
         ->assertRedirect(route('projects.edit', $project));
 
     expect($project->fresh())
         ->verification_status->toBe('verified')
+        ->laravel_cloud_url->toBe('https://my-app-main.laravel.cloud')
+        ->verification_method->toBe('cloud_url')
         ->is_public->toBeFalse()
-        ->and($environment->fresh()->domains)->toBe(['shipped.test']);
+        ->verified_at->not->toBeNull()
+        ->verification_checked_at->not->toBeNull()
+        ->verification_failure_reason->toBeNull();
+
+    Http::assertNotSent(fn (Request $request) => str_contains($request->url(), 'cloud.laravel.com/api'));
 });
 
-test('verification matches a paginated custom Cloud domain and repairs the application label', function () {
+test('a HEAD rejection falls back to a bounded GET when the origin answers 405', function () {
     Http::preventStrayRequests();
+    Http::fake(['https://my-app-main.laravel.cloud' => Http::sequence([
+        Http::response('', 405),
+        Http::response('live', 200),
+    ])]);
 
     $creator = User::factory()->create();
-    $connection = CloudConnection::factory()->for($creator)->create(['api_token' => 'secret-token']);
-    $environment = ConnectedEnvironment::factory()->for($connection)->create([
-        'application_id' => 'app-1',
-        'application_name' => 'app-a1cef50f-b4a5-4ec4-a398-74f83dcc8f08',
-        'environment_id' => 'env-1',
-        'domains' => ['old.artisanbizops.com'],
-    ]);
     $project = Project::factory()->for($creator, 'creator')->create([
-        'live_url' => 'https://www.artisanbizops.com',
-    ]);
-
-    Http::fake([
-        'https://cloud.laravel.com/api/environments/env-1?include=primaryDomain,application' => Http::response([
-            'data' => [
-                'id' => 'env-1',
-                'attributes' => ['name' => 'main'],
-                'relationships' => [
-                    'application' => ['data' => ['id' => 'app-1']],
-                ],
-            ],
-            'included' => [
-                ['id' => 'app-1', 'type' => 'applications', 'attributes' => ['name' => 'Artisan Jack']],
-            ],
-        ]),
-        'https://cloud.laravel.com/api/environments/env-1/domains' => Http::response([
-            'data' => [
-                ['id' => 'domain-1', 'attributes' => ['domain' => 'preview.artisanbizops.com']],
-            ],
-            'links' => [
-                'next' => 'https://cloud.laravel.com/api/environments/env-1/domains?page=2',
-            ],
-        ]),
-        'https://cloud.laravel.com/api/environments/env-1/domains?page=2' => Http::response([
-            'data' => [
-                ['id' => 'domain-2', 'attributes' => ['domain' => 'artisanbizops.com']],
-            ],
-            'links' => ['next' => null],
-        ]),
+        'live_url' => 'https://my-app-main.laravel.cloud',
     ]);
 
     $this->actingAs($creator)
         ->post(route('projects.verification.store', $project), [
-            'connected_environment_id' => $environment->id,
+            'laravel_cloud_url' => 'https://my-app-main.laravel.cloud',
         ])
         ->assertRedirect(route('projects.edit', $project));
 
-    expect($project->fresh()->verification_status)->toBe('verified')
-        ->and($environment->fresh())
-        ->application_name->toBe('Artisan Jack')
-        ->domains->toBe([
-            'preview.artisanbizops.com',
-            'artisanbizops.com',
-        ]);
+    expect($project->fresh()->verification_status)->toBe('verified');
 
-    Http::assertSentCount(3);
+    Http::assertSentInOrder([
+        fn (Request $request) => $request->method() === 'HEAD',
+        fn (Request $request) => $request->method() === 'GET',
+    ]);
 });
 
-test('a host mismatch fails verification and withdraws the project', function () {
-    $creator = User::factory()->create();
-    $connection = CloudConnection::factory()->for($creator)->create();
-    $environment = ConnectedEnvironment::factory()->for($connection)->create([
-        'application_id' => 'app-1',
-        'environment_id' => 'env-1',
-    ]);
-    $project = Project::factory()->public()->for($creator, 'creator')->create(['live_url' => 'https://other.test']);
+test('a definitive Cloud response fails verification and withdraws the project', function (int $status) {
+    Http::preventStrayRequests();
+    Http::fake(['https://my-app-main.laravel.cloud' => Http::response('', $status)]);
 
-    Http::fake([
-        'https://cloud.laravel.com/api/environments/env-1*' => Http::response(environmentPayload(['shipped.test'])),
+    $creator = User::factory()->create();
+    $project = Project::factory()->public()->for($creator, 'creator')->create([
+        'laravel_cloud_url' => null,
+        'live_url' => 'https://my-app-main.laravel.cloud',
     ]);
 
     $this->actingAs($creator)
-        ->post(route('projects.verification.store', $project), ['connected_environment_id' => $environment->id])
+        ->post(route('projects.verification.store', $project), [
+            'laravel_cloud_url' => 'https://my-app-main.laravel.cloud',
+        ])
         ->assertRedirect(route('projects.edit', $project));
 
     expect($project->fresh())
         ->is_public->toBeFalse()
         ->verification_status->toBe('failed')
-        ->verification_failure_reason->toBe('The live URL does not match the selected Laravel Cloud environment.');
-});
+        ->laravel_cloud_url->toBe('https://my-app-main.laravel.cloud')
+        ->verification_failure_reason->toBe('The Laravel Cloud URL rejected the verification request.');
+})->with([
+    'not found' => [404],
+    'unauthorized origin' => [401],
+    'redirect to custom domain' => [301],
+]);
 
-test('an unavailable Cloud API marks verification as stale and withdraws the project', function () {
+test('a retryable Cloud outcome marks verification stale, withdraws the project, and keeps verified_at', function (callable $fakeResponse) {
+    Http::preventStrayRequests();
+    $fakeResponse();
+
     $creator = User::factory()->create();
-    $connection = CloudConnection::factory()->for($creator)->create();
-    $environment = ConnectedEnvironment::factory()->for($connection)->create([
-        'application_id' => 'app-1',
-        'environment_id' => 'env-1',
-    ]);
-    $project = Project::factory()->public()->for($creator, 'creator')->create();
-
-    Http::fake([
-        'https://cloud.laravel.com/api/environments/env-1*' => Http::response([], 503),
+    $verifiedAt = now()->subDay()->startOfSecond();
+    $project = Project::factory()->public()->for($creator, 'creator')->create([
+        'laravel_cloud_url' => null,
+        'verified_at' => $verifiedAt,
+        'live_url' => 'https://my-app-main.laravel.cloud',
     ]);
 
     $this->actingAs($creator)
-        ->post(route('projects.verification.store', $project), ['connected_environment_id' => $environment->id])
+        ->post(route('projects.verification.store', $project), [
+            'laravel_cloud_url' => 'https://my-app-main.laravel.cloud',
+        ])
         ->assertRedirect(route('projects.edit', $project));
 
     expect($project->fresh())
         ->is_public->toBeFalse()
         ->verification_status->toBe('stale')
-        ->verification_failure_reason->toBe('Laravel Cloud could not be reached.');
-});
+        ->verified_at->equalTo($verifiedAt)->toBeTrue()
+        ->verification_checked_at->not->toBeNull()
+        ->and($project->fresh()->verification_failure_reason)->toBeString();
+})->with([
+    'server error' => [fn () => Http::fake(['https://my-app-main.laravel.cloud' => Http::response('', 503)])],
+    'rate limited' => [fn () => Http::fake(['https://my-app-main.laravel.cloud' => Http::response('', 429)])],
+    'timeout' => [fn () => Http::fake(['https://my-app-main.laravel.cloud' => Http::failedConnection('cURL error 28: Operation timed out')])],
+    'connection refused' => [fn () => Http::fake(['https://my-app-main.laravel.cloud' => Http::failedConnection('cURL error 7: Connection refused')])],
+]);
 
-test('invalid Cloud credentials require reconnection and withdraw the project', function (int $status): void {
+test('a successful retry restores verification without automatically republishing', function () {
+    Http::preventStrayRequests();
+    Http::fake(['https://my-app-main.laravel.cloud' => Http::response('', 200)]);
+
     $creator = User::factory()->create();
-    $connection = CloudConnection::factory()->for($creator)->create();
-    $environment = ConnectedEnvironment::factory()->for($connection)->create([
-        'application_id' => 'app-1',
-        'environment_id' => 'env-1',
-    ]);
-    $project = Project::factory()->public()->for($creator, 'creator')->create();
-
-    Http::fake([
-        'https://cloud.laravel.com/api/environments/env-1*' => Http::response([], $status),
+    $project = Project::factory()->stale()->for($creator, 'creator')->create([
+        'is_public' => false,
+        'laravel_cloud_url' => 'https://my-app-main.laravel.cloud',
+        'live_url' => 'https://my-app-main.laravel.cloud',
     ]);
 
     $this->actingAs($creator)
-        ->post(route('projects.verification.store', $project), ['connected_environment_id' => $environment->id])
+        ->post(route('projects.verification.store', $project), [
+            'laravel_cloud_url' => 'https://my-app-main.laravel.cloud',
+        ])
         ->assertRedirect(route('projects.edit', $project));
 
     expect($project->fresh())
-        ->is_public->toBeFalse()
-        ->verification_status->toBe('failed')
-        ->verification_failure_reason->toBe('Laravel Cloud credentials are invalid. Reconnect Cloud and verify again.');
-})->with([401, 403]);
+        ->verification_status->toBe('verified')
+        ->verification_failure_reason->toBeNull()
+        ->is_public->toBeFalse();
+});
 
-test('verification rejects an environment owned by another creator', function () {
+test('verification rejects URLs outside the exact Cloud origin', function (string $url) {
+    Http::preventStrayRequests();
+
     $creator = User::factory()->create();
     $project = Project::factory()->for($creator, 'creator')->create();
-    $environment = ConnectedEnvironment::factory()->create();
 
     $this->actingAs($creator)
         ->from(route('projects.edit', $project))
-        ->post(route('projects.verification.store', $project), ['connected_environment_id' => $environment->id])
+        ->post(route('projects.verification.store', $project), ['laravel_cloud_url' => $url])
         ->assertRedirect(route('projects.edit', $project))
-        ->assertSessionHasErrors('connected_environment_id');
+        ->assertSessionHasErrors('laravel_cloud_url');
+
+    expect($project->fresh()->verification_status)->toBe('unverified');
+})->with([
+    'http scheme' => 'http://my-app-main.laravel.cloud',
+    'custom domain' => 'https://example.com',
+    'multi-level cloud host' => 'https://foo.bar.laravel.cloud',
+    'path' => 'https://my-app-main.laravel.cloud/health',
+    'missing url' => '',
+]);
+
+test('only the project creator can verify a project', function () {
+    $creator = User::factory()->create();
+    $intruder = User::factory()->create();
+    $project = Project::factory()->for($creator, 'creator')->create(['laravel_cloud_url' => null]);
+
+    $this->actingAs($intruder)
+        ->post(route('projects.verification.store', $project), [
+            'laravel_cloud_url' => 'https://my-app-main.laravel.cloud',
+        ])
+        ->assertForbidden();
+
+    expect($project->fresh()->verification_status)->toBe('unverified');
+});
+
+test('the studio edit page exposes Cloud URL evidence without legacy connection data', function () {
+    $creator = User::factory()->create();
+    $connection = CloudConnection::factory()->for($creator)->create(['api_token' => 'never-expose-this-token']);
+    $environment = ConnectedEnvironment::factory()->for($connection)->create();
+    $project = Project::factory()->verified()->for($creator, 'creator')->create([
+        'connected_environment_id' => $environment->id,
+        'laravel_cloud_url' => 'https://my-app-main.laravel.cloud',
+    ]);
+
+    $this->actingAs($creator)
+        ->get(route('projects.edit', $project))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Projects/Edit')
+            ->where('project.laravel_cloud_url', 'https://my-app-main.laravel.cloud')
+            ->where('project.verification_status', 'verified')
+            ->where('project.verification_method', 'cloud_url')
+            ->missing('connectedEnvironments')
+            ->missing('project.api_token'));
 });
 
 test('updating a live URL invalidates verification and public visibility', function () {
     $creator = User::factory()->create();
     $project = Project::factory()->public()->for($creator, 'creator')->create([
+        'laravel_cloud_url' => 'https://my-app-main.laravel.cloud',
         'live_url' => 'https://before.test',
         'verification_checked_at' => now()->subDay(),
     ]);
@@ -206,27 +221,101 @@ test('updating a live URL invalidates verification and public visibility', funct
         ->is_public->toBeFalse()
         ->verification_status->toBe('unverified')
         ->verified_at->toBeNull()
+        ->laravel_cloud_url->toBe('https://my-app-main.laravel.cloud')
         ->verification_failure_reason->toBe('The live URL changed and must be verified again.');
 });
 
-test('updating the selected environment invalidates verification and public visibility', function () {
+test('changing the Laravel Cloud URL invalidates verification and public visibility', function () {
     $creator = User::factory()->create();
-    $connection = CloudConnection::factory()->for($creator)->create();
-    $currentEnvironment = ConnectedEnvironment::factory()->for($connection)->create();
-    $replacementEnvironment = ConnectedEnvironment::factory()->for($connection)->create();
     $project = Project::factory()->public()->for($creator, 'creator')->create([
-        'connected_environment_id' => $currentEnvironment->id,
+        'laravel_cloud_url' => 'https://old-main.laravel.cloud',
+        'verification_checked_at' => now()->subDay(),
     ]);
 
     $this->actingAs($creator)
-        ->patch(route('projects.update', $project), ['connected_environment_id' => $replacementEnvironment->id])
+        ->patch(route('projects.update', $project), ['laravel_cloud_url' => 'https://new-main.laravel.cloud'])
         ->assertRedirect(route('projects.edit', $project));
 
     expect($project->fresh())
         ->is_public->toBeFalse()
         ->verification_status->toBe('unverified')
         ->verified_at->toBeNull()
-        ->verification_failure_reason->toBe('The selected Laravel Cloud environment changed and must be verified again.');
+        ->laravel_cloud_url->toBe('https://new-main.laravel.cloud')
+        ->verification_failure_reason->toBe('The Laravel Cloud URL changed and must be verified again.');
+});
+
+test('clearing the Laravel Cloud URL invalidates verification and public visibility', function () {
+    $creator = User::factory()->create();
+    $project = Project::factory()->public()->for($creator, 'creator')->create([
+        'laravel_cloud_url' => 'https://my-app-main.laravel.cloud',
+        'verification_checked_at' => now()->subDay(),
+    ]);
+
+    $this->actingAs($creator)
+        ->patch(route('projects.update', $project), ['laravel_cloud_url' => null])
+        ->assertRedirect(route('projects.edit', $project));
+
+    expect($project->fresh())
+        ->is_public->toBeFalse()
+        ->verification_status->toBe('unverified')
+        ->laravel_cloud_url->toBeNull()
+        ->verification_failure_reason->toBe('The Laravel Cloud URL changed and must be verified again.');
+});
+
+test('a canonically equivalent Cloud URL edit keeps verification intact', function () {
+    $creator = User::factory()->create();
+    $project = Project::factory()->public()->for($creator, 'creator')->create([
+        'laravel_cloud_url' => 'https://my-app-main.laravel.cloud',
+        'verification_checked_at' => now()->subDay(),
+    ]);
+
+    $this->actingAs($creator)
+        ->patch(route('projects.update', $project), ['laravel_cloud_url' => 'HTTPS://My-App-Main.Laravel.Cloud./'])
+        ->assertRedirect(route('projects.edit', $project));
+
+    expect($project->fresh())
+        ->is_public->toBeTrue()
+        ->verification_status->toBe('verified')
+        ->laravel_cloud_url->toBe('https://my-app-main.laravel.cloud');
+});
+
+test('an unrelated edit does not disturb verification', function () {
+    $creator = User::factory()->create();
+    $project = Project::factory()->public()->for($creator, 'creator')->create([
+        'laravel_cloud_url' => 'https://my-app-main.laravel.cloud',
+        'verification_checked_at' => now()->subDay(),
+    ]);
+
+    $this->actingAs($creator)
+        ->patch(route('projects.update', $project), ['tagline' => 'A fresh one-liner.'])
+        ->assertRedirect(route('projects.edit', $project));
+
+    expect($project->fresh())
+        ->is_public->toBeTrue()
+        ->verification_status->toBe('verified');
+});
+
+test('a reachable Cloud URL cannot verify a project with an unrelated live URL', function () {
+    Http::preventStrayRequests();
+    Http::fake(['https://example-main.laravel.cloud' => Http::response('', 200)]);
+
+    $creator = User::factory()->create(['username' => 'creator']);
+    $project = Project::factory()->for($creator, 'creator')->create([
+        'live_url' => 'https://example.com',
+        'laravel_cloud_url' => null,
+    ]);
+    $this->actingAs($creator)
+        ->post(route('projects.verification.store', $project), [
+            'laravel_cloud_url' => 'https://example-main.laravel.cloud',
+        ])
+        ->assertRedirect(route('projects.edit', $project));
+
+    expect($project->fresh())
+        ->verification_status->toBe('failed')
+        ->is_public->toBeFalse()
+        ->verification_failure_reason->toBe('The Laravel Cloud URL does not match the project live URL.');
+
+    Http::assertSentCount(0);
 });
 
 test('an unverified project cannot become public even with a published release', function () {
@@ -254,70 +343,165 @@ test('only verified published projects are discoverable to guests', function () 
     $this->get(route('projects.show', ['creator' => $creator, 'project' => $unverified]))->assertNotFound();
 });
 
-test('daily rechecks invalidate a connection and withdraw every bound project when its token is invalid', function () {
+test('verification probes are rate limited per creator and project', function () {
     $creator = User::factory()->create();
-    $connection = CloudConnection::factory()->for($creator)->create(['api_token' => 'invalid-token']);
-    $environment = ConnectedEnvironment::factory()->for($connection)->create([
-        'application_id' => 'app-1',
-        'environment_id' => 'env-1',
-    ]);
-    $firstProject = Project::factory()->public()->for($creator, 'creator')->create([
-        'connected_environment_id' => $environment->id,
-    ]);
-    $secondProject = Project::factory()->verified()->for($creator, 'creator')->create([
-        'connected_environment_id' => $environment->id,
+    $project = Project::factory()->for($creator, 'creator')->create([
+        'live_url' => 'https://my-app-main.laravel.cloud',
     ]);
 
-    Http::fake([
-        'https://cloud.laravel.com/api/environments/env-1*' => Http::response([], 401),
-    ]);
+    $this->mock(LaravelCloudUrlProbe::class, function (MockInterface $mock): void {
+        $mock->shouldReceive('probe')->times(5)->andReturn(
+            new CloudUrlProbeResult(CloudUrlProbeOutcome::Reachable, 200, null, 1),
+        );
+    });
 
-    $this->artisan('shipped:refresh-cloud-verifications')->assertSuccessful();
+    foreach (range(1, 5) as $_) {
+        $this->actingAs($creator)
+            ->post(route('projects.verification.store', $project), [
+                'laravel_cloud_url' => 'https://my-app-main.laravel.cloud',
+            ])
+            ->assertRedirect();
+    }
 
-    expect($connection->fresh())
-        ->status->toBe('invalid')
-        ->and($firstProject->fresh())
-        ->is_public->toBeFalse()
-        ->verification_status->toBe('failed')
-        ->and($secondProject->fresh())
-        ->is_public->toBeFalse()
-        ->verification_status->toBe('failed');
+    $this->actingAs($creator)
+        ->post(route('projects.verification.store', $project), [
+            'laravel_cloud_url' => 'https://my-app-main.laravel.cloud',
+        ])
+        ->assertTooManyRequests();
 });
 
-test('daily rechecks make retryable failures stale without clearing verification evidence and continue', function () {
-    $unavailableCreator = User::factory()->create();
-    $unavailableConnection = CloudConnection::factory()->for($unavailableCreator)->create(['api_token' => 'unavailable-token']);
-    $unavailableEnvironment = ConnectedEnvironment::factory()->for($unavailableConnection)->create([
-        'application_id' => 'app-unavailable',
-        'environment_id' => 'env-unavailable',
-    ]);
-    $verifiedAt = now()->subDay()->startOfSecond();
-    $unavailableProject = Project::factory()->public()->for($unavailableCreator, 'creator')->create([
-        'connected_environment_id' => $unavailableEnvironment->id,
-        'verified_at' => $verifiedAt,
+test('the daily recheck withdraws legacy verified projects instead of skipping them', function () {
+    Http::preventStrayRequests();
+
+    $creator = User::factory()->create();
+    $connection = CloudConnection::factory()->for($creator)->create();
+    $environment = ConnectedEnvironment::factory()->for($connection)->create();
+    $project = Project::factory()->for($creator, 'creator')->create([
+        'connected_environment_id' => $environment->id,
+        'is_public' => true,
+        'verification_status' => 'verified',
+        'verified_at' => now()->subDay(),
+        'laravel_cloud_url' => null,
     ]);
 
-    $validCreator = User::factory()->create();
-    $validConnection = CloudConnection::factory()->for($validCreator)->create(['api_token' => 'valid-token']);
-    $validEnvironment = ConnectedEnvironment::factory()->for($validConnection)->create([
-        'application_id' => 'app-valid',
-        'environment_id' => 'env-valid',
-    ]);
-    $validProject = Project::factory()->for($validCreator, 'creator')->create([
-        'connected_environment_id' => $validEnvironment->id,
-        'live_url' => 'https://valid.shipped.test',
-    ]);
+    $this->artisan('shipped:refresh-cloud-verifications')
+        ->expectsOutputToContain('legacy pending 1')
+        ->assertSuccessful();
 
-    Http::fake([
-        'https://cloud.laravel.com/api/environments/env-unavailable*' => Http::response([], 503),
-        'https://cloud.laravel.com/api/environments/env-valid*' => Http::response(environmentPayload(['valid.shipped.test'])),
-    ]);
-
-    $this->artisan('shipped:refresh-cloud-verifications')->assertSuccessful();
-
-    expect($unavailableProject->fresh())
+    expect($project->fresh())
         ->is_public->toBeFalse()
+        ->verification_status->toBe('unverified')
+        ->verification_failure_reason->toBe('Legacy verification requires a Laravel Cloud URL recheck.')
+        ->verification_checked_at->not->toBeNull();
+
+    Http::assertSentCount(0);
+});
+
+test('the daily recheck probes URL-backed projects and reports aggregate counters', function () {
+    Http::preventStrayRequests();
+    Http::fake([
+        'https://healthy-main.laravel.cloud' => Http::response('', 200),
+        'https://broken-main.laravel.cloud' => Http::response('', 404),
+        'https://flaky-main.laravel.cloud' => Http::response('', 503),
+    ]);
+
+    $creator = User::factory()->create();
+    $healthy = Project::factory()->verified()->for($creator, 'creator')->create([
+        'laravel_cloud_url' => 'https://healthy-main.laravel.cloud',
+        'live_url' => 'https://healthy-main.laravel.cloud',
+        'is_public' => true,
+    ]);
+    $broken = Project::factory()->verified()->for($creator, 'creator')->create([
+        'laravel_cloud_url' => 'https://broken-main.laravel.cloud',
+        'live_url' => 'https://broken-main.laravel.cloud',
+        'is_public' => true,
+    ]);
+    $flakyVerifiedAt = now()->subDay()->startOfSecond();
+    $flaky = Project::factory()->verified()->for($creator, 'creator')->create([
+        'laravel_cloud_url' => 'https://flaky-main.laravel.cloud',
+        'live_url' => 'https://flaky-main.laravel.cloud',
+        'is_public' => true,
+        'verified_at' => $flakyVerifiedAt,
+    ]);
+    $legacy = Project::factory()->unverified()->for($creator, 'creator')->create([
+        'laravel_cloud_url' => null,
+    ]);
+    $demo = Project::factory()->verified()->demo()->for($creator, 'creator')->create([
+        'laravel_cloud_url' => 'https://demo-main.laravel.cloud',
+        'live_url' => 'https://demo-main.laravel.cloud',
+        'is_public' => true,
+    ]);
+
+    $this->artisan('shipped:refresh-cloud-verifications')
+        ->expectsOutputToContain('Rechecked 3 project(s): 1 verified, 1 failed, 1 stale, 0 exception(s)')
+        ->assertSuccessful();
+
+    expect($healthy->fresh())
+        ->verification_status->toBe('verified')
+        ->is_public->toBeTrue()
+        ->and($broken->fresh())
+        ->verification_status->toBe('failed')
+        ->is_public->toBeFalse()
+        ->and($flaky->fresh())
         ->verification_status->toBe('stale')
-        ->verified_at->toEqual($verifiedAt)
-        ->and($validProject->fresh()->verification_status)->toBe('verified');
+        ->is_public->toBeFalse()
+        ->verified_at->equalTo($flakyVerifiedAt)->toBeTrue()
+        ->and($legacy->fresh()->verification_checked_at)->toBeNull()
+        ->and($demo->fresh()->verification_checked_at)->toBeNull();
+});
+
+test('the daily recheck continues after an unexpected per-project exception', function () {
+    Http::preventStrayRequests();
+    Http::fake(['https://healthy-main.laravel.cloud' => Http::response('', 200)]);
+
+    $creator = User::factory()->create();
+    $exploding = Project::factory()->verified()->for($creator, 'creator')->create([
+        'laravel_cloud_url' => 'https://exploding-main.laravel.cloud',
+        'live_url' => 'https://exploding-main.laravel.cloud',
+    ]);
+    $healthy = Project::factory()->verified()->for($creator, 'creator')->create([
+        'laravel_cloud_url' => 'https://healthy-main.laravel.cloud',
+        'live_url' => 'https://healthy-main.laravel.cloud',
+    ]);
+
+    $probe = app(LaravelCloudUrlProbe::class);
+
+    $this->mock(LaravelCloudUrlProbe::class, function (MockInterface $mock) use ($probe): void {
+        $mock->shouldReceive('probe')->andReturnUsing(
+            fn (LaravelCloudUrl $url) => $url->host() === 'exploding-main.laravel.cloud'
+                ? throw new RuntimeException('probe exploded')
+                : $probe->probe($url),
+        );
+    });
+
+    $this->artisan('shipped:refresh-cloud-verifications')
+        ->expectsOutputToContain('Rechecked 1 project(s): 1 verified, 0 failed, 0 stale, 1 exception(s)')
+        ->assertSuccessful();
+
+    expect($healthy->fresh()->verification_status)->toBe('verified')
+        ->and($exploding->fresh()->verification_status)->toBe('verified');
+});
+
+test('the daily recheck processes every chunk', function () {
+    Http::preventStrayRequests();
+    Http::fake(['*' => Http::response('', 200)]);
+
+    $creator = User::factory()->create();
+
+    Project::factory()
+        ->count(101)
+        ->sequence(function ($sequence): array {
+            $url = 'https://app-'.(($sequence->index % 50) + 1).'-main.laravel.cloud';
+
+            return [
+                'laravel_cloud_url' => $url,
+                'live_url' => $url,
+            ];
+        })
+        ->for($creator, 'creator')
+        ->create();
+
+    $this->artisan('shipped:refresh-cloud-verifications')
+        ->expectsOutputToContain('Rechecked 101 project(s): 101 verified, 0 failed, 0 stale, 0 exception(s)')
+        ->assertSuccessful();
 });

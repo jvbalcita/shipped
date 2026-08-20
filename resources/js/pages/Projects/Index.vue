@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import { Plus } from '@lucide/vue';
-import CloudConnectionPanel from '@/components/shipped/CloudConnectionPanel.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
 import SectionHeader from '@/components/shipped/SectionHeader.vue';
 import StudioProjectRow from '@/components/shipped/StudioProjectRow.vue';
@@ -14,10 +13,6 @@ import {
 } from '@/components/ui/empty';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { create } from '@/routes/projects';
-import type {
-    CloudConnectionSummary,
-    ConnectedEnvironmentSummary,
-} from '@/types';
 
 interface StudioProject {
     id: number;
@@ -62,8 +57,6 @@ function projectNextStep(project: StudioProject): string {
 
 defineProps<{
     projects: StudioProject[];
-    cloudConnection: CloudConnectionSummary | null;
-    connectedEnvironments: ConnectedEnvironmentSummary[];
 }>();
 </script>
 
@@ -86,14 +79,10 @@ defineProps<{
                     >
                 </div>
                 <p class="mt-6 max-w-xl text-muted-foreground">
-                    Draft the record, publish the release, then make the
-                    project public when it is ready.
+                    Draft the record, publish the release, then make the project
+                    public when it is ready.
                 </p>
             </SectionHeader>
-            <CloudConnectionPanel
-                :connection="cloudConnection"
-                :environments="connectedEnvironments"
-            />
             <Tabs default-value="all" class="w-full min-w-0"
                 ><div
                     class="overflow-x-auto border-b border-foreground p-5 sm:px-8"

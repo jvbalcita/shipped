@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { router, useForm } from '@inertiajs/vue3';
-import { CalendarClock, Check, Eye, EyeOff, ImagePlus, Send } from '@lucide/vue';
+import {
+    CalendarClock,
+    Check,
+    Eye,
+    EyeOff,
+    ImagePlus,
+    Send,
+} from '@lucide/vue';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import BadgeSnippet from '@/components/shipped/BadgeSnippet.vue';
 import DatePicker from '@/components/shipped/DatePicker.vue';
@@ -40,14 +47,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { update } from '@/routes/projects';
 import { store as releaseStore } from '@/routes/projects/releases';
 import visibility from '@/routes/projects/visibility';
-import type { ConnectedEnvironmentSummary } from '@/types';
 
 const props = defineProps<{
     project: any;
     categories: { id: number; name: string }[];
     pricingOptions: { value: string; label: string }[];
     suggestedTags: string[];
-    connectedEnvironments: ConnectedEnvironmentSummary[];
     badgeMarkdown: string | null;
     githubLinked?: boolean;
     githubRepos?: { name: string; url: string }[] | null;
@@ -63,7 +68,9 @@ const projectForm = useForm({
     launch_date: props.project.launch_date
         ? String(props.project.launch_date).slice(0, 10)
         : '',
-    tags: (props.project.tags ?? []).map((tag: { name: string }) => tag.name).join(', '),
+    tags: (props.project.tags ?? [])
+        .map((tag: { name: string }) => tag.name)
+        .join(', '),
     cover_image: null as File | null,
     cover_removal: false as boolean,
     logo: null as File | null,
@@ -129,8 +136,12 @@ function onLogoRemove(): void {
 }
 
 function saveProject(): void {
-    projectForm.screenshots = newScreenshots.value.map((screenshot) => screenshot.file);
-    projectForm.screenshots_captions = newScreenshots.value.map((screenshot) => screenshot.caption);
+    projectForm.screenshots = newScreenshots.value.map(
+        (screenshot) => screenshot.file,
+    );
+    projectForm.screenshots_captions = newScreenshots.value.map(
+        (screenshot) => screenshot.caption,
+    );
     projectForm.screenshot_order = existingOrder.value.filter(
         (id) => !removedScreenshots.value.includes(id),
     );
@@ -149,7 +160,9 @@ const newScreenshots = ref<{ file: File; caption: string }[]>([]);
 const screenshotInput = ref<HTMLInputElement | null>(null);
 const removedScreenshots = ref<number[]>([]);
 const existingOrder = ref<number[]>(
-    (props.project.screenshots ?? []).map((screenshot: { id: number }) => screenshot.id),
+    (props.project.screenshots ?? []).map(
+        (screenshot: { id: number }) => screenshot.id,
+    ),
 );
 const existingCaptions = ref<Record<number, string>>(
     Object.fromEntries(
@@ -164,7 +177,10 @@ const existingCaptions = ref<Record<number, string>>(
 
 const screenshotMap = computed(() =>
     Object.fromEntries(
-        (props.project.screenshots ?? []).map((screenshot: any) => [screenshot.id, screenshot]),
+        (props.project.screenshots ?? []).map((screenshot: any) => [
+            screenshot.id,
+            screenshot,
+        ]),
     ),
 );
 
@@ -175,7 +191,9 @@ const visibleExisting = computed(() =>
 );
 
 const canAddScreenshot = computed(
-    () => visibleExisting.value.length + newScreenshots.value.length < MAX_SCREENSHOTS,
+    () =>
+        visibleExisting.value.length + newScreenshots.value.length <
+        MAX_SCREENSHOTS,
 );
 
 function addScreenshots(files: FileList | null): void {
@@ -298,9 +316,11 @@ const filedSerial = ref<string | null>(null);
 let filedTimeout: ReturnType<typeof setTimeout> | null = null;
 
 function handleFiled(event: Event): void {
-    const detail = (event as CustomEvent).detail as {
-        filed_serial?: string;
-    } | undefined;
+    const detail = (event as CustomEvent).detail as
+        | {
+              filed_serial?: string;
+          }
+        | undefined;
 
     if (!detail?.filed_serial) {
         return;
@@ -429,22 +449,21 @@ onUnmounted(() => {
                                     }}
                                 </p>
                             </template>
-                            <FieldError
-                                v-if="projectForm.errors.github_url">{{
+                            <FieldError v-if="projectForm.errors.github_url">{{
                                 projectForm.errors.github_url
                             }}</FieldError></Field
                         ><Field
                             ><FieldLabel>Cover image</FieldLabel
-                                ><FileUpload
-                                    :model-value="projectForm.cover_image"
-                                    :existing-url="
-                                        project.cover_image_url
-                                            ? project.cover_image_url
-                                            : null
-                                    "
-                                    :error="projectForm.errors.cover_image"
-                                    @update:model-value="onCoverChange"
-                                    @remove-existing="onCoverRemove" /></Field
+                            ><FileUpload
+                                :model-value="projectForm.cover_image"
+                                :existing-url="
+                                    project.cover_image_url
+                                        ? project.cover_image_url
+                                        : null
+                                "
+                                :error="projectForm.errors.cover_image"
+                                @update:model-value="onCoverChange"
+                                @remove-existing="onCoverRemove" /></Field
                         ><Field
                             ><FieldLabel>Logo</FieldLabel
                             ><FileUpload
@@ -455,13 +474,12 @@ onUnmounted(() => {
                                 "
                                 :error="projectForm.errors.logo"
                                 @update:model-value="onLogoChange"
-                                @remove-existing="onLogoRemove"
-                            /></Field
+                                @remove-existing="onLogoRemove" /></Field
                         ><Field
                             ><FieldLabel>Screenshots</FieldLabel>
                             <p class="text-xs text-muted-foreground">
-                                Up to {{ MAX_SCREENSHOTS }} images, JPG/PNG/WebP,
-                                up to 5 MB each.
+                                Up to {{ MAX_SCREENSHOTS }} images,
+                                JPG/PNG/WebP, up to 5 MB each.
                             </p>
                             <div class="grid gap-3">
                                 <div
@@ -476,11 +494,15 @@ onUnmounted(() => {
                                     />
                                     <div class="grid flex-1 gap-2">
                                         <Input
-                                            :model-value="existingCaptions[screenshot.id]"
+                                            :model-value="
+                                                existingCaptions[screenshot.id]
+                                            "
                                             placeholder="Caption (optional)"
                                             @update:model-value="
                                                 (value: string | number) =>
-                                                    (existingCaptions[screenshot.id] = String(value))
+                                                    (existingCaptions[
+                                                        screenshot.id
+                                                    ] = String(value))
                                             "
                                         />
                                         <div class="flex gap-2">
@@ -488,7 +510,12 @@ onUnmounted(() => {
                                                 type="button"
                                                 variant="ghost"
                                                 size="sm"
-                                                @click="moveExistingScreenshot(screenshot.id, -1)"
+                                                @click="
+                                                    moveExistingScreenshot(
+                                                        screenshot.id,
+                                                        -1,
+                                                    )
+                                                "
                                             >
                                                 Up
                                             </Button>
@@ -496,7 +523,12 @@ onUnmounted(() => {
                                                 type="button"
                                                 variant="ghost"
                                                 size="sm"
-                                                @click="moveExistingScreenshot(screenshot.id, 1)"
+                                                @click="
+                                                    moveExistingScreenshot(
+                                                        screenshot.id,
+                                                        1,
+                                                    )
+                                                "
                                             >
                                                 Down
                                             </Button>
@@ -504,7 +536,11 @@ onUnmounted(() => {
                                                 type="button"
                                                 variant="outline"
                                                 size="sm"
-                                                @click="removeExistingScreenshot(screenshot.id)"
+                                                @click="
+                                                    removeExistingScreenshot(
+                                                        screenshot.id,
+                                                    )
+                                                "
                                             >
                                                 Remove
                                             </Button>
@@ -513,7 +549,9 @@ onUnmounted(() => {
                                 </div>
 
                                 <div
-                                    v-for="(screenshot, index) in newScreenshots"
+                                    v-for="(
+                                        screenshot, index
+                                    ) in newScreenshots"
                                     :key="`new-${index}`"
                                     class="flex items-start gap-3 border border-dashed border-foreground p-3"
                                 >
@@ -551,8 +589,9 @@ onUnmounted(() => {
                                             ($event.target as HTMLInputElement)
                                                 .files,
                                         );
-                                        ($event.target as HTMLInputElement).value =
-                                            '';
+                                        (
+                                            $event.target as HTMLInputElement
+                                        ).value = '';
                                     "
                                 />
                                 <Button
@@ -565,10 +604,9 @@ onUnmounted(() => {
                                     Add screenshots
                                 </Button>
                             </div>
-                            <FieldError
-                                v-if="projectForm.errors.screenshots"
-                                >{{ projectForm.errors.screenshots }}</FieldError
-                            ></Field
+                            <FieldError v-if="projectForm.errors.screenshots">{{
+                                projectForm.errors.screenshots
+                            }}</FieldError></Field
                         ><Field
                             ><FieldLabel for="pricing">Pricing</FieldLabel
                             ><Select v-model="projectForm.pricing"
@@ -708,7 +746,9 @@ onUnmounted(() => {
                                 releaseForm.processing ||
                                 (isScheduled && !isScheduledTimeValid)
                             "
-                            ><Spinner v-if="releaseForm.processing" /><CalendarClock
+                            ><Spinner
+                                v-if="releaseForm.processing"
+                            /><CalendarClock
                                 v-else-if="isScheduled"
                                 class="size-4"
                             /><Send v-else class="size-4" />{{
@@ -724,7 +764,9 @@ onUnmounted(() => {
                             >Create a published release first, then confirm the
                             public project record below.</AlertDescription
                         ></Alert
-                    ><AlertDialog v-if="!project.is_public" v-model:open="confirmPublish"
+                    ><AlertDialog
+                        v-if="!project.is_public"
+                        v-model:open="confirmPublish"
                         ><AlertDialogTrigger as-child
                             ><Button
                                 class="mt-6 w-full"
@@ -734,8 +776,7 @@ onUnmounted(() => {
                                     !hasPublishedRelease ||
                                     project.verification_status !== 'verified'
                                 "
-                                ><Eye class="size-4" />Publish
-                                project</Button
+                                ><Eye class="size-4" />Publish project</Button
                             ></AlertDialogTrigger
                         ><AlertDialogContent
                             class="rounded-none border-2 border-foreground"
@@ -748,15 +789,15 @@ onUnmounted(() => {
                                     releases.</AlertDialogDescription
                                 ></AlertDialogHeader
                             ><AlertDialogFooter
-                                ><AlertDialogCancel
-                                    :disabled="publishing"
+                                ><AlertDialogCancel :disabled="publishing"
                                     >Keep private</AlertDialogCancel
                                 ><AlertDialogAction
                                     :disabled="publishing"
                                     @click="publishProject"
                                     ><Spinner v-if="publishing" /><Check
                                         v-else
-                                        class="size-4" />
+                                        class="size-4"
+                                    />
                                     Publish publicly</AlertDialogAction
                                 ></AlertDialogFooter
                             ></AlertDialogContent
@@ -789,7 +830,8 @@ onUnmounted(() => {
                                     @click="withdrawProject"
                                     ><Spinner v-if="withdrawing" /><Check
                                         v-else
-                                        class="size-4" />
+                                        class="size-4"
+                                    />
                                     Withdraw from public</AlertDialogAction
                                 ></AlertDialogFooter
                             ></AlertDialogContent
@@ -797,10 +839,7 @@ onUnmounted(() => {
                     >
                 </section>
             </div>
-            <VerificationPanel
-                :project="project"
-                :environments="connectedEnvironments"
-            />
+            <VerificationPanel :project="project" />
             <BadgeSnippet v-if="badgeMarkdown" :markdown="badgeMarkdown" />
             <section class="border-t border-foreground">
                 <div class="grid p-5 sm:grid-cols-[.45fr_1.55fr] sm:p-8">
@@ -863,9 +902,7 @@ onUnmounted(() => {
                 >
                     FILED
                 </p>
-                <p
-                    class="technical-label tabular-nums text-muted-foreground"
-                >
+                <p class="technical-label text-muted-foreground tabular-nums">
                     {{ filedSerial }}
                 </p>
             </div>
