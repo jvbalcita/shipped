@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
-import { Briefcase, Code, Globe } from '@lucide/vue';
+import { Briefcase, Globe } from '@lucide/vue';
+import BrandIcon from '@/components/BrandIcon.vue';
 import FollowButton from '@/components/shipped/FollowButton.vue';
 import ProjectCard from '@/components/shipped/ProjectCard.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
@@ -12,10 +13,6 @@ defineProps<{ creator: any; projects: any[] }>();
 const page = usePage();
 
 const linkIcon = (type: string) => {
-    if (type === 'github') {
-        return Code;
-    }
-
     if (type === 'linkedin') {
         return Briefcase;
     }
@@ -98,7 +95,13 @@ const linkIcon = (type: string) => {
                             target="_blank"
                             rel="noreferrer"
                         >
+                            <BrandIcon
+                                v-if="link.type === 'github'"
+                                brand="github"
+                                class="size-3.5"
+                            />
                             <component
+                                v-else
                                 :is="linkIcon(link.type)"
                                 class="size-3.5"
                                 aria-hidden="true"

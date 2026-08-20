@@ -2,6 +2,7 @@
 import { Form, Head } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import AuthDivider from '@/components/AuthDivider.vue';
+import BrandIcon from '@/components/BrandIcon.vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import TextLink from '@/components/TextLink.vue';
@@ -50,6 +51,16 @@ defineOptions({
             @click="pendingProvider = provider"
         >
             <Spinner v-if="pendingProvider === provider" />
+            <BrandIcon
+                v-else-if="provider === 'github'"
+                brand="github"
+                class="size-4"
+            />
+            <BrandIcon
+                v-else-if="provider === 'google'"
+                brand="google"
+                class="size-4"
+            />
             Continue with {{ providerLabels[provider] ?? provider }}
         </a>
     </div>
