@@ -33,7 +33,7 @@ A linked third-party provider identity (Google or GitHub) stored on a dedicated 
 _Avoid_: Social login, social account, provider account
 
 **Creator Studio**:
-The authenticated workspace where a creator shapes projects, releases, Cloud Connections, and their public presence.
+The authenticated workspace where a creator shapes projects, releases, Laravel Cloud URL verification, and their public presence.
 _Avoid_: Dashboard, admin area, back office
 
 **Project**:
@@ -41,7 +41,7 @@ A creator-owned application showcase that can be published publicly only after i
 _Avoid_: App, listing, submission
 
 **Launch Composer**:
-A guided creation flow that creates a Project's private identity. Cloud Connection, Verification, and public launch decisions happen later in Creator Studio.
+A guided creation flow that creates a Project's private identity. Verification and public launch decisions happen later in Creator Studio.
 _Avoid_: Form, wizard, project editor
 
 **Release**:
@@ -53,24 +53,28 @@ An authenticated community member's single, reversible expression of appreciatio
 _Avoid_: Like, upvote, appreciation
 
 **Verification**:
-A system-issued confirmation that a Project's normalized live hostname matches the selected Connected Environment's primary or custom domain.
-_Avoid_: Badge, claimed deployment
+A system-issued confirmation that a Project's creator-submitted Laravel Cloud URL is a reachable HTTPS `*.laravel.cloud` origin whose normalized project name matches the Project's live hostname. It is deployment evidence, not proof of Cloud account ownership, and a successful check never republishes automatically.
+_Avoid_: Badge, claimed deployment, token verification
 
 **Verification State**:
-The current outcome of a Verification: verified, failed, stale, or unverified. Shipped refreshes it immediately when requested and daily afterward; a non-verified state makes the Project private.
+The current outcome of a Verification: verified, failed, stale, or unverified. Shipped refreshes it when a creator submits or rechecks a Laravel Cloud URL, then daily. Changing the live URL or stored Laravel Cloud URL, or a failed, stale, mismatched, or legacy-pending recheck, makes the Project private; a later successful check never republishes automatically.
 _Avoid_: Badge status, deployment status
 
+**Laravel Cloud URL**:
+The HTTPS `*.laravel.cloud` origin a creator submits as verification evidence. It must resolve only to public addresses, answer the hardened reachability probe, and share a normalized project name with the live hostname. Normal verification stores this URL and does not request an API token.
+_Avoid_: Cloud token, environment ID, Connected Environment URL
+
 **Cloud Connection**:
-A creator-controlled, encrypted Laravel Cloud API credential used by Shipped to inspect applications and environments for verification. It is validated before storage, never shown again, and is a dedicated record owned by one Creator; a Creator has one Cloud Connection.
-_Avoid_: Cloud account, deployment token
+A legacy creator-owned record of an encrypted Laravel Cloud API token, retained during cutover for read-only environment backfill. It is not the active verification path; a Creator may still have one Cloud Connection, but new verification uses a Laravel Cloud URL.
+_Avoid_: Cloud account, deployment token, current verification credential
 
 **Disconnect**:
-The Creator's explicit removal of a Cloud Connection. It removes its credential and Connected Environments, and makes every affected Project private without deleting its Project or Releases.
+The explicit removal of a legacy Cloud Connection. It deletes the stored credential and Connected Environments and makes every affected Project private without deleting its Project or Releases. It is a cutover remnant, not the current way to withdraw verification.
 _Avoid_: Delete account, unverify
 
 **Connected Environment**:
-The stored record of a Laravel Cloud environment available through a Creator's Cloud Connection. A Project selects at most one Connected Environment as its deployment evidence.
-_Avoid_: Production app, Cloud project
+A legacy stored record of a Laravel Cloud environment synced through a Cloud Connection. Retained as a backfill source for URL candidates; a Project no longer verifies by selecting one, and a remaining binding without URL evidence is treated as legacy-pending and made private.
+_Avoid_: Production app, Cloud project, current verification evidence
 
 **Category**:
 A single curated product classification assigned to a project for community discovery.
