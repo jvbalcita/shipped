@@ -4,7 +4,6 @@ namespace App\Http\Requests;
 
 use App\Enums\ProjectPricing;
 use App\Models\Project;
-use App\Rules\LaravelCloudUrlRule;
 use App\Rules\SquareImage;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
@@ -34,7 +33,6 @@ class UpdateProjectRequest extends FormRequest
             'description' => ['sometimes', 'required', 'string', 'max:2000'],
             'category_id' => ['sometimes', 'required', 'integer', 'exists:categories,id'],
             'live_url' => ['nullable', 'url', 'max:255'],
-            'laravel_cloud_url' => ['nullable', 'string', 'max:255', new LaravelCloudUrlRule],
             'github_url' => ['nullable', 'url', 'max:255'],
             'pricing' => ['sometimes', 'nullable', Rule::enum(ProjectPricing::class)],
             'launch_date' => ['sometimes', 'nullable', 'date'],

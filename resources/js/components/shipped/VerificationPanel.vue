@@ -79,6 +79,10 @@ const verifiedAt = computed(() => {
 });
 
 function verify(): void {
+    if (isVerified.value) {
+        form.laravel_cloud_url = props.project.laravel_cloud_url ?? '';
+    }
+
     form.post(store(props.project).url, {
         preserveScroll: true,
         onSuccess: (page) => {
@@ -133,7 +137,16 @@ function verify(): void {
                         <FieldLabel for="laravel_cloud_url"
                             >Laravel Cloud environment URL</FieldLabel
                         >
+                        <p
+                            v-if="isVerified"
+                            id="laravel_cloud_url"
+                            class="flex min-h-10 items-center border border-input bg-transparent px-3 py-1 font-mono text-sm"
+                            data-test="cloud-url-readonly"
+                        >
+                            {{ project.laravel_cloud_url }}
+                        </p>
                         <Input
+                            v-else
                             id="laravel_cloud_url"
                             v-model="form.laravel_cloud_url"
                             type="url"

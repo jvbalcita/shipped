@@ -167,9 +167,11 @@ test('a definitive Cloud response fails verification and withdraws the project',
     Http::fake(['https://my-app-main.laravel.cloud' => Http::response('', $status)]);
 
     $creator = User::factory()->create();
-    $project = Project::factory()->public()->for($creator, 'creator')->create([
+    $project = Project::factory()->for($creator, 'creator')->create([
+        'is_public' => true,
         'laravel_cloud_url' => null,
         'live_url' => 'https://my-app-main.laravel.cloud',
+        'verification_status' => 'unverified',
     ]);
 
     $this->actingAs($creator)
@@ -196,7 +198,7 @@ test('a retryable Cloud outcome marks verification stale, withdraws the project,
     $creator = User::factory()->create();
     $verifiedAt = now()->subDay()->startOfSecond();
     $project = Project::factory()->public()->for($creator, 'creator')->create([
-        'laravel_cloud_url' => null,
+        'laravel_cloud_url' => 'https://my-app-main.laravel.cloud',
         'verified_at' => $verifiedAt,
         'live_url' => 'https://my-app-main.laravel.cloud',
     ]);
@@ -297,6 +299,9 @@ test('the studio edit page exposes Cloud URL evidence without legacy connection 
             ->where('project.verification_method', 'cloud_url')
             ->missing('connectedEnvironments')
             ->missing('project.api_token'));
+
+    expect((string) file_get_contents(resource_path('js/pages/Projects/Edit.vue')))
+        ->not->toContain('laravel_cloud_url');
 });
 
 test('updating a live URL invalidates verification and public visibility', function () {
@@ -319,41 +324,97 @@ test('updating a live URL invalidates verification and public visibility', funct
         ->verification_failure_reason->toBe('The live URL changed and must be verified again.');
 });
 
-test('changing the Laravel Cloud URL invalidates verification and public visibility', function () {
+test('updating a verified project ignores a submitted Cloud URL and still saves other fields', function () {
     $creator = User::factory()->create();
     $project = Project::factory()->public()->for($creator, 'creator')->create([
         'laravel_cloud_url' => 'https://old-main.laravel.cloud',
+        'tagline' => 'The original one-liner.',
         'verification_checked_at' => now()->subDay(),
     ]);
 
     $this->actingAs($creator)
-        ->patch(route('projects.update', $project), ['laravel_cloud_url' => 'https://new-main.laravel.cloud'])
-        ->assertRedirect(route('projects.edit', $project));
+        ->put(route('projects.update', $project), [
+            'tagline' => 'Saved after the Cloud URL froze.',
+            'laravel_cloud_url' => 'https://new-main.laravel.cloud',
+        ])
+        ->assertRedirect(route('projects.edit', $project))
+        ->assertSessionDoesntHaveErrors();
 
     expect($project->fresh())
-        ->is_public->toBeFalse()
-        ->verification_status->toBe('unverified')
-        ->verified_at->toBeNull()
-        ->laravel_cloud_url->toBe('https://new-main.laravel.cloud')
-        ->verification_failure_reason->toBe('The Laravel Cloud URL changed and must be verified again.');
+        ->is_public->toBeTrue()
+        ->tagline->toBe('Saved after the Cloud URL froze.')
+        ->verification_status->toBe('verified')
+        ->laravel_cloud_url->toBe('https://old-main.laravel.cloud');
 });
 
-test('clearing the Laravel Cloud URL invalidates verification and public visibility', function () {
+test('a verified project cannot change its Cloud origin through verification', function () {
+    Http::preventStrayRequests();
+
     $creator = User::factory()->create();
     $project = Project::factory()->public()->for($creator, 'creator')->create([
-        'laravel_cloud_url' => 'https://my-app-main.laravel.cloud',
-        'verification_checked_at' => now()->subDay(),
+        'live_url' => 'https://old-main.laravel.cloud',
+        'laravel_cloud_url' => 'https://old-main.laravel.cloud',
     ]);
 
     $this->actingAs($creator)
-        ->patch(route('projects.update', $project), ['laravel_cloud_url' => null])
+        ->from(route('projects.edit', $project))
+        ->post(route('projects.verification.store', $project), [
+            'laravel_cloud_url' => 'https://new-main.laravel.cloud',
+        ])
+        ->assertRedirect(route('projects.edit', $project))
+        ->assertSessionHasErrors('laravel_cloud_url');
+
+    expect($project->fresh())
+        ->laravel_cloud_url->toBe('https://old-main.laravel.cloud')
+        ->verification_status->toBe('verified');
+
+    Http::assertSentCount(0);
+});
+
+test('a verified project may re-probe the same canonical Cloud origin', function () {
+    Http::preventStrayRequests();
+    Http::fake(['https://my-app-main.laravel.cloud' => Http::response('', 200)]);
+
+    $creator = User::factory()->create();
+    $project = Project::factory()->public()->for($creator, 'creator')->create([
+        'live_url' => 'https://my-app-main.laravel.cloud',
+        'laravel_cloud_url' => 'https://my-app-main.laravel.cloud',
+    ]);
+
+    $this->actingAs($creator)
+        ->post(route('projects.verification.store', $project), [
+            'laravel_cloud_url' => 'HTTPS://My-App-Main.Laravel.Cloud./',
+        ])
+        ->assertRedirect(route('projects.edit', $project))
+        ->assertSessionDoesntHaveErrors();
+
+    expect($project->fresh())
+        ->verification_status->toBe('verified')
+        ->laravel_cloud_url->toBe('https://my-app-main.laravel.cloud');
+
+    Http::assertSentCount(1);
+});
+
+test('an unverified project may still set its Cloud origin through verification', function () {
+    Http::preventStrayRequests();
+    Http::fake(['https://my-app-main.laravel.cloud' => Http::response('', 200)]);
+
+    $creator = User::factory()->create();
+    $project = Project::factory()->for($creator, 'creator')->create([
+        'laravel_cloud_url' => null,
+        'live_url' => 'https://my-app-main.laravel.cloud',
+        'verification_status' => 'unverified',
+    ]);
+
+    $this->actingAs($creator)
+        ->post(route('projects.verification.store', $project), [
+            'laravel_cloud_url' => 'https://my-app-main.laravel.cloud',
+        ])
         ->assertRedirect(route('projects.edit', $project));
 
     expect($project->fresh())
-        ->is_public->toBeFalse()
-        ->verification_status->toBe('unverified')
-        ->laravel_cloud_url->toBeNull()
-        ->verification_failure_reason->toBe('The Laravel Cloud URL changed and must be verified again.');
+        ->laravel_cloud_url->toBe('https://my-app-main.laravel.cloud')
+        ->verification_status->toBe('verified');
 });
 
 test('a canonically equivalent Cloud URL edit keeps verification intact', function () {
