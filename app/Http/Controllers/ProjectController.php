@@ -16,7 +16,6 @@ use App\Models\User;
 use App\Services\GitHub\Exceptions\GitHubApiUnavailable;
 use App\Services\GitHub\GitHubClient;
 use App\Services\HtmlSanitizer;
-use App\Services\LaravelCloud\LaravelCloudUrl;
 use App\Services\LaravelCloud\ProjectVerificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
@@ -276,10 +275,16 @@ class ProjectController extends Controller
     public function update(UpdateProjectRequest $request, Project $project, ProjectVerificationService $verification): RedirectResponse
     {
         $liveUrlChanged = false;
-        $cloudUrlChanged = false;
 
-        DB::transaction(function () use ($request, $project, &$liveUrlChanged, &$cloudUrlChanged): void {
-            $data = $request->safe()->except(['cover_image', 'logo', 'logo_removal', 'tags', 'cover_removal']);
+        DB::transaction(function () use ($request, $project, &$liveUrlChanged): void {
+            $data = $request->safe()->except([
+                'cover_image',
+                'logo',
+                'logo_removal',
+                'tags',
+                'cover_removal',
+                'laravel_cloud_url',
+            ]);
             if ($request->hasFile('cover_image')) {
                 if ($project->cover_image_path) {
                     Storage::delete($project->cover_image_path);
@@ -308,15 +313,8 @@ class ProjectController extends Controller
                 $data['logo_path'] = null;
             }
 
-            if (array_key_exists('laravel_cloud_url', $data)) {
-                // Canonicalize before storing so an equivalent spelling
-                // (casing, trailing slash or dot) does not count as a change.
-                $data['laravel_cloud_url'] = LaravelCloudUrl::tryFrom((string) $data['laravel_cloud_url'])?->url();
-            }
-
             $project->update($data);
             $liveUrlChanged = $project->wasChanged('live_url');
-            $cloudUrlChanged = $project->wasChanged('laravel_cloud_url');
 
             if ($request->exists('tags')) {
                 $this->syncTags($project, $request->string('tags')->toString());
@@ -325,12 +323,8 @@ class ProjectController extends Controller
             $this->updateScreenshots($project, $request);
         });
 
-        if ($liveUrlChanged || $cloudUrlChanged) {
-            $verification->invalidate($project, match (true) {
-                $liveUrlChanged && $cloudUrlChanged => 'The live URL and Laravel Cloud URL changed and must be verified again.',
-                $cloudUrlChanged => 'The Laravel Cloud URL changed and must be verified again.',
-                default => 'The live URL changed and must be verified again.',
-            });
+        if ($liveUrlChanged) {
+            $verification->invalidate($project, 'The live URL changed and must be verified again.');
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Project record saved.']);
