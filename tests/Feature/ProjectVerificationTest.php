@@ -9,8 +9,10 @@ use App\Services\LaravelCloud\CloudUrlProbeOutcome;
 use App\Services\LaravelCloud\CloudUrlProbeResult;
 use App\Services\LaravelCloud\LaravelCloudUrl;
 use App\Services\LaravelCloud\LaravelCloudUrlProbe;
+use App\Services\LaravelCloud\ProjectVerificationService;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia as Assert;
 use Mockery\MockInterface;
 
@@ -662,7 +664,7 @@ test('the daily recheck processes every chunk', function () {
     Project::factory()
         ->count(101)
         ->sequence(function ($sequence): array {
-            $url = 'https://app-'.(($sequence->index % 50) + 1).'-main.laravel.cloud';
+            $url = 'https://app-'.($sequence->index + 1).'-main.laravel.cloud';
 
             return [
                 'laravel_cloud_url' => $url,
@@ -675,4 +677,141 @@ test('the daily recheck processes every chunk', function () {
     $this->artisan('shipped:refresh-cloud-verifications')
         ->expectsOutputToContain('Rechecked 101 project(s): 101 verified, 0 failed, 0 stale, 0 exception(s)')
         ->assertSuccessful();
+});
+
+test('verifying an origin already held by another listing is rejected without publishing', function () {
+    Http::preventStrayRequests();
+
+    $holder = User::factory()->create();
+    $challengerOwner = User::factory()->create();
+    $heldUrl = 'https://taken-main.laravel.cloud';
+    $challengerUrl = 'https://other-main.laravel.cloud';
+
+    Project::factory()->verified()->for($holder, 'creator')->create([
+        'laravel_cloud_url' => $heldUrl,
+        'live_url' => $heldUrl,
+        'is_public' => true,
+    ]);
+
+    $challenger = Project::factory()->for($challengerOwner, 'creator')->create([
+        'laravel_cloud_url' => $challengerUrl,
+        'live_url' => $heldUrl,
+        'is_public' => false,
+        'verification_status' => 'unverified',
+    ]);
+
+    $this->actingAs($challengerOwner)
+        ->postJson(route('projects.verification.store', $challenger), [
+            'laravel_cloud_url' => $heldUrl,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['laravel_cloud_url']);
+
+    expect($challenger->fresh())
+        ->is_public->toBeFalse()
+        ->laravel_cloud_url->toBe($challengerUrl)
+        ->verification_status->toBe('unverified');
+
+    Http::assertSentCount(0);
+});
+
+test('a project may re-submit its own Cloud origin', function () {
+    Http::preventStrayRequests();
+    Http::fake(['https://own-main.laravel.cloud' => Http::response('', 200)]);
+
+    $creator = User::factory()->create();
+    $url = 'https://own-main.laravel.cloud';
+    $project = Project::factory()->verified()->for($creator, 'creator')->create([
+        'laravel_cloud_url' => $url,
+        'live_url' => $url,
+    ]);
+
+    $this->actingAs($creator)
+        ->post(route('projects.verification.store', $project), [
+            'laravel_cloud_url' => $url,
+        ])
+        ->assertRedirect(route('projects.edit', $project))
+        ->assertSessionDoesntHaveErrors();
+
+    expect($project->fresh())
+        ->verification_status->toBe('verified')
+        ->laravel_cloud_url->toBe($url);
+});
+
+test('equivalent Cloud origin spellings collide after canonicalize', function () {
+    Http::preventStrayRequests();
+
+    $holder = User::factory()->create();
+    $challengerOwner = User::factory()->create();
+
+    Project::factory()->verified()->for($holder, 'creator')->create([
+        'laravel_cloud_url' => 'https://taken-main.laravel.cloud',
+        'live_url' => 'https://taken-main.laravel.cloud',
+    ]);
+
+    $challenger = Project::factory()->for($challengerOwner, 'creator')->create([
+        'live_url' => 'https://taken-main.laravel.cloud',
+        'laravel_cloud_url' => null,
+    ]);
+
+    $this->actingAs($challengerOwner)
+        ->postJson(route('projects.verification.store', $challenger), [
+            'laravel_cloud_url' => 'HTTPS://Taken-Main.Laravel.Cloud./',
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['laravel_cloud_url']);
+
+    expect($challenger->fresh()->laravel_cloud_url)->toBeNull()
+        ->and($challenger->fresh()->is_public)->toBeFalse();
+
+    Http::assertSentCount(0);
+});
+
+test('a unique Cloud origin collision at save becomes a field error without leaking SQL', function () {
+    Http::preventStrayRequests();
+    Http::fake(['https://taken-main.laravel.cloud' => Http::response('', 200)]);
+
+    $holder = User::factory()->create();
+    $challengerOwner = User::factory()->create();
+    $url = LaravelCloudUrl::from('https://taken-main.laravel.cloud');
+
+    Project::factory()->verified()->for($holder, 'creator')->create([
+        'laravel_cloud_url' => $url->url(),
+        'live_url' => $url->url(),
+    ]);
+
+    $challenger = Project::factory()->for($challengerOwner, 'creator')->create([
+        'laravel_cloud_url' => null,
+        'live_url' => $url->url(),
+        'is_public' => false,
+        'verification_status' => 'unverified',
+    ]);
+
+    $exception = null;
+
+    try {
+        app(ProjectVerificationService::class)->verify($challenger, $url);
+    } catch (ValidationException $caught) {
+        $exception = $caught;
+    }
+
+    expect($exception)->toBeInstanceOf(ValidationException::class)
+        ->and($exception->errors()['laravel_cloud_url'][0] ?? null)->toBe(
+            ProjectVerificationService::ORIGIN_ALREADY_USED,
+        )
+        ->and($exception->getMessage())->not->toContain('SQL')
+        ->and($exception->getMessage())->not->toContain('UNIQUE')
+        ->and($exception->getMessage())->not->toContain('23505')
+        ->and(json_encode($exception->errors()))->not->toContain('SQLSTATE');
+
+    expect($challenger->fresh())
+        ->laravel_cloud_url->toBeNull()
+        ->is_public->toBeFalse()
+        ->verification_status->toBe('unverified');
+});
+
+test('the project factory assigns unique Cloud origins in verified state', function () {
+    $projects = Project::factory()->verified()->count(8)->create();
+
+    expect($projects->pluck('laravel_cloud_url')->filter()->unique()->count())->toBe(8);
 });
