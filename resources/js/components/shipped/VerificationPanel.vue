@@ -111,10 +111,10 @@ function verify(): void {
                     <AlertTitle>Deployed on Laravel Cloud</AlertTitle>
                     <AlertDescription>
                         {{ project.laravel_cloud_url }} answered the latest
-                        check{{ verifiedAt ? ` on ${verifiedAt}` : '' }}.
-                        The probe checks the URL is up on Laravel Cloud; it is
-                        not Cloud account ownership. Name match is a
-                        consistency check, not proof of control.
+                        check{{ verifiedAt ? ` on ${verifiedAt}` : '' }}. The
+                        probe checks the URL is up on Laravel Cloud; it is not
+                        Cloud account ownership. Name match is a consistency
+                        check, not proof of control.
                     </AlertDescription>
                 </Alert>
 
@@ -156,11 +156,11 @@ function verify(): void {
                         <FieldDescription>
                             Copy the HTTPS URL from Laravel Cloud under Network
                             → Domains. Its project name must match the project's
-                            Live URL name, even when Laravel Cloud adds a suffix.
-                            The probe checks the URL is up on Laravel Cloud; it
-                            is not Cloud account ownership. Name match is a
-                            consistency check, not proof of control. Shipped
-                            never asks for an API token.
+                            Live URL name, even when Laravel Cloud adds a
+                            suffix. The probe checks the URL is up on Laravel
+                            Cloud; it is not Cloud account ownership. Name match
+                            is a consistency check, not proof of control.
+                            Shipped never asks for an API token.
                         </FieldDescription>
                     </Field>
                     <div class="flex flex-wrap gap-3">

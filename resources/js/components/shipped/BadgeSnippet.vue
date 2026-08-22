@@ -28,10 +28,10 @@ async function copyMarkdown(): Promise<void> {
             <p class="technical-label text-primary">README badge</p>
             <div class="mt-8 flex flex-col gap-3 sm:mt-0">
                 <p class="text-sm leading-6 text-muted-foreground">
-                    Drop the live-on-Cloud badge into your README. It links
-                    back to your Shipped launch page and updates as your
-                    verification status changes. The probe means the Cloud
-                    URL was up, not Cloud account ownership.
+                    Drop the live-on-Cloud badge into your README. It links back
+                    to your Shipped launch page and updates as your verification
+                    status changes. The probe means the Cloud URL was up, not
+                    Cloud account ownership.
                 </p>
                 <div class="flex gap-2">
                     <input
