@@ -45,7 +45,8 @@ test('a discoverable project serves its manifest as a self-contained SVG', funct
         ->toContain(strtoupper(mb_substr($project->name, 0, 30)))
         ->toContain(mb_substr($project->tagline, 0, 110))
         ->toContain('@'.strtoupper($project->creator->username))
-        ->toContain('VERIFIED LIVE')
+        ->toContain('LIVE ON CLOUD')
+        ->not->toContain('VERIFIED LIVE')
         ->toContain('LAUNCHED')
         ->toContain('FIRST CHEER FROM @'.strtoupper($cheerer->username));
 });

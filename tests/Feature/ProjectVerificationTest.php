@@ -422,6 +422,22 @@ test('an unverified project cannot become public even with a published release',
         ->assertSessionHasErrors('is_public');
 });
 
+test('the public launch page labels a verified project as live on Laravel Cloud', function () {
+    $creator = User::factory()->create();
+    $project = Project::factory()->public()->for($creator, 'creator')->create();
+    Release::factory()->for($project)->create(['published_at' => now()]);
+
+    $this->get(route('projects.show', [$creator, $project]))
+        ->assertSuccessful()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Projects/Show')
+            ->where('project.verification_status', 'verified'));
+
+    expect((string) file_get_contents(resource_path('js/pages/Projects/Show.vue')))
+        ->toContain('Live on Laravel Cloud')
+        ->not->toContain('Verified Laravel Cloud');
+});
+
 test('only verified published projects are discoverable to guests', function () {
     $creator = User::factory()->create(['username' => 'creator']);
     $verified = Project::factory()->public()->for($creator, 'creator')->create(['name' => 'Verified']);

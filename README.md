@@ -123,11 +123,12 @@ Legacy Laravel Cloud API tokens are encrypted at rest, never displayed after sub
 ## The verification badge
 
 Every discoverable project gets a self-hosted SVG badge (`GET /badges/{slug}.svg`)
-that reflects live verification status — VERIFIED LIVE, STALE, VERIFICATION
+that reflects live verification status — LIVE ON CLOUD, STALE, VERIFICATION
 FAILED, or UNVERIFIED. Grab the copy-ready markdown from Creator Studio. The
 markdown is built from `APP_URL`, so it points at your real domain in
 production (locally it uses `shipped.test:8087`, which only resolves on this
-machine).
+machine). The live-on-Cloud badge means the Cloud URL was reachable; it does
+not prove Laravel Cloud account ownership.
 
 ## Quality checks
 

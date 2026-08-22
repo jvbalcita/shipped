@@ -22,7 +22,7 @@ function badgeableDemoProject(string $verificationStatus): Project
     return $project;
 }
 
-test('a discoverable verified project serves a verified-live badge as SVG', function () {
+test('a discoverable verified project serves a live-on-Cloud badge as SVG', function () {
     $creator = User::factory()->create();
     $project = Project::factory()->public()->for($creator, 'creator')->create();
     Release::factory()->for($project)->create(['published_at' => now()]);
@@ -39,7 +39,8 @@ test('a discoverable verified project serves a verified-live badge as SVG', func
         ->toContain('s-maxage=300');
 
     expect($response->getContent())
-        ->toContain('VERIFIED LIVE')
+        ->toContain('LIVE ON CLOUD')
+        ->not->toContain('VERIFIED LIVE')
         ->toContain('#16a34a')
         ->toContain('SHIPPED');
 });
