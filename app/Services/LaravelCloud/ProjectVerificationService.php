@@ -3,10 +3,15 @@
 namespace App\Services\LaravelCloud;
 
 use App\Models\Project;
+use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Validation\ValidationException;
 
 final class ProjectVerificationService
 {
     public const string LEGACY_MIGRATION_REASON = 'Legacy verification requires a Laravel Cloud URL recheck.';
+
+    public const string ORIGIN_ALREADY_USED = 'This Laravel Cloud URL is already used by another listing.';
 
     /**
      * Safe creator-facing copy per machine failure code. Values are stored
@@ -176,7 +181,25 @@ final class ProjectVerificationService
      */
     private function transition(Project $project, array $attributes): Project
     {
-        $project->forceFill($attributes)->save();
+        try {
+            $project->forceFill($attributes)->save();
+        } catch (UniqueConstraintViolationException) {
+            throw ValidationException::withMessages([
+                'laravel_cloud_url' => self::ORIGIN_ALREADY_USED,
+            ]);
+        } catch (QueryException $e) {
+            if (
+                $e->getCode() !== '23505'
+                && ! str_contains((string) $e->getMessage(), '23505')
+                && ! str_contains((string) $e->getMessage(), 'UNIQUE constraint failed')
+            ) {
+                throw $e;
+            }
+
+            throw ValidationException::withMessages([
+                'laravel_cloud_url' => self::ORIGIN_ALREADY_USED,
+            ]);
+        }
 
         return $project;
     }
