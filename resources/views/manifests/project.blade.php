@@ -41,10 +41,10 @@
         <text x="1108" y="448" text-anchor="end" font-family="'IBM Plex Mono', 'Courier New', monospace" font-size="22" font-weight="700" letter-spacing="3" fill="#050505">{{ $serial }}</text>
     @endif
 
-    {{-- VERIFIED LIVE stamp + verification date --}}
+    {{-- LIVE ON CLOUD stamp + verification date --}}
     <g transform="translate(92 484)">
         <rect width="250" height="46" fill="#16a34a"/>
-        <text x="125" y="23" text-anchor="middle" dominant-baseline="central" font-family="'IBM Plex Mono', 'Courier New', monospace" font-size="20" font-weight="700" letter-spacing="2" fill="#f4f4f0">VERIFIED LIVE</text>
+        <text x="125" y="23" text-anchor="middle" dominant-baseline="central" font-family="'IBM Plex Mono', 'Courier New', monospace" font-size="20" font-weight="700" letter-spacing="2" fill="#f4f4f0">LIVE ON CLOUD</text>
     </g>
     @if ($verifiedOn)
         <text x="360" y="507" dominant-baseline="central" font-family="'IBM Plex Mono', 'Courier New', monospace" font-size="20" letter-spacing="1" fill="#585852">SINCE {{ $verifiedOn }}</text>

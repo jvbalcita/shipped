@@ -9,7 +9,7 @@ class BadgeController extends Controller
 {
     /** @var array<string, array{label: string, color: string}> */
     private const STATUSES = [
-        'verified' => ['label' => 'VERIFIED LIVE', 'color' => '#16a34a'],
+        'verified' => ['label' => 'LIVE ON CLOUD', 'color' => '#16a34a'],
         'stale' => ['label' => 'STALE', 'color' => '#d97706'],
         'failed' => ['label' => 'VERIFICATION FAILED', 'color' => '#dc2626'],
         'unverified' => ['label' => 'UNVERIFIED', 'color' => '#6b7280'],

@@ -237,8 +237,7 @@ async function copyManifestLink(): Promise<void> {
                         <span
                             v-if="project.verification_status === 'verified'"
                             class="technical-label inline-flex items-center gap-1 text-primary"
-                            ><Cloud class="size-4" />Verified Laravel
-                            Cloud</span
+                            ><Cloud class="size-4" />Live on Laravel Cloud</span
                         >
                     </div>
                     <div class="mt-12 flex items-center gap-5 sm:gap-8">
