@@ -33,6 +33,10 @@ class BadgeController extends Controller
                 'color' => $status['color'],
             ])
             ->header('Content-Type', 'image/svg+xml')
-            ->header('Cache-Control', 'public, max-age=300');
+            ->setCache([
+                'public' => true,
+                'max_age' => 300,
+                's_maxage' => 300,
+            ]);
     }
 }

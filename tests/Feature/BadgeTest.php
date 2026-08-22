@@ -35,7 +35,8 @@ test('a discoverable verified project serves a verified-live badge as SVG', func
     // Symfony normalizes the directive order; assert both tokens exist.
     expect($response->headers->get('Cache-Control'))
         ->toContain('public')
-        ->toContain('max-age=300');
+        ->toContain('max-age=300')
+        ->toContain('s-maxage=300');
 
     expect($response->getContent())
         ->toContain('VERIFIED LIVE')
