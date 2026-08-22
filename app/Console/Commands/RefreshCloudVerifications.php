@@ -44,6 +44,11 @@ class RefreshCloudVerifications extends Command
                     } catch (Throwable $exception) {
                         $counts['exceptions']++;
 
+                        $verificationService->invalidate(
+                            $project,
+                            'The Laravel Cloud URL could not be rechecked. Try again shortly.',
+                        );
+
                         // Structured, payload-free context: never the URL,
                         // DNS answers, or anything token-derived.
                         Log::warning('Laravel Cloud URL recheck failed.', [

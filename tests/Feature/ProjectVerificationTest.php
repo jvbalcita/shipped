@@ -516,6 +516,19 @@ test('only verified published projects are discoverable to guests', function () 
     $this->get(route('projects.show', ['creator' => $creator, 'project' => $unverified]))->assertNotFound();
 });
 
+test('a stale project is not discoverable and its badge 404s', function () {
+    $creator = User::factory()->create();
+    $stale = Project::factory()->stale()->for($creator, 'creator')->create([
+        'is_public' => true,
+    ]);
+    Release::factory()->for($stale)->create(['published_at' => now()]);
+
+    expect(Project::query()->discoverable()->whereKey($stale)->exists())->toBeFalse();
+
+    $this->get(route('projects.show', [$creator, $stale]))->assertNotFound();
+    $this->get(route('badges.show', $stale))->assertNotFound();
+});
+
 test('verification probes are rate limited per creator and project', function () {
     $creator = User::factory()->create();
     $project = Project::factory()->for($creator, 'creator')->create([
@@ -621,6 +634,8 @@ test('the daily recheck probes URL-backed projects and reports aggregate counter
         ->verified_at->equalTo($flakyVerifiedAt)->toBeTrue()
         ->and($legacy->fresh()->verification_checked_at)->toBeNull()
         ->and($demo->fresh()->verification_checked_at)->toBeNull();
+
+    expect(Project::query()->discoverable()->whereKey($flaky)->exists())->toBeFalse();
 });
 
 test('the daily recheck continues after an unexpected per-project exception', function () {
@@ -628,13 +643,17 @@ test('the daily recheck continues after an unexpected per-project exception', fu
     Http::fake(['https://healthy-main.laravel.cloud' => Http::response('', 200)]);
 
     $creator = User::factory()->create();
-    $exploding = Project::factory()->verified()->for($creator, 'creator')->create([
+    $stranger = User::factory()->create();
+    $exploding = Project::factory()->public()->for($creator, 'creator')->create([
         'laravel_cloud_url' => 'https://exploding-main.laravel.cloud',
         'live_url' => 'https://exploding-main.laravel.cloud',
+        'is_public' => true,
     ]);
+    Release::factory()->for($exploding)->create(['published_at' => now()]);
     $healthy = Project::factory()->verified()->for($creator, 'creator')->create([
         'laravel_cloud_url' => 'https://healthy-main.laravel.cloud',
         'live_url' => 'https://healthy-main.laravel.cloud',
+        'is_public' => false,
     ]);
 
     $probe = app(LaravelCloudUrlProbe::class);
@@ -651,8 +670,28 @@ test('the daily recheck continues after an unexpected per-project exception', fu
         ->expectsOutputToContain('Rechecked 1 project(s): 1 verified, 0 failed, 0 stale, 1 exception(s)')
         ->assertSuccessful();
 
-    expect($healthy->fresh()->verification_status)->toBe('verified')
-        ->and($exploding->fresh()->verification_status)->toBe('verified');
+    expect($healthy->fresh())
+        ->verification_status->toBe('verified')
+        ->is_public->toBeFalse()
+        ->and($exploding->fresh())
+        ->verification_status->toBe('unverified')
+        ->is_public->toBeFalse()
+        ->laravel_cloud_url->toBe('https://exploding-main.laravel.cloud')
+        ->verification_failure_reason->toBe('The Laravel Cloud URL could not be rechecked. Try again shortly.');
+
+    expect(Project::query()->discoverable()->whereKey($exploding)->exists())->toBeFalse();
+
+    $this->withoutVite();
+
+    $this->actingAs($creator)
+        ->get(route('projects.edit', $exploding))
+        ->assertOk();
+
+    $this->actingAs($stranger)
+        ->get(route('projects.show', [$creator, $exploding->fresh()]))
+        ->assertNotFound();
+
+    $this->get(route('badges.show', $exploding->fresh()))->assertNotFound();
 });
 
 test('the daily recheck processes every chunk', function () {
