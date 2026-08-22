@@ -15,6 +15,14 @@ class DiscoverController extends Controller
 {
     public function __invoke(Request $request): Response
     {
+        if (! $request->filled('q') && $request->filled('search')) {
+            $search = $request->query('search');
+
+            if (is_string($search)) {
+                $request->merge(['q' => $search]);
+            }
+        }
+
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
             'category' => ['nullable', 'string', 'exists:categories,slug'],
