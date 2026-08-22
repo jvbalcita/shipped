@@ -305,140 +305,22 @@ test('Laravel Cloud client marks connection failures as retryable', function () 
         ->toThrow(CloudApiUnavailable::class, 'Laravel Cloud API is temporarily unavailable.');
 });
 
-test('a creator can connect Laravel Cloud only after the token validates', function () {
-    Http::preventStrayRequests();
-    Http::fake([
-        'https://cloud.laravel.com/api/applications' => Http::response([
-            'data' => [
-                ['id' => 'app-1', 'attributes' => ['name' => 'Shipped']],
-            ],
-        ]),
-        'https://cloud.laravel.com/api/applications/app-1/environments?include=primaryDomain' => Http::response([
-            'data' => [
-                ['id' => 'environment-1', 'attributes' => ['name' => 'production']],
-            ],
-        ]),
-        'https://cloud.laravel.com/api/environments/environment-1?include=primaryDomain,application' => Http::response([
-            'data' => [
-                'id' => 'environment-1',
-                'attributes' => ['name' => 'production'],
-            ],
-        ]),
-    ]);
+test('creating or replacing a cloud connection token over http is rejected', function () {
     $creator = User::factory()->create();
 
-    $this->actingAs($creator)
-        ->post(route('cloud-connection.store'), ['api_token' => 'cloud-token'])
-        ->assertRedirect(route('dashboard'));
+    $create = $this->actingAs($creator)
+        ->post('/cloud-connection', ['api_token' => 'cloud-token']);
 
-    $connection = $creator->cloudConnection()->firstOrFail();
+    expect($create->status())->toBe(405)
+        ->and(CloudConnection::query()->where('user_id', $creator->id)->exists())->toBeFalse();
 
-    expect($connection->api_token)->toBe('cloud-token')
-        ->and($connection->status)->toBe('connected')
-        ->and($connection->last_validated_at)->not->toBeNull()
-        ->and($connection->connectedEnvironments()->firstOrFail()->only([
-            'application_id',
-            'environment_id',
-            'application_name',
-            'environment_name',
-            'domains',
-        ]))->toBe([
-            'application_id' => 'app-1',
-            'environment_id' => 'environment-1',
-            'application_name' => 'Shipped',
-            'environment_name' => 'production',
-            'domains' => [],
-        ]);
-});
-
-test('an invalid token is rejected without replacing the existing connection', function () {
-    Http::preventStrayRequests();
-    Http::fake([
-        'https://cloud.laravel.com/api/applications' => Http::response([], 401),
-    ]);
-    $creator = User::factory()->create();
     $connection = CloudConnection::factory()->for($creator)->create(['api_token' => 'existing-token']);
 
-    $this->actingAs($creator)
-        ->from(route('dashboard'))
-        ->post(route('cloud-connection.store'), ['api_token' => 'invalid-token'])
-        ->assertRedirect(route('dashboard'))
-        ->assertSessionHasErrors('api_token');
+    $replace = $this->actingAs($creator)
+        ->post('/cloud-connection', ['api_token' => 'replacement-token']);
 
-    expect($connection->fresh()->api_token)->toBe('existing-token');
-});
-
-test('an unavailable API returns a connection error without replacing the existing token', function () {
-    Http::preventStrayRequests();
-    Http::fake([
-        'https://cloud.laravel.com/api/applications' => Http::response([], 503),
-    ]);
-    $creator = User::factory()->create();
-    $connection = CloudConnection::factory()->for($creator)->create(['api_token' => 'existing-token']);
-
-    $this->actingAs($creator)
-        ->from(route('dashboard'))
-        ->post(route('cloud-connection.store'), ['api_token' => 'replacement-token'])
-        ->assertRedirect(route('dashboard'))
-        ->assertSessionHasErrors('cloud_connection');
-
-    expect($connection->fresh()->api_token)->toBe('existing-token');
-});
-
-test('replacing a token withdraws projects from environments no longer returned by Laravel Cloud', function () {
-    Http::preventStrayRequests();
-    Http::fake([
-        'https://cloud.laravel.com/api/applications' => Http::response([
-            'data' => [
-                ['id' => 'app-2', 'attributes' => ['name' => 'New application']],
-            ],
-        ]),
-        'https://cloud.laravel.com/api/applications/app-2/environments?include=primaryDomain' => Http::response([
-            'data' => [
-                ['id' => 'environment-2', 'attributes' => ['name' => 'production']],
-            ],
-        ]),
-        'https://cloud.laravel.com/api/environments/environment-2?include=primaryDomain,application' => Http::response([
-            'data' => [
-                'id' => 'environment-2',
-                'attributes' => ['name' => 'production'],
-            ],
-        ]),
-    ]);
-    $creator = User::factory()->create();
-    $connection = CloudConnection::factory()->for($creator)->create(['api_token' => 'existing-token']);
-    $staleEnvironment = ConnectedEnvironment::factory()->for($connection)->create([
-        'environment_id' => 'environment-1',
-    ]);
-    $affectedProject = Project::factory()->public()->for($creator, 'creator')->create([
-        'connected_environment_id' => $staleEnvironment->id,
-    ]);
-
-    $this->actingAs($creator)
-        ->post(route('cloud-connection.store'), ['api_token' => 'replacement-token'])
-        ->assertRedirect(route('dashboard'));
-
-    expect($connection->fresh()->api_token)->toBe('replacement-token')
-        ->and($staleEnvironment->fresh())->toBeNull()
-        ->and($connection->fresh()->connectedEnvironments()->pluck('environment_id')->all())->toBe(['environment-2'])
-        ->and($affectedProject->fresh()->only([
-            'is_public',
-            'verification_status',
-            'verified_at',
-            'verification_failure_reason',
-        ]))->toBe([
-            'is_public' => false,
-            'verification_status' => 'unverified',
-            'verified_at' => null,
-            'verification_failure_reason' => 'Laravel Cloud environment is no longer available.',
-        ])
-        ->and($affectedProject->fresh()->verification_checked_at)->not->toBeNull();
-
-    $this->actingAs($creator)
-        ->get(route('cloud-connection.environments'))
-        ->assertSuccessful()
-        ->assertJsonCount(1)
-        ->assertJsonPath('0.environment_id', 'environment-2');
+    expect($replace->status())->toBe(405)
+        ->and($connection->fresh()->api_token)->toBe('existing-token');
 });
 
 test('disconnect withdraws affected projects and deletes cloud evidence', function () {

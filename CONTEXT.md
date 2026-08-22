@@ -29,7 +29,7 @@ A creator-uploaded profile image stored as a Laravel Storage path; auto-populate
 _Avoid_: Profile picture, profile photo, user image
 
 **OAuth Account**:
-A linked third-party provider identity (Google or GitHub) stored on a dedicated `oauth_accounts` table, enabling OAuth login alongside Fortify password/passkey auth. One creator may link multiple providers.
+A linked third-party provider identity stored on a dedicated `oauth_accounts` table, enabling OAuth login alongside Fortify password/passkey auth. GitHub is offered when credentials are configured; Google appears only when its client ID exists. One creator may link multiple providers.
 _Avoid_: Social login, social account, provider account
 
 **Creator Studio**:

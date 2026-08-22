@@ -154,6 +154,22 @@ test('discover can filter by pricing and sort by launch date', function () {
             ->where('projects.data.0.name', 'Paid Launch'));
 });
 
+test('discovery treats search as an alias of the q query parameter', function () {
+    $creator = User::factory()->create();
+    $match = Project::factory()->public()->for($creator, 'creator')->create(['name' => 'BizOps Kit']);
+    $other = Project::factory()->public()->for($creator, 'creator')->create(['name' => 'Unrelated Launch']);
+    Release::factory()->for($match)->create(['published_at' => now()]);
+    Release::factory()->for($other)->create(['published_at' => now()]);
+
+    $this->get('/discover?search=bizops')
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->component('Discover/Index')
+            ->has('projects.data', 1)
+            ->where('projects.data.0.name', 'BizOps Kit')
+            ->where('filters.q', 'bizops'));
+});
+
 test('public project show includes pricing logo and launch date', function () {
     Storage::fake();
 
