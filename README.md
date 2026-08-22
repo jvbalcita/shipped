@@ -12,7 +12,7 @@
 ## What it does
 
 - Creates private launch records with real evidence: cover image, screenshots with captions, and a live or source URL are required before a record exists.
-- Offers sign-in and account linking through GitHub and Google alongside email, passkeys, and two-factor authentication.
+- Offers sign-in and account linking through GitHub alongside email, passkeys, and two-factor authentication. Google appears only when `GOOGLE_CLIENT_ID` is configured.
 - Lets GitHub-linked creators pick their repository from a searchable dropdown of their public repos while composing a launch.
 - Publishes release notes immediately or on a schedule.
 - Verifies a live URL by requiring a reachable Laravel Cloud URL whose normalized project name matches the live hostname before public listing.
@@ -28,7 +28,7 @@
 | Backend       | Laravel 13, PHP 8.4.1+                                                       |
 | Frontend      | Inertia v3, Vue 3, TypeScript, Tailwind CSS 4                                |
 | UI primitives | shadcn-vue / Reka UI                                                         |
-| Auth          | Laravel Fortify, passkeys, two-factor, GitHub/Google OAuth via Socialite      |
+| Auth          | Laravel Fortify, passkeys, two-factor, GitHub OAuth via Socialite (Google when credentials exist) |
 | Storage       | Laravel Filesystem with local public storage or S3-compatible Object Storage |
 | Tests         | Pest 4, PHPStan, Pint, ESLint, Prettier                                      |
 
@@ -102,7 +102,7 @@ AWS_USE_PATH_STYLE_ENDPOINT=false
 1. Create a Laravel Cloud application from this repository and attach a database.
 2. Add the production `APP_*`, `DB_*`, mail, queue, cache, and Object Storage variables in Laravel Cloud.
 3. Set `FILESYSTEM_DISK=s3` and the standard `AWS_*` values shown above if covers should use Object Storage.
-4. To enable OAuth sign-in and the GitHub repository picker, set `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` / `GITHUB_REDIRECT_URI` (and the `GOOGLE_*` equivalents) for your Socialite apps. Providers without credentials are hidden automatically.
+4. To enable GitHub sign-in and the repository picker, set `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` / `GITHUB_REDIRECT_URI`. Google appears on `/login` only when the `GOOGLE_*` equivalents are also set. Providers without credentials are hidden automatically.
 5. Build frontend assets during deployment with `npm ci && npm run build`.
 6. Run `php artisan migrate --force` as a deploy command.
 7. Seed the curated categories once — the launch composer's category dropdown is empty until this runs:
@@ -161,7 +161,7 @@ php artisan test --compact
 
 ## Docs
 
-- [Vision & roadmap](docs/superpowers/plans/2026-07-13-laravel-cloud-verification-mvp.md) — product direction
+- [Vision & roadmap](docs/adr/0001-verify-projects-through-laravel-cloud.md) — product direction
 - [Implementation plans](docs/superpowers/plans/) — follow/feed, badge, manifest, notifications
 - [ADRs](docs/adr/) — architecture decision records
 

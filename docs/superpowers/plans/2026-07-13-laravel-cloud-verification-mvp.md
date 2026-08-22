@@ -1,5 +1,7 @@
 # Laravel Cloud Verification MVP Implementation Plan
 
+> Historical: this plan is the original API-token verification MVP. Current vision and the live verification contract are in [ADR 0001](../../adr/0001-verify-projects-through-laravel-cloud.md).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make Shipped a verified Laravel Cloud registry: creators connect one Laravel Cloud API token, bind a Project to a Cloud environment, verify its hostname, and publish only after a published Release and current verification exist.
