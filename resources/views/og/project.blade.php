@@ -3,6 +3,7 @@
     $username = '@'.$project->creator->username;
     $category = strtoupper($project->category?->name ?? 'Launch');
     $tagline = mb_substr($project->tagline ?? '', 0, 110);
+    $storyExcerpt = $project->shipStory?->excerpt(92);
     $serial = $project->filed_serial;
 @endphp
 <svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="{{ $project->name }}">
@@ -29,6 +30,10 @@
     {{-- Tagline --}}
     @if ($tagline)
         <text x="94" y="468" font-family="Arial, Helvetica, sans-serif" font-size="32" fill="#585852">{{ $tagline }}</text>
+    @endif
+
+    @if ($storyExcerpt)
+        <text x="94" y="508" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#585852">{{ $storyExcerpt }}</text>
     @endif
 
     {{-- Bottom rule + creator username --}}

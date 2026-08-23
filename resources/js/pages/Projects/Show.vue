@@ -41,7 +41,10 @@ import {
     store as storeComment,
     update as updateComment,
 } from '@/routes/projects/comments';
-import { destroy as destroyFollow, store as storeFollow } from '@/routes/projects/follow';
+import {
+    destroy as destroyFollow,
+    store as storeFollow,
+} from '@/routes/projects/follow';
 import {
     destroy as destroyReview,
     store as storeReview,
@@ -52,12 +55,14 @@ import { show as releaseShow } from '@/routes/releases';
 const props = defineProps<{
     project: any;
     manifestUrl: string | null;
-    cheers: {
-        name: string | null;
-        username: string | null;
-        avatar_url: string | null;
-        cheered_at: string | null;
-    }[] | null;
+    cheers:
+        | {
+              name: string | null;
+              username: string | null;
+              avatar_url: string | null;
+              cheered_at: string | null;
+          }[]
+        | null;
     hasCheered: boolean;
     canCheer: boolean;
 }>();
@@ -110,11 +115,13 @@ function submitReview(): void {
 }
 
 function removeReview(): void {
-    useForm({})
-        .delete(
-            destroyReview({ project: props.project, review: props.project.user_review }).url,
-            { preserveScroll: true },
-        );
+    useForm({}).delete(
+        destroyReview({
+            project: props.project,
+            review: props.project.user_review,
+        }).url,
+        { preserveScroll: true },
+    );
 }
 
 function submitComment(): void {
@@ -147,15 +154,12 @@ function startEdit(comment: any): void {
 }
 
 function saveEdit(comment: any): void {
-    editForm.patch(
-        updateComment({ project: props.project, comment }).url,
-        {
-            preserveScroll: true,
-            onSuccess: () => {
-                editingId.value = null;
-            },
+    editForm.patch(updateComment({ project: props.project, comment }).url, {
+        preserveScroll: true,
+        onSuccess: () => {
+            editingId.value = null;
         },
-    );
+    });
 }
 
 function deleteComment(): void {
@@ -231,7 +235,7 @@ async function copyManifestLink(): Promise<void> {
                         }}</Badge>
                         <span
                             v-if="project.filed_serial"
-                            class="technical-label tabular-nums text-muted-foreground"
+                            class="technical-label text-muted-foreground tabular-nums"
                             >{{ project.filed_serial }}</span
                         >
                         <span
@@ -273,14 +277,13 @@ async function copyManifestLink(): Promise<void> {
                             data-test="project-launch-date"
                             >Launched
                             {{
-                                new Date(project.launch_date).toLocaleDateString(
-                                    undefined,
-                                    {
-                                        year: 'numeric',
-                                        month: 'short',
-                                        day: 'numeric',
-                                    },
-                                )
+                                new Date(
+                                    project.launch_date,
+                                ).toLocaleDateString(undefined, {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                })
                             }}</span
                         >
                     </div>
@@ -301,6 +304,103 @@ async function copyManifestLink(): Promise<void> {
                         class="rich-text mt-8 max-w-2xl whitespace-pre-line"
                         v-html="project.description"
                     ></div>
+                    <section
+                        v-if="project.ship_story"
+                        class="mt-12 border-y border-foreground py-8"
+                        data-test="ship-story"
+                    >
+                        <div class="grid gap-8 lg:grid-cols-[.7fr_1.3fr]">
+                            <div>
+                                <p class="technical-label text-primary">
+                                    Ship Story
+                                </p>
+                                <h2 class="display-type mt-4 text-4xl">
+                                    Why this exists.
+                                </h2>
+                                <p
+                                    class="mt-4 max-w-sm text-sm leading-7 text-muted-foreground"
+                                >
+                                    A creator-approved account of the problem,
+                                    choices, and lessons behind this launch.
+                                </p>
+                            </div>
+                            <div class="grid gap-7 sm:grid-cols-2">
+                                <div>
+                                    <p class="technical-label text-primary">
+                                        Problem
+                                    </p>
+                                    <p
+                                        class="mt-2 text-sm leading-7 whitespace-pre-line"
+                                    >
+                                        {{ project.ship_story.problem }}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p class="technical-label text-primary">
+                                        Audience
+                                    </p>
+                                    <p
+                                        class="mt-2 text-sm leading-7 whitespace-pre-line"
+                                    >
+                                        {{ project.ship_story.audience }}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p class="technical-label text-primary">
+                                        What shipped
+                                    </p>
+                                    <p
+                                        class="mt-2 text-sm leading-7 whitespace-pre-line"
+                                    >
+                                        {{ project.ship_story.shipped }}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p class="technical-label text-primary">
+                                        Build choices
+                                    </p>
+                                    <p
+                                        class="mt-2 text-sm leading-7 whitespace-pre-line"
+                                    >
+                                        {{ project.ship_story.build_decisions }}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p class="technical-label text-primary">
+                                        Hardest problem
+                                    </p>
+                                    <p
+                                        class="mt-2 text-sm leading-7 whitespace-pre-line"
+                                    >
+                                        {{ project.ship_story.hardest_problem }}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p class="technical-label text-primary">
+                                        Lessons learned
+                                    </p>
+                                    <p
+                                        class="mt-2 text-sm leading-7 whitespace-pre-line"
+                                    >
+                                        {{ project.ship_story.lessons_learned }}
+                                    </p>
+                                </div>
+                                <div
+                                    v-if="project.ship_story.next"
+                                    class="sm:col-span-2"
+                                >
+                                    <p class="technical-label text-primary">
+                                        What comes next
+                                    </p>
+                                    <p
+                                        class="mt-2 text-sm leading-7 whitespace-pre-line"
+                                    >
+                                        {{ project.ship_story.next }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
                     <div
                         v-if="project.screenshots && project.screenshots.length"
                         class="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4"
@@ -329,7 +429,11 @@ async function copyManifestLink(): Promise<void> {
                                 class="block border-t border-foreground px-3 py-2 text-xs"
                             >
                                 Fig. {{ String(index + 1).padStart(2, '0')
-                                }}{{ screenshot.caption ? ` — ${screenshot.caption}` : '' }}
+                                }}{{
+                                    screenshot.caption
+                                        ? ` — ${screenshot.caption}`
+                                        : ''
+                                }}
                             </span>
                         </button>
                     </div>
@@ -363,15 +467,17 @@ async function copyManifestLink(): Promise<void> {
                             :following="project.followed_by_viewer"
                             :action="
                                 project.followed_by_viewer
-                                    ? { ...destroyFollow(project), method: 'delete' as const }
-                                    : { ...storeFollow(project), method: 'post' as const }
+                                    ? {
+                                          ...destroyFollow(project),
+                                          method: 'delete' as const,
+                                      }
+                                    : {
+                                          ...storeFollow(project),
+                                          method: 'post' as const,
+                                      }
                             "
                         />
-                        <Button
-                            v-if="manifestUrl"
-                            as-child
-                            variant="outline"
-                        >
+                        <Button v-if="manifestUrl" as-child variant="outline">
                             <a
                                 :href="manifestUrl"
                                 :download="`${project.slug}-manifest.svg`"
@@ -446,7 +552,7 @@ async function copyManifestLink(): Promise<void> {
                                 >
                             </h2>
                             <p
-                                class="font-prose mt-3 text-sm leading-7 whitespace-pre-line"
+                                class="mt-3 font-prose text-sm leading-7 whitespace-pre-line"
                             >
                                 {{ release.notes }}
                             </p>
@@ -494,18 +600,25 @@ async function copyManifestLink(): Promise<void> {
                     >
                         <div class="flex items-start justify-between gap-4">
                             <div class="min-w-0">
-                                <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                                    <p class="technical-label">{{
-                                        comment.user?.username ?? comment.user?.name
-                                    }}</p>
+                                <div
+                                    class="flex flex-wrap items-baseline gap-x-3 gap-y-1"
+                                >
+                                    <p class="technical-label">
+                                        {{
+                                            comment.user?.username ??
+                                            comment.user?.name
+                                        }}
+                                    </p>
                                     <time
                                         class="technical-label text-muted-foreground"
-                                        >{{ formatTimestamp(comment.created_at) }}</time
+                                        >{{
+                                            formatTimestamp(comment.created_at)
+                                        }}</time
                                     >
                                 </div>
                                 <p
                                     v-if="comment.is_deleted"
-                                    class="technical-label mt-1 italic text-muted-foreground"
+                                    class="technical-label mt-1 text-muted-foreground italic"
                                 >
                                     [deleted]
                                 </p>
@@ -532,7 +645,7 @@ async function copyManifestLink(): Promise<void> {
                                 </template>
                                 <p
                                     v-else
-                                    class="mt-2 whitespace-pre-line text-sm leading-6"
+                                    class="mt-2 text-sm leading-6 whitespace-pre-line"
                                 >
                                     {{ comment.body }}
                                 </p>
@@ -557,7 +670,7 @@ async function copyManifestLink(): Promise<void> {
                                 </button>
                                 <div
                                     v-if="$page.props.auth.user"
-                                    class="flex gap-1 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+                                    class="flex gap-1 transition-opacity sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100"
                                 >
                                     <Button
                                         v-if="comment.can_edit"
@@ -565,23 +678,23 @@ async function copyManifestLink(): Promise<void> {
                                         variant="ghost"
                                         :aria-label="`Edit comment by ${comment.user?.username}`"
                                         @click="startEdit(comment)"
-                                        ><Pencil class="size-4" /></Button
-                                    >
+                                        ><Pencil class="size-4"
+                                    /></Button>
                                     <Button
                                         v-if="comment.can_delete"
                                         size="sm"
                                         variant="ghost"
                                         :aria-label="`Delete comment by ${comment.user?.username}`"
                                         @click="requestDelete(comment)"
-                                        ><Trash2 class="size-4" /></Button
-                                    >
+                                        ><Trash2 class="size-4"
+                                    /></Button>
                                     <Button
                                         size="sm"
                                         variant="ghost"
                                         :aria-label="`Reply to ${comment.user?.username}`"
                                         @click="startReply(comment)"
-                                        ><CornerUpLeft class="size-4" /></Button
-                                    >
+                                        ><CornerUpLeft class="size-4"
+                                    /></Button>
                                 </div>
                             </div>
                         </div>
@@ -598,21 +711,27 @@ async function copyManifestLink(): Promise<void> {
                                     class="flex items-start justify-between gap-4"
                                 >
                                     <div class="min-w-0">
-                                        <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                                            <p class="technical-label">{{
-                                                reply.user?.username ??
-                                                reply.user?.name
-                                            }}</p>
+                                        <div
+                                            class="flex flex-wrap items-baseline gap-x-3 gap-y-1"
+                                        >
+                                            <p class="technical-label">
+                                                {{
+                                                    reply.user?.username ??
+                                                    reply.user?.name
+                                                }}
+                                            </p>
                                             <time
                                                 class="technical-label text-muted-foreground"
                                                 >{{
-                                                    formatTimestamp(reply.created_at)
+                                                    formatTimestamp(
+                                                        reply.created_at,
+                                                    )
                                                 }}</time
                                             >
                                         </div>
                                         <p
                                             v-if="reply.is_deleted"
-                                            class="technical-label mt-1 italic text-muted-foreground"
+                                            class="technical-label mt-1 text-muted-foreground italic"
                                         >
                                             [deleted]
                                         </p>
@@ -626,7 +745,9 @@ async function copyManifestLink(): Promise<void> {
                                             <div class="mt-2 flex gap-2">
                                                 <Button
                                                     size="sm"
-                                                    :disabled="editForm.processing"
+                                                    :disabled="
+                                                        editForm.processing
+                                                    "
                                                     @click="saveEdit(reply)"
                                                     >Save</Button
                                                 >
@@ -641,7 +762,7 @@ async function copyManifestLink(): Promise<void> {
                                         </template>
                                         <p
                                             v-else
-                                            class="mt-2 whitespace-pre-line text-sm leading-6"
+                                            class="mt-2 text-sm leading-6 whitespace-pre-line"
                                         >
                                             {{ reply.body }}
                                         </p>
@@ -666,7 +787,7 @@ async function copyManifestLink(): Promise<void> {
                                         </button>
                                         <div
                                             v-if="$page.props.auth.user"
-                                            class="flex gap-1 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+                                            class="flex gap-1 transition-opacity sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100"
                                         >
                                             <Button
                                                 v-if="reply.can_edit"
@@ -674,23 +795,25 @@ async function copyManifestLink(): Promise<void> {
                                                 variant="ghost"
                                                 :aria-label="`Edit reply by ${reply.user?.username}`"
                                                 @click="startEdit(reply)"
-                                                ><Pencil class="size-4" /></Button
-                                            >
+                                                ><Pencil class="size-4"
+                                            /></Button>
                                             <Button
                                                 v-if="reply.can_delete"
                                                 size="sm"
                                                 variant="ghost"
                                                 :aria-label="`Delete reply by ${reply.user?.username}`"
                                                 @click="requestDelete(reply)"
-                                                ><Trash2 class="size-4" /></Button
-                                            >
+                                                ><Trash2 class="size-4"
+                                            /></Button>
                                         </div>
                                     </div>
                                 </div>
                             </li>
                         </ul>
                         <form
-                            v-if="replyTo === comment.id && $page.props.auth.user"
+                            v-if="
+                                replyTo === comment.id && $page.props.auth.user
+                            "
                             class="mt-4 grid gap-2 border-l border-foreground pl-4"
                             @submit.prevent="submitReply"
                         >
@@ -851,10 +974,7 @@ async function copyManifestLink(): Promise<void> {
                                 />
                             </span>
                         </div>
-                        <p
-                            v-if="review.body"
-                            class="mt-2 text-sm leading-6"
-                        >
+                        <p v-if="review.body" class="mt-2 text-sm leading-6">
                             {{ review.body }}
                         </p>
                     </li>

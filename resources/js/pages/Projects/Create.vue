@@ -118,7 +118,7 @@ function validateCurrentStep(): boolean {
         }
 
         if (!form.description.trim()) {
-            errors.description = 'Tell the fuller story.';
+            errors.description = 'Write a short project overview.';
         }
 
         if (Object.keys(errors).length) {
@@ -176,8 +176,12 @@ function continueComposer(): void {
         return;
     }
 
-    form.screenshots = newScreenshots.value.map((screenshot) => screenshot.file);
-    form.screenshots_captions = newScreenshots.value.map((screenshot) => screenshot.caption);
+    form.screenshots = newScreenshots.value.map(
+        (screenshot) => screenshot.file,
+    );
+    form.screenshots_captions = newScreenshots.value.map(
+        (screenshot) => screenshot.caption,
+    );
 
     form.post(store().url, {
         forceFormData: true,
@@ -206,8 +210,8 @@ function continueComposer(): void {
                     Give it a shape.
                 </h1>
                 <p class="mt-6 max-w-2xl leading-7 text-muted-foreground">
-                    Start private. Build a launch record with enough
-                    substance to become public.
+                    Start private. Build a launch record with enough substance
+                    to become public.
                 </p>
             </SectionHeader>
             <div class="border-b border-foreground p-5 sm:p-8">
@@ -285,7 +289,7 @@ function continueComposer(): void {
                                     }}</FieldError></Field
                                 ><Field
                                     ><FieldLabel for="description"
-                                        >The fuller story</FieldLabel
+                                        >Short overview</FieldLabel
                                     ><RichTextEditor
                                         v-model="form.description"
                                     /><FieldError
@@ -336,8 +340,7 @@ function continueComposer(): void {
                                     ><FileUpload
                                         v-model="form.logo"
                                         kind="logo"
-                                        :error="form.errors.logo"
-                                    /></Field
+                                        :error="form.errors.logo" /></Field
                                 ><Field
                                     ><FieldLabel>Screenshots</FieldLabel>
                                     <p class="text-xs text-muted-foreground">
@@ -346,7 +349,9 @@ function continueComposer(): void {
                                     </p>
                                     <div class="grid gap-3">
                                         <div
-                                            v-for="(screenshot, index) in newScreenshots"
+                                            v-for="(
+                                                screenshot, index
+                                            ) in newScreenshots"
                                             :key="`new-${index}`"
                                             class="flex items-start gap-3 border border-dashed border-foreground p-3"
                                         >
@@ -364,7 +369,11 @@ function continueComposer(): void {
                                                     type="button"
                                                     variant="outline"
                                                     size="sm"
-                                                    @click="removeNewScreenshot(index)"
+                                                    @click="
+                                                        removeNewScreenshot(
+                                                            index,
+                                                        )
+                                                    "
                                                 >
                                                     Remove
                                                 </Button>
@@ -381,11 +390,13 @@ function continueComposer(): void {
                                             data-test="project-screenshots"
                                             @change="
                                                 addScreenshots(
-                                                    ($event.target as HTMLInputElement)
-                                                        .files,
+                                                    (
+                                                        $event.target as HTMLInputElement
+                                                    ).files,
                                                 );
-                                                ($event.target as HTMLInputElement).value =
-                                                    '';
+                                                (
+                                                    $event.target as HTMLInputElement
+                                                ).value = '';
                                             "
                                         />
                                         <Button
@@ -400,7 +411,9 @@ function continueComposer(): void {
                                     </div>
                                     <FieldError
                                         v-if="form.errors.screenshots"
-                                        >{{ form.errors.screenshots }}</FieldError
+                                        >{{
+                                            form.errors.screenshots
+                                        }}</FieldError
                                     ></Field
                                 ><Field
                                     ><FieldLabel for="pricing"
@@ -498,12 +511,9 @@ function continueComposer(): void {
                                             }}
                                         </p>
                                     </template>
-                                    <FieldError
-                                        v-if="form.errors.github_url"
-                                        >{{
-                                            form.errors.github_url
-                                        }}</FieldError
-                                    ></Field
+                                    <FieldError v-if="form.errors.github_url">{{
+                                        form.errors.github_url
+                                    }}</FieldError></Field
                                 >
                             </div>
                         </template>
@@ -547,15 +557,15 @@ function continueComposer(): void {
                     <aside class="bg-secondary p-5 sm:p-8">
                         <p class="technical-label">Field notes</p>
                         <p class="mt-8 max-w-sm text-sm leading-7">
-                            A launch stays private until it has a release story
-                            and you deliberately publish it. This first step
-                            simply creates the project record.
+                            A launch stays private until it has a Ship Story, a
+                            release, and a deliberate public filing. This first
+                            step simply creates the project record.
                         </p>
                         <p class="technical-label mt-12 text-primary">
                             Required /
                             {{
                                 step === 1
-                                    ? 'Name, line, story'
+                                    ? 'Name, line, overview'
                                     : step === 2
                                       ? 'Category, cover, screenshot, link'
                                       : 'Review'

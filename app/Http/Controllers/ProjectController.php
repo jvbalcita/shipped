@@ -11,6 +11,7 @@ use App\Models\Comment;
 use App\Models\Project;
 use App\Models\ProjectScreenshot;
 use App\Models\Review;
+use App\Models\ShipStory;
 use App\Models\Tag;
 use App\Models\User;
 use App\Services\GitHub\Exceptions\GitHubApiUnavailable;
@@ -98,6 +99,7 @@ class ProjectController extends Controller
             $data['pricing'] = $data['pricing'] ?? ProjectPricing::Free->value;
             $data['slug'] = $this->uniqueSlug($data['name']);
             $project = $request->user()->projects()->create($data);
+            $project->shipStory()->create();
             $this->syncTags($project, $request->string('tags')->toString());
             $this->storeScreenshots($project, $request);
 
@@ -123,6 +125,7 @@ class ProjectController extends Controller
             'screenshots:id,project_id,path,caption,sort_order',
             'reviews.user:id,name,username',
             'releases' => fn ($query) => $query->published()->latest('published_at'),
+            'shipStory',
         ])->loadCount(['cheers', 'reviews', 'followers'])
             ->loadAvg('reviews', 'rating');
 
@@ -181,6 +184,9 @@ class ProjectController extends Controller
                     'notes',
                     'published_at',
                 ))->values(),
+                'ship_story' => $isDiscoverable
+                    ? $this->shipStoryProps($project->shipStory)
+                    : null,
                 'rating_average' => $project->reviews_avg_rating !== null
                     ? round((float) $project->reviews_avg_rating, 1)
                     : null,
@@ -250,8 +256,11 @@ class ProjectController extends Controller
     {
         $this->authorize('update', $project);
 
+        $project->load(['releases', 'tags', 'screenshots', 'creator']);
+
         return Inertia::render('Projects/Edit', [
-            'project' => $project->load(['releases', 'tags', 'screenshots', 'creator']),
+            'project' => $project,
+            'shipStory' => $this->shipStoryProps($project->shipStory, true),
             'categories' => Category::query()->orderBy('name')->get(),
             'pricingOptions' => collect(ProjectPricing::cases())->map(fn (ProjectPricing $pricing) => [
                 'value' => $pricing->value,
@@ -454,5 +463,29 @@ class ProjectController extends Controller
         })->all();
 
         $project->tags()->sync($tagIds);
+    }
+
+    /** @return array<string, mixed>|null */
+    private function shipStoryProps(?ShipStory $story, bool $includeApproval = false): ?array
+    {
+        if ($story === null) {
+            return null;
+        }
+
+        return [
+            'id' => $story->id,
+            'problem' => $story->problem,
+            'audience' => $story->audience,
+            'shipped' => $story->shipped,
+            'build_decisions' => $story->build_decisions,
+            'hardest_problem' => $story->hardest_problem,
+            'lessons_learned' => $story->lessons_learned,
+            'next' => $story->next,
+            'is_complete' => $story->isComplete(),
+            'is_approved' => $story->isApprovedAndComplete(),
+            'approved_at' => $includeApproval
+                ? $story->approved_at?->toIso8601String()
+                : null,
+        ];
     }
 }

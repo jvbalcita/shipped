@@ -28,6 +28,7 @@ class PublishScheduledReleases extends Command
         Project::query()
             ->where('is_public', false)
             ->where('verification_status', 'verified')
+            ->whereHas('approvedShipStory')
             ->whereHas('releases', fn (Builder $query) => $query
                 ->whereIn($release->qualifyColumn('id'), $latestRelease)
                 ->where($release->qualifyColumn('published_at'), '<=', now()))

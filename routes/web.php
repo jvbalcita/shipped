@@ -18,6 +18,7 @@ use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectFollowController;
 use App\Http\Controllers\ProjectReleaseController;
 use App\Http\Controllers\ProjectReviewController;
+use App\Http\Controllers\ProjectShipStoryController;
 use App\Http\Controllers\ProjectVerificationController;
 use App\Http\Controllers\ProjectVisibilityController;
 use App\Http\Controllers\ReleaseController;
@@ -51,6 +52,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('cloud-connection/environments', [ConnectedEnvironmentController::class, 'index'])->name('cloud-connection.environments');
     Route::resource('projects', ProjectController::class)->except(['show']);
     Route::post('projects/{project}/releases', [ProjectReleaseController::class, 'store'])->name('projects.releases.store');
+    Route::put('projects/{project}/ship-story', [ProjectShipStoryController::class, 'update'])->name('projects.ship-story.update');
     Route::patch('projects/{project}/visibility', [ProjectVisibilityController::class, 'update'])->name('projects.visibility.update');
     Route::post('projects/{project}/verification', [ProjectVerificationController::class, 'store'])
         ->middleware('throttle:project-verification')

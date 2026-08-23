@@ -31,6 +31,18 @@ test('a creator can publish a project after creating its first release', functio
 
     expect($project->is_public)->toBeFalse();
 
+    $shipStory = $project->shipStory()->firstOrFail();
+    $shipStory->fill([
+        'problem' => 'Teams need a calmer way to understand queue work.',
+        'audience' => 'Laravel teams running production queues.',
+        'shipped' => 'A focused queue visibility tool.',
+        'build_decisions' => 'We kept the workflow inside the existing Laravel project model.',
+        'hardest_problem' => 'Making operational state readable without adding noise.',
+        'lessons_learned' => 'A small, focused surface is easier to trust.',
+    ]);
+    $shipStory->approved_at = now();
+    $shipStory->save();
+
     $this->actingAs($creator)
         ->post(route('projects.releases.store', $project), [
             'title' => 'Queue Pilot is live',
@@ -67,6 +79,7 @@ test('a creator can open the studio after creating a private draft', function ()
     $project = Project::query()->firstOrFail();
 
     $response->assertRedirect(route('projects.edit', $project));
+    expect($project->shipStory()->exists())->toBeTrue();
 
     $this->actingAs($creator)
         ->get(route('projects.edit', $project))
