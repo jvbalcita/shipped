@@ -12,6 +12,15 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class ProjectFactory extends Factory
 {
+    public function configure(): static
+    {
+        return $this->afterCreating(function (Project $project): void {
+            if ($project->is_public || $project->is_demo || $project->verification_status === 'verified') {
+                $this->createApprovedShipStory($project);
+            }
+        });
+    }
+
     /**
      * Define the model's default state.
      *
@@ -91,5 +100,20 @@ class ProjectFactory extends Factory
     public function demo(): static
     {
         return $this->state(fn () => ['is_demo' => true]);
+    }
+
+    private function createApprovedShipStory(Project $project): void
+    {
+        $story = $project->shipStory()->firstOrNew();
+        $story->fill([
+            'problem' => 'A focused problem deserves a clear explanation.',
+            'audience' => 'People who need a practical solution to this problem.',
+            'shipped' => 'A working release that people can try today.',
+            'build_decisions' => 'A small, deliberate Laravel stack kept the product easy to change.',
+            'hardest_problem' => 'The hardest part was turning the rough idea into a useful workflow.',
+            'lessons_learned' => 'The smallest useful slice taught us what to build next.',
+        ]);
+        $story->approved_at = now();
+        $story->save();
     }
 }

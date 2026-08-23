@@ -19,7 +19,7 @@ class OgController extends Controller
 
         return response()
             ->view('og.project', [
-                'project' => $project->load(['creator', 'category']),
+                'project' => $project->load(['creator', 'category', 'shipStory']),
             ])
             ->header('Content-Type', 'image/svg+xml');
     }

@@ -50,6 +50,7 @@ class DiscoverController extends Controller
                 'creator:id,name,username',
                 'category:id,name,slug',
                 'tags:id,name,slug',
+                'shipStory',
             ])
             ->withCount('cheers')
             ->withAvg('reviews', 'rating')
@@ -81,6 +82,7 @@ class DiscoverController extends Controller
                 'creator' => $project->creator?->only('id', 'name', 'username'),
                 'category' => $project->category?->only('id', 'name', 'slug'),
                 'tags' => $project->tags->map->only('id', 'name', 'slug')->values(),
+                'ship_story_excerpt' => $project->shipStory?->excerpt(),
             ])
             ->withQueryString();
 

@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
@@ -103,6 +104,18 @@ class Project extends Model
         return $this->hasMany(Release::class);
     }
 
+    /** @return HasOne<ShipStory, $this> */
+    public function shipStory(): HasOne
+    {
+        return $this->hasOne(ShipStory::class);
+    }
+
+    /** @return HasOne<ShipStory, $this> */
+    public function approvedShipStory(): HasOne
+    {
+        return $this->shipStory()->approvedAndComplete();
+    }
+
     /** @return BelongsToMany<Tag, $this> */
     public function tags(): BelongsToMany
     {
@@ -140,7 +153,8 @@ class Project extends Model
                     ->where('verification_status', 'verified')
                     ->whereHas('releases', fn ($query) => $query
                         ->whereNotNull('published_at')
-                        ->where('published_at', '<=', now()));
+                        ->where('published_at', '<=', now()))
+                    ->whereHas('approvedShipStory');
             });
 
             if (app()->environment(['local', 'testing'])) {
@@ -150,7 +164,8 @@ class Project extends Model
                         ->where('is_public', true)
                         ->whereHas('releases', fn ($query) => $query
                             ->whereNotNull('published_at')
-                            ->where('published_at', '<=', now()));
+                            ->where('published_at', '<=', now()))
+                        ->whereHas('approvedShipStory');
                 });
             }
         });
@@ -169,7 +184,17 @@ class Project extends Model
     {
         return $this->is_public
             && $this->verification_status === 'verified'
-            && $this->releases()->published()->exists();
+            && $this->releases()->published()->exists()
+            && $this->hasApprovedShipStory();
+    }
+
+    public function hasApprovedShipStory(): bool
+    {
+        if ($this->relationLoaded('shipStory')) {
+            return $this->shipStory?->isApprovedAndComplete() === true;
+        }
+
+        return $this->approvedShipStory()->exists();
     }
 
     public function withdrawFromPublicRegistry(): void

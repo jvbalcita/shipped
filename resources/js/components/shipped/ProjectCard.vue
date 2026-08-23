@@ -15,12 +15,18 @@ const cheered = ref(Boolean(props.project.cheered_by_viewer));
 const count = ref(Number(props.project.cheers_count ?? 0));
 
 // Resync local state when the Discover page re-renders with fresh counts.
-watch(() => props.project.cheers_count, (value) => {
-    count.value = Number(value ?? 0);
-});
-watch(() => props.project.cheered_by_viewer, (value) => {
-    cheered.value = Boolean(value);
-});
+watch(
+    () => props.project.cheers_count,
+    (value) => {
+        count.value = Number(value ?? 0);
+    },
+);
+watch(
+    () => props.project.cheered_by_viewer,
+    (value) => {
+        cheered.value = Boolean(value);
+    },
+);
 
 function toggleCheer(): void {
     const authed = page.props.auth.user !== null;
@@ -110,7 +116,9 @@ function toggleCheer(): void {
                         class="size-10 shrink-0 border border-foreground object-cover"
                     />
                     <div class="min-w-0">
-                        <h2 class="display-type text-2xl">{{ project.name }}</h2>
+                        <h2 class="display-type text-2xl">
+                            {{ project.name }}
+                        </h2>
                         <p
                             v-if="project.pricing_label || project.pricing"
                             class="technical-label mt-2 text-primary"
@@ -149,6 +157,15 @@ function toggleCheer(): void {
                 >
                     {{ project.tagline }}
                 </p>
+                <div
+                    v-if="project.ship_story_excerpt"
+                    class="mt-4 border-l-2 border-primary pl-3"
+                >
+                    <p class="technical-label text-primary">Ship Story</p>
+                    <p class="mt-1 line-clamp-3 text-sm leading-6">
+                        {{ project.ship_story_excerpt }}
+                    </p>
+                </div>
                 <ul
                     v-if="project.tags?.length"
                     class="mt-3 flex flex-wrap gap-2"

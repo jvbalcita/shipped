@@ -20,6 +20,10 @@ class ProjectVisibilityController extends Controller
             throw ValidationException::withMessages(['is_public' => 'Verify the live URL with Laravel Cloud before making this project public.']);
         }
 
+        if ($request->boolean('is_public') && ! $project->hasApprovedShipStory()) {
+            throw ValidationException::withMessages(['is_public' => 'Complete and approve your Ship Story before making this project public.']);
+        }
+
         $wasPublic = (bool) $project->is_public;
         $makingPublic = $request->boolean('is_public');
 

@@ -46,10 +46,26 @@ import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { update } from '@/routes/projects';
 import { store as releaseStore } from '@/routes/projects/releases';
+import shipStoryRoutes from '@/routes/projects/ship-story';
 import visibility from '@/routes/projects/visibility';
+
+type ShipStoryData = {
+    id: number;
+    problem: string | null;
+    audience: string | null;
+    shipped: string | null;
+    build_decisions: string | null;
+    hardest_problem: string | null;
+    lessons_learned: string | null;
+    next: string | null;
+    is_complete: boolean;
+    is_approved: boolean;
+    approved_at: string | null;
+};
 
 const props = defineProps<{
     project: any;
+    shipStory: ShipStoryData | null;
     categories: { id: number; name: string }[];
     pricingOptions: { value: string; label: string }[];
     suggestedTags: string[];
@@ -99,9 +115,33 @@ const releaseForm = useForm({
     timing: 'now',
     published_at: '',
 });
+const shipStoryForm = useForm({
+    problem: props.shipStory?.problem ?? '',
+    audience: props.shipStory?.audience ?? '',
+    shipped: props.shipStory?.shipped ?? '',
+    build_decisions: props.shipStory?.build_decisions ?? '',
+    hardest_problem: props.shipStory?.hardest_problem ?? '',
+    lessons_learned: props.shipStory?.lessons_learned ?? '',
+    next: props.shipStory?.next ?? '',
+    approve: false,
+});
 const confirmPublish = ref(false);
 const isScheduledTimeValid = ref(false);
 const isScheduled = computed(() => releaseForm.timing === 'schedule');
+const shipStoryStatus = computed(() => {
+    if (props.shipStory?.is_approved) {
+        return 'Approved for public discovery';
+    }
+
+    if (props.shipStory) {
+        return 'Private draft';
+    }
+
+    return 'Not started';
+});
+const hasApprovedShipStory = computed(
+    () => props.shipStory?.is_approved === true,
+);
 const hasPublishedRelease = computed(() =>
     props.project.releases.some(
         (release: { published_at: string | null }) =>
@@ -263,6 +303,16 @@ function submitRelease(): void {
     });
 }
 
+function saveShipStory(approve: boolean): void {
+    shipStoryForm.approve = approve;
+    shipStoryForm.put(shipStoryRoutes.update(props.project).url, {
+        preserveScroll: true,
+        onSuccess: () => {
+            shipStoryForm.approve = false;
+        },
+    });
+}
+
 function updateScheduledTimeValidity(isValid: boolean): void {
     isScheduledTimeValid.value = isValid;
 
@@ -391,7 +441,7 @@ onUnmounted(() => {
                                 required /></Field
                         ><Field
                             ><FieldLabel for="description"
-                                >The fuller story</FieldLabel
+                                >Short overview</FieldLabel
                             ><RichTextEditor
                                 v-model="projectForm.description" /></Field
                         ><Field
@@ -761,9 +811,9 @@ onUnmounted(() => {
                     <Alert class="mt-8 border-foreground"
                         ><AlertTitle>Public visibility is deliberate</AlertTitle
                         ><AlertDescription
-                            >Create a published release first, then confirm the
-                            public project record below.</AlertDescription
-                        ></Alert
+                            >Approve a complete Ship Story, publish a release,
+                            and verify the live URL before filing this project.
+                        </AlertDescription></Alert
                     ><AlertDialog
                         v-if="!project.is_public"
                         v-model:open="confirmPublish"
@@ -774,7 +824,9 @@ onUnmounted(() => {
                                 :disabled="
                                     publishing ||
                                     !hasPublishedRelease ||
-                                    project.verification_status !== 'verified'
+                                    project.verification_status !==
+                                        'verified' ||
+                                    !hasApprovedShipStory
                                 "
                                 ><Eye class="size-4" />Publish project</Button
                             ></AlertDialogTrigger
@@ -839,6 +891,175 @@ onUnmounted(() => {
                     >
                 </section>
             </div>
+            <section class="border-t border-foreground bg-background">
+                <div class="grid gap-8 p-5 sm:grid-cols-[.45fr_1.55fr] sm:p-8">
+                    <div>
+                        <p class="technical-label text-primary">Ship Story</p>
+                        <h2 class="display-type mt-5 text-4xl">
+                            Give the launch a reason to return.
+                        </h2>
+                        <p
+                            class="mt-5 max-w-sm text-sm leading-7 text-muted-foreground"
+                        >
+                            Keep this private while you think. Approve it when
+                            the story explains the problem, the people, and the
+                            choices behind the shipped work.
+                        </p>
+                        <p
+                            class="technical-label mt-8"
+                            :class="
+                                shipStory?.is_approved
+                                    ? 'text-primary'
+                                    : 'text-muted-foreground'
+                            "
+                            data-test="ship-story-status"
+                        >
+                            {{ shipStoryStatus }}
+                        </p>
+                    </div>
+                    <form
+                        novalidate
+                        class="grid gap-5"
+                        data-test="ship-story-form"
+                        @submit.prevent="saveShipStory(false)"
+                    >
+                        <Field>
+                            <FieldLabel for="story_problem"
+                                >What problem made this worth
+                                building?</FieldLabel
+                            >
+                            <Textarea
+                                id="story_problem"
+                                v-model="shipStoryForm.problem"
+                                rows="4"
+                                placeholder="Name the real problem behind the project."
+                            />
+                            <FieldError v-if="shipStoryForm.errors.problem">{{
+                                shipStoryForm.errors.problem
+                            }}</FieldError>
+                        </Field>
+                        <Field>
+                            <FieldLabel for="story_audience"
+                                >Who is this for?</FieldLabel
+                            >
+                            <Textarea
+                                id="story_audience"
+                                v-model="shipStoryForm.audience"
+                                rows="3"
+                                placeholder="Describe the people who get value from it."
+                            />
+                            <FieldError v-if="shipStoryForm.errors.audience">{{
+                                shipStoryForm.errors.audience
+                            }}</FieldError>
+                        </Field>
+                        <Field>
+                            <FieldLabel for="story_shipped"
+                                >What shipped?</FieldLabel
+                            >
+                            <Textarea
+                                id="story_shipped"
+                                v-model="shipStoryForm.shipped"
+                                rows="4"
+                                placeholder="Tell people what they can try now."
+                            />
+                            <FieldError v-if="shipStoryForm.errors.shipped">{{
+                                shipStoryForm.errors.shipped
+                            }}</FieldError>
+                        </Field>
+                        <div class="grid gap-5 md:grid-cols-2">
+                            <Field>
+                                <FieldLabel for="story_build_decisions"
+                                    >What build choices mattered?</FieldLabel
+                                >
+                                <Textarea
+                                    id="story_build_decisions"
+                                    v-model="shipStoryForm.build_decisions"
+                                    rows="5"
+                                    placeholder="Explain a Laravel, product, or design decision."
+                                />
+                                <FieldError
+                                    v-if="shipStoryForm.errors.build_decisions"
+                                    >{{
+                                        shipStoryForm.errors.build_decisions
+                                    }}</FieldError
+                                >
+                            </Field>
+                            <Field>
+                                <FieldLabel for="story_hardest_problem"
+                                    >What was hardest?</FieldLabel
+                                >
+                                <Textarea
+                                    id="story_hardest_problem"
+                                    v-model="shipStoryForm.hardest_problem"
+                                    rows="5"
+                                    placeholder="Share the obstacle that changed the build."
+                                />
+                                <FieldError
+                                    v-if="shipStoryForm.errors.hardest_problem"
+                                    >{{
+                                        shipStoryForm.errors.hardest_problem
+                                    }}</FieldError
+                                >
+                            </Field>
+                        </div>
+                        <Field>
+                            <FieldLabel for="story_lessons_learned"
+                                >What did you learn?</FieldLabel
+                            >
+                            <Textarea
+                                id="story_lessons_learned"
+                                v-model="shipStoryForm.lessons_learned"
+                                rows="4"
+                                placeholder="Leave the next builder a useful lesson."
+                            />
+                            <FieldError
+                                v-if="shipStoryForm.errors.lessons_learned"
+                                >{{
+                                    shipStoryForm.errors.lessons_learned
+                                }}</FieldError
+                            >
+                        </Field>
+                        <Field>
+                            <FieldLabel for="story_next"
+                                >What comes next?
+                                <span class="text-muted-foreground"
+                                    >(optional)</span
+                                ></FieldLabel
+                            >
+                            <Textarea
+                                id="story_next"
+                                v-model="shipStoryForm.next"
+                                rows="3"
+                                placeholder="Name the next experiment, release, or question."
+                            />
+                            <FieldError v-if="shipStoryForm.errors.next">{{
+                                shipStoryForm.errors.next
+                            }}</FieldError>
+                        </Field>
+                        <div class="flex flex-wrap gap-3">
+                            <Button
+                                type="submit"
+                                variant="outline"
+                                :disabled="shipStoryForm.processing"
+                                data-test="save-ship-story"
+                            >
+                                <Spinner v-if="shipStoryForm.processing" />
+                                Save draft
+                            </Button>
+                            <Button
+                                type="button"
+                                :disabled="shipStoryForm.processing"
+                                data-test="approve-ship-story"
+                                @click="saveShipStory(true)"
+                            >
+                                <Spinner v-if="shipStoryForm.processing" />
+                                <Check v-else class="size-4" />
+                                Approve Ship Story
+                            </Button>
+                        </div>
+                    </form>
+                </div>
+            </section>
             <VerificationPanel :project="project" />
             <BadgeSnippet v-if="badgeMarkdown" :markdown="badgeMarkdown" />
             <section class="border-t border-foreground">
