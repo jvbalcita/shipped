@@ -17,6 +17,7 @@ import {
 import { computed, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import CheerWall from '@/components/shipped/CheerWall.vue';
+import Breadcrumbs from '@/components/shipped/Breadcrumbs.vue';
 import FollowButton from '@/components/shipped/FollowButton.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
 import ScreenshotLightbox from '@/components/shipped/ScreenshotLightbox.vue';
@@ -35,6 +36,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { defaultCoverUrl } from '@/lib/cover';
+import { home } from '@/routes';
 import { store as storeCommentCheer } from '@/routes/comments/cheers';
 import { show as creatorShow } from '@/routes/creators';
 import {
@@ -67,6 +69,17 @@ const props = defineProps<{
     hasCheered: boolean;
     canCheer: boolean;
 }>();
+
+const breadcrumbs = [
+    { label: 'Home', href: home().url },
+    {
+        label: '@' + props.project.creator.username,
+        href: creatorShow({
+            creator: props.project.creator,
+        }).url,
+    },
+    { label: props.project.name },
+];
 
 const reviewForm = useForm({
     rating: props.project.user_review?.rating ?? 5,
@@ -214,6 +227,7 @@ async function copyManifestLink(): Promise<void> {
         <section
             class="page-enter mx-auto w-full max-w-[90rem] min-w-0 border-x border-foreground"
         >
+            <Breadcrumbs :items="breadcrumbs" />
             <div class="relative border-b border-foreground bg-secondary">
                 <img
                     :src="project.cover_image_url ?? defaultCoverUrl(project)"

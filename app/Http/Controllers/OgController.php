@@ -3,12 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\Project;
+use App\Models\Release;
 use App\Models\User;
 use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
 
 class OgController extends Controller
 {
+    public function site(): Response
+    {
+        return response()
+            ->view('og.site')
+            ->header('Content-Type', 'image/svg+xml')
+            ->header('Cache-Control', 'public, max-age=300, must-revalidate');
+    }
+
     /**
      * Render a Creator Shipping Profile share card as a self-contained SVG.
      */
@@ -34,7 +43,7 @@ class OgController extends Controller
                 ),
             ])
             ->header('Content-Type', 'image/svg+xml')
-            ->header('Cache-Control', 'public, max-age=300');
+            ->header('Cache-Control', 'public, max-age=300, must-revalidate');
     }
 
     /**
@@ -50,7 +59,23 @@ class OgController extends Controller
             ->view('og.project', [
                 'project' => $project->load(['creator', 'category', 'shipStory']),
             ])
-            ->header('Content-Type', 'image/svg+xml');
+            ->header('Content-Type', 'image/svg+xml')
+            ->header('Cache-Control', 'public, max-age=300, must-revalidate');
+    }
+
+    public function release(User $creator, Project $project, Release $release): Response
+    {
+        abort_unless($project->creator->is($creator), 404);
+        abort_unless($release->project->is($project), 404);
+        abort_unless(Project::query()->discoverable()->whereKey($project)->exists(), 404);
+        abort_unless($release->published_at?->isPast(), 404);
+
+        return response()
+            ->view('og.release', [
+                'release' => $release->load(['project.creator']),
+            ])
+            ->header('Content-Type', 'image/svg+xml')
+            ->header('Cache-Control', 'public, max-age=300, must-revalidate');
     }
 
     /**
@@ -67,6 +92,6 @@ class OgController extends Controller
                 'project' => $project->load(['creator']),
             ])
             ->header('Content-Type', 'image/svg+xml')
-            ->header('Cache-Control', 'public, max-age=300');
+            ->header('Cache-Control', 'public, max-age=300, must-revalidate');
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use App\Models\Release;
+use App\Services\Seo\SeoMetadata;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
@@ -29,10 +30,25 @@ class WelcomeController extends Controller
             ];
         });
 
+        $seo = new SeoMetadata(
+            title: 'Shipped — The verified launch registry for Laravel projects',
+            description: 'Discover verified Laravel projects and the people who ship them.',
+            canonicalUrl: route('home'),
+            image: route('og.site'),
+            imageAlt: 'Shipped — The verified launch registry for Laravel projects',
+            jsonLd: [[
+                '@context' => 'https://schema.org',
+                '@type' => 'WebSite',
+                '@id' => route('home').'#website',
+                'name' => 'Shipped',
+                'url' => route('home'),
+            ]],
+        );
+
         return Inertia::render('Welcome', [
             ...$stats,
-            'ogTitle' => 'Shipped — A public home for launches',
-            'ogDescription' => 'A public registry for independent launches worth sharing.',
+            'seo' => $seo->toArray(),
+            ...$seo->legacyProps(),
         ]);
     }
 }

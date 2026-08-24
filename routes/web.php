@@ -23,12 +23,15 @@ use App\Http\Controllers\ProjectShipStoryController;
 use App\Http\Controllers\ProjectVerificationController;
 use App\Http\Controllers\ProjectVisibilityController;
 use App\Http\Controllers\ReleaseController;
+use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\UserFollowController;
 use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', WelcomeController::class)->name('home');
 Route::get('/discover', DiscoverController::class)->name('discover');
+Route::get('/sitemap.xml', [SitemapController::class, 'sitemap'])->name('sitemap');
+Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
 
 Route::get('oauth/{provider}', [OAuthController::class, 'redirect'])
     ->name('oauth.redirect')
@@ -83,9 +86,13 @@ Route::get('/@{creator:username}/{project:slug}', [ProjectController::class, 'sh
     ->name('projects.show');
 
 Route::get('/og/@{creator:username}', [OgController::class, 'creator'])->name('og.creator');
+Route::get('/og/site.svg', [OgController::class, 'site'])->name('og.site');
 Route::get('/og/@{creator:username}/{project:slug}', [OgController::class, 'project'])
     ->scopeBindings()
     ->name('og.project');
+Route::get('/og/@{creator:username}/{project:slug}/releases/{release}.svg', [OgController::class, 'release'])
+    ->scopeBindings()
+    ->name('og.release');
 
 Route::get('/covers/@{creator:username}/{project:slug}', [OgController::class, 'cover'])
     ->scopeBindings()
