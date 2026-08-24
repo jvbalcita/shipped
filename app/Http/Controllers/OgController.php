@@ -15,7 +15,7 @@ class OgController extends Controller
         return response()
             ->view('og.site')
             ->header('Content-Type', 'image/svg+xml')
-            ->header('Cache-Control', 'public, max-age=300');
+            ->header('Cache-Control', 'public, max-age=300, must-revalidate');
     }
 
     /**
@@ -43,7 +43,7 @@ class OgController extends Controller
                 ),
             ])
             ->header('Content-Type', 'image/svg+xml')
-            ->header('Cache-Control', 'public, max-age=300');
+            ->header('Cache-Control', 'public, max-age=300, must-revalidate');
     }
 
     /**
@@ -60,7 +60,7 @@ class OgController extends Controller
                 'project' => $project->load(['creator', 'category', 'shipStory']),
             ])
             ->header('Content-Type', 'image/svg+xml')
-            ->header('Cache-Control', 'public, max-age=300');
+            ->header('Cache-Control', 'public, max-age=300, must-revalidate');
     }
 
     public function release(User $creator, Project $project, Release $release): Response
@@ -75,7 +75,7 @@ class OgController extends Controller
                 'release' => $release->load(['project.creator']),
             ])
             ->header('Content-Type', 'image/svg+xml')
-            ->header('Cache-Control', 'public, max-age=300');
+            ->header('Cache-Control', 'public, max-age=300, must-revalidate');
     }
 
     /**
@@ -92,6 +92,6 @@ class OgController extends Controller
                 'project' => $project->load(['creator']),
             ])
             ->header('Content-Type', 'image/svg+xml')
-            ->header('Cache-Control', 'public, max-age=300');
+            ->header('Cache-Control', 'public, max-age=300, must-revalidate');
     }
 }

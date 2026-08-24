@@ -56,7 +56,7 @@ class SitemapController extends Controller
         return response()
             ->view('sitemap', ['urls' => $urls])
             ->header('Content-Type', 'application/xml; charset=UTF-8')
-            ->header('Cache-Control', 'public, max-age=300');
+            ->header('Cache-Control', 'public, max-age=300, must-revalidate');
     }
 
     public function robots(): Response
@@ -64,6 +64,6 @@ class SitemapController extends Controller
         return response()
             ->view('robots', ['sitemapUrl' => route('sitemap')])
             ->header('Content-Type', 'text/plain; charset=UTF-8')
-            ->header('Cache-Control', 'public, max-age=300');
+            ->header('Cache-Control', 'public, max-age=300, must-revalidate');
     }
 }

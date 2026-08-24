@@ -41,10 +41,15 @@ test('the sitemap contains only canonical public record URLs', function () {
 });
 
 test('robots advertises the absolute sitemap URL', function () {
-    $this->get('/robots.txt')
+    $response = $this->get('/robots.txt')
         ->assertSuccessful()
         ->assertHeader('Content-Type', 'text/plain; charset=UTF-8')
         ->assertSee('User-agent: *', false)
         ->assertSee('Disallow:', false)
         ->assertSee('Sitemap: '.url('/sitemap.xml'), false);
+
+    expect($response->headers->get('Cache-Control'))
+        ->toContain('public')
+        ->toContain('max-age=300')
+        ->toContain('must-revalidate');
 });

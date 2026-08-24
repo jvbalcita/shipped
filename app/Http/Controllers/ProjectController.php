@@ -130,44 +130,57 @@ class ProjectController extends Controller
         ])->loadCount(['cheers', 'reviews', 'followers'])
             ->loadAvg('reviews', 'rating');
 
-        $canonicalUrl = route('projects.show', ['creator' => $creator, 'project' => $project]);
-        $softwareApplication = [
-            '@context' => 'https://schema.org',
-            '@type' => 'SoftwareApplication',
-            '@id' => $canonicalUrl.'#software',
-            'name' => $project->name,
-            'description' => SeoMetadata::summary(
-                $project->tagline,
-                'A verified Laravel project shipped by @'.$creator->username.' on Shipped.',
-            ),
-        ];
-        if ($project->live_url !== null) {
-            $softwareApplication['url'] = $project->live_url;
-        }
-        if ($project->category?->name !== null) {
-            $softwareApplication['applicationCategory'] = $project->category->name;
-        }
-        if ($project->github_url !== null) {
-            $softwareApplication['sameAs'] = [$project->github_url];
-        }
-        $seo = new SeoMetadata(
-            title: $project->name.' by @'.$creator->username.' — Shipped',
-            description: SeoMetadata::summary(
-                $project->tagline,
-                'A verified Laravel project shipped by @'.$creator->username.' on Shipped.',
-            ),
-            canonicalUrl: $canonicalUrl,
-            image: route('og.project', ['creator' => $creator, 'project' => $project]),
-            imageAlt: 'Share Card for '.$project->name.' by @'.$creator->username,
-            jsonLd: [
+        $seoProps = [];
+
+        if ($isDiscoverable) {
+            $canonicalUrl = route('projects.show', ['creator' => $creator, 'project' => $project]);
+            $jsonLd = [
                 SeoMetadata::breadcrumbList([
                     ['name' => 'Home', 'url' => route('home')],
                     ['name' => $creator->name, 'url' => route('creators.show', $creator)],
                     ['name' => $project->name, 'url' => $canonicalUrl],
                 ]),
-                $softwareApplication,
-            ],
-        );
+            ];
+
+            if ($project->live_url !== null) {
+                $softwareApplication = [
+                    '@context' => 'https://schema.org',
+                    '@type' => 'SoftwareApplication',
+                    '@id' => $canonicalUrl.'#software',
+                    'name' => $project->name,
+                    'description' => SeoMetadata::summary(
+                        $project->tagline,
+                        'A verified Laravel project shipped by @'.$creator->username.' on Shipped.',
+                    ),
+                    'url' => $project->live_url,
+                ];
+                if ($project->category?->name !== null) {
+                    $softwareApplication['applicationCategory'] = $project->category->name;
+                }
+                if ($project->github_url !== null) {
+                    $softwareApplication['sameAs'] = [$project->github_url];
+                }
+
+                $jsonLd[] = $softwareApplication;
+            }
+
+            $seo = new SeoMetadata(
+                title: $project->name.' by @'.$creator->username.' — Shipped',
+                description: SeoMetadata::summary(
+                    $project->tagline,
+                    'A verified Laravel project shipped by @'.$creator->username.' on Shipped.',
+                ),
+                canonicalUrl: $canonicalUrl,
+                image: route('og.project', ['creator' => $creator, 'project' => $project]),
+                imageAlt: 'Share Card for '.$project->name.' by @'.$creator->username,
+                jsonLd: $jsonLd,
+            );
+
+            $seoProps = [
+                'seo' => $seo->toArray(),
+                ...$seo->legacyProps(),
+            ];
+        }
 
         $viewer = request()->user();
         $viewerReview = $viewer !== null
@@ -259,8 +272,7 @@ class ProjectController extends Controller
                     'user' => $comment->user?->only('id', 'name', 'username'),
                 ])->values(),
             ],
-            'seo' => $seo->toArray(),
-            ...$seo->legacyProps(),
+            ...$seoProps,
             'manifestUrl' => $isDiscoverable
                 ? route('manifests.show', ['creator' => $creator, 'project' => $project])
                 : null,

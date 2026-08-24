@@ -72,8 +72,9 @@ The first variants are:
 - Site: Home or general Shipped identity
 - Project: project name, category, creator, verification-aware context, and short tagline
 - Release: release title, parent project, publication context, and creator
+- Creator: preserve the existing Shipping Profile card; its metadata image is conditional on at least one discoverable Project.
 
-Creator cards are deferred until the public Creator page has a sufficiently complete and stable profile contract. A Creator card must not be added merely because a route exists.
+The existing Creator card route remains a backwards-compatible public projection, including for empty profiles; this change does not broaden its data contract. Any redesign or richer Creator-card expansion remains deferred until the public Creator page has a sufficiently complete and stable profile contract.
 
 Cards use only data that is already safe to show on the corresponding public page. A private, stale, or otherwise non-discoverable record does not receive an indexable or shareable card. The endpoint is cacheable and deterministic for the same public record state.
 

@@ -13,7 +13,8 @@ test('the site share card is a cacheable self-contained SVG', function () {
 
     expect($this->get('/og/site.svg')->headers->get('Cache-Control'))
         ->toContain('public')
-        ->toContain('max-age=300');
+        ->toContain('max-age=300')
+        ->toContain('must-revalidate');
 });
 
 test('a release share card is scoped to a published discoverable release', function () {
@@ -35,7 +36,8 @@ test('a release share card is scoped to a published discoverable release', funct
 
     expect($this->get("/og/@card_builder/{$project->slug}/releases/{$release->id}.svg")->headers->get('Cache-Control'))
         ->toContain('public')
-        ->toContain('max-age=300');
+        ->toContain('max-age=300')
+        ->toContain('must-revalidate');
 });
 
 test('private projects and unpublished releases do not receive public share cards', function () {
@@ -89,4 +91,39 @@ test('a project share card preserves Unicode when applying editorial casing', fu
     $this->get(route('og.project', ['creator' => $creator, 'project' => $project]))
         ->assertSuccessful()
         ->assertSee('CAFÉ ÑANDÚ', false);
+});
+
+test('long share-card text receives an explicit SVG width constraint', function () {
+    $creator = User::factory()->create([
+        'name' => 'A Very Long Creator Name That Needs To Fit',
+        'username' => 'long_card_builder',
+    ]);
+    $project = Project::factory()->public()->for($creator, 'creator')->create([
+        'name' => 'A Very Long Project Name That Needs To Fit Safely',
+        'tagline' => 'A supporting line that is long enough to need deterministic width handling in the share card.',
+    ]);
+    $release = Release::factory()->for($project)->create([
+        'title' => 'A Very Long Release Title That Needs To Fit Safely',
+        'notes' => 'A supporting release summary that is long enough to need deterministic width handling in the share card.',
+        'published_at' => now()->subMinute(),
+    ]);
+
+    $this->get(route('og.project', ['creator' => $creator, 'project' => $project]))
+        ->assertSuccessful()
+        ->assertSee('textLength="1016"', false)
+        ->assertSee('lengthAdjust="spacingAndGlyphs"', false);
+
+    $this->get(route('og.release', [
+        'creator' => $creator,
+        'project' => $project,
+        'release' => $release,
+    ]))
+        ->assertSuccessful()
+        ->assertSee('textLength="1016"', false)
+        ->assertSee('lengthAdjust="spacingAndGlyphs"', false);
+
+    $this->get(route('og.creator', $creator))
+        ->assertSuccessful()
+        ->assertSee('textLength="1016"', false)
+        ->assertSee('lengthAdjust="spacingAndGlyphs"', false);
 });

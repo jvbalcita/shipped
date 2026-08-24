@@ -80,6 +80,34 @@ test('a discoverable project exposes record-backed metadata and structured data'
             ->where('seo.jsonLd.1.@type', 'SoftwareApplication'));
 });
 
+test('a private project page does not expose public SEO metadata', function () {
+    $creator = User::factory()->create(['username' => 'private_builder']);
+    $project = Project::factory()->for($creator, 'creator')->create();
+
+    $this->actingAs($creator)
+        ->get(route('projects.show', ['creator' => $creator, 'project' => $project]))
+        ->assertSuccessful()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Projects/Show')
+            ->missing('seo')
+            ->missing('ogTitle')
+            ->missing('ogImage'));
+});
+
+test('a project without a live URL omits SoftwareApplication structured data', function () {
+    $creator = User::factory()->create(['username' => 'no_live_url_builder']);
+    $project = Project::factory()->public()->for($creator, 'creator')->create([
+        'live_url' => null,
+    ]);
+    Release::factory()->for($project)->create(['published_at' => now()->subMinute()]);
+
+    $this->get(route('projects.show', ['creator' => $creator, 'project' => $project]))
+        ->assertSuccessful()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('seo.jsonLd.0.@type', 'BreadcrumbList')
+            ->missing('seo.jsonLd.1'));
+});
+
 test('a published release exposes its own canonical record metadata', function () {
     $creator = User::factory()->create(['username' => 'release_builder']);
     $project = Project::factory()->public()->for($creator, 'creator')->create([
