@@ -29,13 +29,21 @@ const previewUrl = computed(() =>
     props.modelValue
         ? URL.createObjectURL(props.modelValue)
         : showExisting.value
-            ? props.existingUrl
-            : null,
+          ? props.existingUrl
+          : null,
 );
 
 const isSquare = computed(() => props.kind !== 'cover');
 const noun = computed(() =>
-    props.kind === 'logo' ? 'logo' : props.kind === 'avatar' ? 'avatar' : 'cover',
+    props.kind === 'logo'
+        ? 'logo'
+        : props.kind === 'avatar'
+          ? 'avatar'
+          : 'cover',
+);
+const rejectedTitle = computed(
+    () =>
+        `${noun.value.charAt(0).toUpperCase()}${noun.value.slice(1)} rejected`,
 );
 const hint = computed(() => {
     if (props.kind === 'logo') {
@@ -61,7 +69,8 @@ function selectFile(file?: File): void {
     // Unsupported types (SVG and HEIC logos especially) must not be
     // silently dropped — the save would quietly continue without them.
     if (file) {
-        typeError.value = 'Only PNG, JPG, and WebP images are supported — SVG and HEIC files must be exported first.';
+        typeError.value =
+            'Only PNG, JPG, and WebP images are supported — SVG and HEIC files must be exported first.';
     }
 }
 
@@ -119,11 +128,7 @@ function removeFile(): void {
                 <ImagePlus class="size-8" aria-hidden="true" />
                 <p class="technical-label">
                     Drop
-                    {{
-                        isSquare
-                            ? `a square ${noun}`
-                            : 'a cover plate'
-                    }}
+                    {{ isSquare ? `a square ${noun}` : 'a cover plate' }}
                     here
                 </p>
                 <p v-if="!isSquare" class="text-sm text-muted-foreground">
@@ -142,9 +147,7 @@ function removeFile(): void {
         <div class="flex flex-wrap gap-2">
             <Button type="button" variant="outline" @click="input?.$el.click()"
                 ><Upload class="size-4" />{{
-                    previewUrl
-                        ? `Replace ${noun}`
-                        : `Choose ${noun}`
+                    previewUrl ? `Replace ${noun}` : `Choose ${noun}`
                 }}</Button
             >
             <Button
@@ -156,8 +159,10 @@ function removeFile(): void {
             >
         </div>
         <Alert v-if="error || typeError" variant="destructive"
-            ><AlertTitle>{{ noun }} rejected</AlertTitle
-            ><AlertDescription>{{ error || typeError }}</AlertDescription></Alert
+            ><AlertTitle>{{ rejectedTitle }}</AlertTitle
+            ><AlertDescription>{{
+                error || typeError
+            }}</AlertDescription></Alert
         >
     </div>
 </template>

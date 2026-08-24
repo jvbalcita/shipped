@@ -5,9 +5,38 @@ namespace App\Http\Controllers;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Http\Response;
+use Illuminate\Support\Collection;
 
 class OgController extends Controller
 {
+    /**
+     * Render a Creator Shipping Profile share card as a self-contained SVG.
+     */
+    public function creator(User $creator): Response
+    {
+        /** @var Collection<int, Project> $projects */
+        $projects = $creator->projects()
+            ->discoverable()
+            ->withCount([
+                'releases as published_releases_count' => fn ($query) => $query->published(),
+            ])
+            ->get();
+
+        return response()
+            ->view('og.creator', [
+                'creator' => $creator,
+                'projectCount' => $projects->count(),
+                'verifiedProjectCount' => $projects
+                    ->where('verification_status', 'verified')
+                    ->count(),
+                'releaseCount' => $projects->sum(
+                    fn (Project $project): int => (int) $project->published_releases_count,
+                ),
+            ])
+            ->header('Content-Type', 'image/svg+xml')
+            ->header('Cache-Control', 'public, max-age=300');
+    }
+
     /**
      * Render a per-launch social-preview card as a self-contained SVG.
      * Only discoverable (publicly filed) launches get a preview image.

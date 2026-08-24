@@ -15,7 +15,7 @@ defineProps<{
         class="grid border-b border-foreground p-5 sm:grid-cols-[.45fr_1.55fr] sm:p-8"
     >
         <p class="technical-label text-primary">{{ label }}</p>
-        <div>
+        <div class="min-w-0">
             <slot />
         </div>
     </div>

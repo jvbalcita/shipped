@@ -30,10 +30,14 @@ const { getInitials } = useInitials();
 const wall = computed(() => props.cheers ?? []);
 
 function cheerProject(): void {
-    router.post(cheer(props.project).url, {}, {
-        preserveScroll: true,
-        preserveState: true,
-    });
+    router.post(
+        cheer(props.project).url,
+        {},
+        {
+            preserveScroll: true,
+            preserveState: true,
+        },
+    );
 }
 
 function cheeredOn(iso: string | null): string {
@@ -55,7 +59,10 @@ function cheeredOn(iso: string | null): string {
         aria-label="Supporters"
     >
         <div class="grid p-5 sm:grid-cols-[.45fr_1.55fr] sm:p-8">
-            <p class="technical-label text-primary" data-test="cheer-wall-count">
+            <p
+                class="technical-label text-primary"
+                data-test="cheer-wall-count"
+            >
                 Supporters / {{ project.cheers_count }}
             </p>
             <div>
@@ -77,8 +84,8 @@ function cheeredOn(iso: string | null): string {
                             hasCheered
                                 ? 'You cheered'
                                 : wall.length
-                                    ? 'Join the wall'
-                                    : 'Cheer this launch'
+                                  ? 'Join the wall'
+                                  : 'Cheer this launch'
                         }}
                     </Button>
                 </div>
@@ -93,7 +100,7 @@ function cheeredOn(iso: string | null): string {
 
                 <ul
                     v-else
-                    class="mt-6 grid gap-px border border-foreground bg-foreground sm:grid-cols-2 lg:grid-cols-3"
+                    class="mt-6 grid gap-px border border-foreground sm:grid-cols-2 lg:grid-cols-3"
                     data-test="cheer-wall-grid"
                 >
                     <li
@@ -128,9 +135,7 @@ function cheeredOn(iso: string | null): string {
                                 </p>
                             </div>
                         </div>
-                        <p
-                            class="technical-label mt-3 text-muted-foreground"
-                        >
+                        <p class="technical-label mt-3 text-muted-foreground">
                             <span
                                 v-if="index === 0"
                                 class="mr-2 inline-flex items-center gap-1 border border-foreground bg-primary px-1.5 py-0.5 text-primary-foreground"

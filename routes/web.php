@@ -12,6 +12,7 @@ use App\Http\Controllers\ManifestController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OgController;
 use App\Http\Controllers\Onboarding\UsernameController as OnboardingUsernameController;
+use App\Http\Controllers\ProfileFeaturedProjectsController;
 use App\Http\Controllers\ProjectCheerController;
 use App\Http\Controllers\ProjectCommentController;
 use App\Http\Controllers\ProjectController;
@@ -41,6 +42,8 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('welcome/username', [OnboardingUsernameController::class, 'update'])
         ->middleware('throttle:10,1')
         ->name('username.claim');
+    Route::put('profile/featured-projects', [ProfileFeaturedProjectsController::class, 'update'])
+        ->name('profile.featured-projects.update');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -79,6 +82,7 @@ Route::get('/@{creator:username}/{project:slug}', [ProjectController::class, 'sh
     ->scopeBindings()
     ->name('projects.show');
 
+Route::get('/og/@{creator:username}', [OgController::class, 'creator'])->name('og.creator');
 Route::get('/og/@{creator:username}/{project:slug}', [OgController::class, 'project'])
     ->scopeBindings()
     ->name('og.project');

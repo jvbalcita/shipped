@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link, useForm } from '@inertiajs/vue3';
 import {
+    ArrowUpRight,
     Cloud,
     CornerUpLeft,
     Download,
@@ -493,23 +494,44 @@ async function copyManifestLink(): Promise<void> {
                             ><Link2 class="size-4" />Copy link</Button
                         >
                     </div>
-                    <p class="technical-label mt-12">
-                        Made by
+                    <div
+                        class="mt-12 flex flex-wrap items-center gap-x-4 gap-y-2"
+                    >
+                        <span
+                            class="technical-label inline-flex items-center gap-2"
+                        >
+                            Made by
+                            <Link
+                                :href="creatorShow(project.creator)"
+                                class="text-primary underline underline-offset-4"
+                                >@{{ project.creator.username }}</Link
+                            >
+                        </span>
+                        <span
+                            aria-hidden="true"
+                            class="technical-label text-muted-foreground"
+                            >/</span
+                        >
                         <Link
                             :href="creatorShow(project.creator)"
-                            class="text-primary underline underline-offset-4"
-                            >@{{ project.creator.username }}</Link
+                            class="technical-label inline-flex min-h-11 items-center gap-1 text-primary underline underline-offset-4"
+                            data-test="view-shipping-profile"
                         >
-                        <span class="text-muted-foreground">
-                            /
+                            View shipping profile
+                            <ArrowUpRight class="size-3" aria-hidden="true" />
+                        </Link>
+                        <span
+                            class="technical-label inline-flex items-center gap-1 text-muted-foreground"
+                            data-test="project-followers-count"
+                        >
                             {{ project.followers_count }}
                             {{
                                 project.followers_count === 1
                                     ? 'follower'
                                     : 'followers'
-                            }}</span
-                        >
-                    </p>
+                            }}
+                        </span>
+                    </div>
                 </div>
             </div>
             <CheerWall
