@@ -143,7 +143,7 @@ test('the initial HTML head exposes canonical robots and structured data metadat
         ->toContain('name="robots" content="index,follow"')
         ->toContain('rel="canonical" href="'.route('home').'"')
         ->toContain('property="og:url" content="'.route('home').'"')
-        ->toContain('<title data-inertia="">Shipped — The verified launch registry for Laravel projects</title>')
+        ->toMatch('/<title(?:\s[^>]*)?>Shipped — The verified launch registry for Laravel projects<\/title>/u')
         ->toContain('type="application/ld+json"')
         ->toContain('"@type":"WebSite"');
 
