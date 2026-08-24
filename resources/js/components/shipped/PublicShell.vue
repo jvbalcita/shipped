@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import {
     ArrowUpRight,
@@ -26,9 +27,15 @@ import { edit as profileEdit } from '@/routes/profile';
 import { create } from '@/routes/projects';
 import { edit as securityEdit } from '@/routes/security';
 
-defineProps<{ title?: string }>();
+const props = defineProps<{ title?: string }>();
 const page = usePage();
 const { getInitials } = useInitials();
+
+const documentTitle = computed(() => {
+    const seoTitle = (page.props as { seo?: { title?: string } }).seo?.title;
+
+    return seoTitle ?? props.title;
+});
 
 const handleLogout = (): void => {
     router.flushAll();
@@ -36,7 +43,7 @@ const handleLogout = (): void => {
 </script>
 
 <template>
-    <Head :title="title" />
+    <Head :title="documentTitle" />
     <a
         href="#main"
         class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"

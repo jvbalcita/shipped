@@ -4,12 +4,14 @@ import { ArrowUpRight, Check, Copy, History, ShieldCheck } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import BrandIcon from '@/components/BrandIcon.vue';
+import Breadcrumbs from '@/components/shipped/Breadcrumbs.vue';
 import FollowButton from '@/components/shipped/FollowButton.vue';
 import ProjectCard from '@/components/shipped/ProjectCard.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
 import SectionHeader from '@/components/shipped/SectionHeader.vue';
 import { Button } from '@/components/ui/button';
 import { normalizeProfileLinkType, profileLinkLabel } from '@/lib/profileLinks';
+import { home } from '@/routes';
 import { show as projectShow } from '@/routes/projects';
 import { show as releaseShow } from '@/routes/releases';
 import {
@@ -28,6 +30,11 @@ const props = defineProps<{
     featured_projects: ProjectCardData[];
     shipping_history: ShippingHistoryEntry[];
 }>();
+
+const breadcrumbs = [
+    { label: 'Home', href: home().url },
+    { label: '@' + props.creator.username },
+];
 
 const page = usePage();
 const copied = ref(false);
@@ -104,6 +111,7 @@ async function copyProfileLink(): Promise<void> {
         <section
             class="page-enter mx-auto w-full max-w-[90rem] min-w-0 border-x border-b border-foreground"
         >
+            <Breadcrumbs :items="breadcrumbs" />
             <SectionHeader :label="'Shipping profile / @' + creator.username">
                 <div class="flex flex-wrap items-start justify-between gap-6">
                     <div

@@ -1,13 +1,34 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import { ArrowLeft, ExternalLink } from '@lucide/vue';
+import { computed } from 'vue';
+import Breadcrumbs from '@/components/shipped/Breadcrumbs.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { home } from '@/routes';
 import { show as creatorShow } from '@/routes/creators';
 import { show as projectShow } from '@/routes/projects';
 
-defineProps<{ release: any }>();
+const props = defineProps<{ release: any }>();
+
+const breadcrumbs = computed(() => [
+    { label: 'Home', href: home().url },
+    {
+        label: '@' + props.release.project.creator.username,
+        href: creatorShow({
+            creator: props.release.project.creator,
+        }).url,
+    },
+    {
+        label: props.release.project.name,
+        href: projectShow({
+            creator: props.release.project.creator,
+            project: props.release.project,
+        }).url,
+    },
+    { label: props.release.title },
+]);
 </script>
 
 <template>
@@ -15,6 +36,7 @@ defineProps<{ release: any }>();
         <section
             class="page-enter mx-auto w-full max-w-[90rem] min-w-0 border-x border-b border-foreground"
         >
+            <Breadcrumbs :items="breadcrumbs" />
             <div class="border-b border-foreground p-5 sm:p-8">
                 <Link
                     :href="

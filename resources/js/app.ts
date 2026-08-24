@@ -12,7 +12,22 @@ if (!import.meta.env.SSR) {
 }
 
 createInertiaApp({
-    title: (title) => (title ? `${title} - ${appName}` : appName),
+    title: (title) => {
+        if (!title) {
+            return appName;
+        }
+
+        if (
+            title === appName ||
+            title.startsWith(`${appName} — `) ||
+            title.endsWith(` - ${appName}`) ||
+            title.endsWith(` — ${appName}`)
+        ) {
+            return title;
+        }
+
+        return `${title} - ${appName}`;
+    },
     layout: (name) => {
         switch (true) {
             case name === 'Welcome':

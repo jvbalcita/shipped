@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Project;
 use App\Models\Release;
 use App\Models\User;
+use App\Services\Seo\SeoMetadata;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -38,6 +39,39 @@ class CreatorController extends Controller
             ->sortBy('profile_featured_order')
             ->take(3)
             ->values();
+        $profileUrl = route('creators.show', $creator);
+        $hasPublicWork = $projects->isNotEmpty();
+        $seo = new SeoMetadata(
+            title: $creator->name.' (@'.$creator->username.') — Shipping Profile — Shipped',
+            description: $hasPublicWork
+                ? $projects->count().' public launches filed by @'.$creator->username.' on Shipped.'
+                : '@'.$creator->username.' has not filed a public launch on Shipped yet.',
+            canonicalUrl: $profileUrl,
+            robots: $hasPublicWork ? 'index,follow' : 'noindex,follow',
+            image: $hasPublicWork ? route('og.creator', $creator) : null,
+            imageAlt: $hasPublicWork ? 'Shipping Profile for '.$creator->name : null,
+            jsonLd: $hasPublicWork
+                ? [[
+                    '@context' => 'https://schema.org',
+                    '@type' => 'ProfilePage',
+                    '@id' => $profileUrl.'#profile',
+                    'url' => $profileUrl,
+                    'name' => $creator->name.' Shipping Profile',
+                    'mainEntity' => array_filter([
+                        '@type' => 'Person',
+                        '@id' => $profileUrl.'#person',
+                        'name' => $creator->name,
+                        'url' => $profileUrl,
+                        'identifier' => $creator->username,
+                        'jobTitle' => $creator->title,
+                        'description' => $creator->bio,
+                    ], fn (mixed $value): bool => $value !== null && $value !== ''),
+                ], SeoMetadata::breadcrumbList([
+                    ['name' => 'Home', 'url' => route('home')],
+                    ['name' => $creator->name, 'url' => $profileUrl],
+                ])]
+                : [],
+        );
 
         return Inertia::render('Creators/Show', [
             'creator' => [
@@ -60,7 +94,7 @@ class CreatorController extends Controller
                     ),
                 ],
             ],
-            'profile_url' => route('creators.show', $creator),
+            'profile_url' => $profileUrl,
             'featured_projects' => $featuredProjects
                 ->map(fn (Project $project): array => $this->projectProps($project))
                 ->values(),
@@ -70,9 +104,8 @@ class CreatorController extends Controller
             'projects' => $projects
                 ->map(fn (Project $project): array => $this->projectProps($project))
                 ->values(),
-            'ogTitle' => $creator->name.' — Shipping Profile — Shipped',
-            'ogDescription' => $projects->count().' public launches filed by @'.$creator->username.'.',
-            'ogImage' => route('og.creator', $creator),
+            'seo' => $seo->toArray(),
+            ...$seo->legacyProps(),
         ]);
     }
 

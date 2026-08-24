@@ -6,6 +6,7 @@ use App\Enums\ProjectPricing;
 use App\Models\Category;
 use App\Models\Cheer;
 use App\Models\Project;
+use App\Services\Seo\SeoMetadata;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -86,6 +87,15 @@ class DiscoverController extends Controller
             ])
             ->withQueryString();
 
+        $seo = new SeoMetadata(
+            title: 'Discover verified Laravel projects — Shipped',
+            description: 'Browse verified Laravel projects and the people who ship them.',
+            canonicalUrl: route('discover'),
+            robots: $request->query() === [] ? 'index,follow' : 'noindex,follow',
+            image: route('og.site'),
+            imageAlt: 'Shipped — The verified launch registry for Laravel projects',
+        );
+
         return Inertia::render('Discover/Index', [
             'projects' => $projects,
             'categories' => Category::query()->orderBy('name')->get(['id', 'name', 'slug']),
@@ -97,6 +107,8 @@ class DiscoverController extends Controller
                 ? Category::query()->where('slug', $filters['category'])->first(['id', 'name', 'slug'])
                 : null,
             'filters' => [...$filters, 'sort' => $sort],
+            'seo' => $seo->toArray(),
+            ...$seo->legacyProps(),
         ]);
     }
 }

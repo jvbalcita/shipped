@@ -1,7 +1,7 @@
 @php
-    $name = strtoupper(mb_substr($creator->name, 0, 30));
-    $username = '@'.strtoupper($creator->username);
-    $title = strtoupper(mb_substr($creator->title ?? 'Laravel Creator', 0, 52));
+    $name = mb_strtoupper(mb_substr($creator->name, 0, 30));
+    $username = '@'.mb_strtoupper($creator->username);
+    $title = mb_strtoupper(mb_substr($creator->title ?? 'Laravel Creator', 0, 52));
     $bio = mb_substr((string) ($creator->bio ?? ''), 0, 92);
 @endphp
 <svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="{{ $creator->name }} Shipping Profile">

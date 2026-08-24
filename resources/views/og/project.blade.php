@@ -1,7 +1,7 @@
 @php
-    $name = strtoupper(mb_substr($project->name, 0, 46));
+    $name = mb_strtoupper(mb_substr($project->name, 0, 46));
     $username = '@'.$project->creator->username;
-    $category = strtoupper($project->category?->name ?? 'Launch');
+    $category = mb_strtoupper($project->category?->name ?? 'Launch');
     $tagline = mb_substr($project->tagline ?? '', 0, 110);
     $storyExcerpt = $project->shipStory?->excerpt(92);
     $serial = $project->filed_serial;
@@ -15,7 +15,7 @@
     {{-- Top meta row --}}
     <text x="92" y="118" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="700" letter-spacing="2" fill="#050505">{{ $category }}</text>
     @if ($serial)
-        <text x="1108" y="118" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="700" letter-spacing="3" fill="#050505">{{ strtoupper($serial) }}</text>
+        <text x="1108" y="118" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="700" letter-spacing="3" fill="#050505">{{ mb_strtoupper($serial) }}</text>
     @endif
 
     {{-- Red FILED stamp --}}
@@ -38,6 +38,6 @@
 
     {{-- Bottom rule + creator username --}}
     <path d="M92 528 H1108" stroke="#050505" stroke-width="2"/>
-    <text x="92" y="566" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" letter-spacing="1" fill="#050505">{{ strtoupper($username) }}</text>
+    <text x="92" y="566" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" letter-spacing="1" fill="#050505">{{ mb_strtoupper($username) }}</text>
     <text x="1108" y="566" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" letter-spacing="2" fill="#050505">SHIPPED</text>
 </svg>
