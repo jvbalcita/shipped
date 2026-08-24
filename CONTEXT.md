@@ -8,6 +8,18 @@ Shipped is a community showcase for projects launched on Laravel Cloud. It gives
 The individual user, identified by a chosen public username, who owns a project and presents it to the community.
 _Avoid_: Owner, account
 
+**Shipping Profile**:
+The canonical public page for an individual Creator at /@{creator:username}. It leads with the Creator's identity and factual record, then presents discoverable Projects, selected Featured Projects, approved Ship Stories, published Releases, and verification evidence.
+_Avoid_: Portfolio builder, resume, social profile
+
+**Shipping History**:
+A derived, project-granular chronology on a Creator's Shipping Profile. Each entry represents one currently discoverable Project and is ordered by its latest published Release, then Launch Date, filing time, or creation time; the Project page remains the complete Release chronology.
+_Avoid_: Timeline, activity feed, update stream
+
+**Featured Project**:
+A Creator-selected, currently discoverable Project shown near the top of the Creator's Shipping Profile. Up to three public selections are displayed; a selection's stored order is retained when its Project becomes private or stale, but it is suppressed until the Project is discoverable again.
+_Avoid_: Pinned post, portfolio item, promoted listing
+
 **Username**:
 A unique, user-chosen public identifier, used for public routing (`/@{creator:username}`) and community identity. Chosen at registration, or **claimed** once during provider sign-up onboarding — an auto-assigned handle stays unclaimed until the creator first picks one. Changeable after claiming, with a reservation hold-window that releases the old username so it cannot be immediately squatted.
 _Avoid_: Handle, login, screen name
@@ -37,7 +49,7 @@ The authenticated workspace where a creator shapes projects, releases, Laravel C
 _Avoid_: Dashboard, admin area, back office
 
 **Project**:
-A creator-owned application showcase that can be published publicly only after it has both a published Release and a current Verification.
+A creator-owned application showcase that can be published publicly only while it is discoverable: public, verified, has a published Release, and has an approved, complete Ship Story.
 _Avoid_: App, listing, submission
 
 **Launch Composer**:
@@ -47,6 +59,10 @@ _Avoid_: Form, wizard, project editor
 **Release**:
 A publishable record of a project being shipped, containing its release notes and publication time. A public Release can be shared as its own record within its public Project; a scheduled Release can publish its Project only while Verification is current.
 _Avoid_: Update, changelog entry, deployment
+
+**Ship Story**:
+A creator-authored, structured account of a Project's purpose, audience, build choices, hardest problem, and lessons learned. It explains the work behind a Project and is distinct from a Release, which records a subsequent shipping event. A draft remains private in Creator Studio; a published Ship Story is public only while its Project is discoverable.
+_Avoid_: Case study, launch post, update, release notes
 
 **Cheer**:
 An authenticated community member's single, reversible expression of appreciation for a cheerable record — currently a Project or a Comment. Stored polymorphically so the same model serves both targets.

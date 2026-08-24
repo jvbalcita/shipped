@@ -24,6 +24,8 @@ use Illuminate\Support\Facades\Storage;
  * @property ProjectPricing|null $pricing
  * @property Carbon|null $launch_date
  * @property CarbonInterface|null $verified_at
+ * @property int|null $profile_featured_order
+ * @property-read int $published_releases_count
  * @property-read float|null $reviews_avg_rating
  */
 class Project extends Model
@@ -58,6 +60,7 @@ class Project extends Model
         return [
             'is_public' => 'boolean',
             'is_demo' => 'boolean',
+            'profile_featured_order' => 'integer',
             'pricing' => ProjectPricing::class,
             'launch_date' => 'date',
             'verified_at' => 'datetime',

@@ -32,7 +32,23 @@ trait ProfileValidationRules
             'location' => $this->locationRules(),
             'bio' => $this->bioRules(),
             'links' => $this->linksRules(),
-            'links.*.type' => ['required_with:links', 'string', Rule::in(['website', 'github', 'twitter', 'linkedin'])],
+            'links.*.type' => [
+                'required_with:links',
+                'string',
+                Rule::in([
+                    'website',
+                    'github',
+                    'x',
+                    'twitter',
+                    'linkedin',
+                    'devto',
+                    'hashnode',
+                    'stackoverflow',
+                    'npm',
+                    'bluesky',
+                    'codepen',
+                ]),
+            ],
             'links.*.url' => ['required_with:links', 'string', 'url', 'max:255'],
         ];
     }

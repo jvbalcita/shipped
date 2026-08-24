@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
+use App\Models\Project;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,9 +21,33 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
+        $user = $request->user();
+        $discoverableProjectIds = Project::query()
+            ->discoverable()
+            ->whereBelongsTo($user, 'creator')
+            ->pluck('id')
+            ->flip();
+
         return Inertia::render('settings/Profile', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
+            'profileProjects' => $user->projects()
+                ->with('category:id,name')
+                ->withCount([
+                    'releases as published_releases_count' => fn ($query) => $query->published(),
+                ])
+                ->latest()
+                ->get()
+                ->map(fn (Project $project): array => [
+                    'id' => $project->id,
+                    'name' => $project->name,
+                    'tagline' => $project->tagline,
+                    'category' => $project->category?->only('id', 'name'),
+                    'profile_featured_order' => $project->profile_featured_order,
+                    'is_discoverable' => $discoverableProjectIds->has($project->id),
+                    'published_releases_count' => (int) $project->published_releases_count,
+                ])
+                ->values(),
         ]);
     }
 

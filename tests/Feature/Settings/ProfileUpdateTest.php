@@ -42,6 +42,30 @@ test('profile information can be updated', function () {
     ]);
 });
 
+test('profile accepts current developer link types', function () {
+    $user = User::factory()->create();
+    $links = [
+        ['type' => 'x', 'url' => 'https://x.com/example'],
+        ['type' => 'devto', 'url' => 'https://dev.to/example'],
+        ['type' => 'hashnode', 'url' => 'https://hashnode.com/@example'],
+        ['type' => 'stackoverflow', 'url' => 'https://stackoverflow.com/users/1/example'],
+        ['type' => 'npm', 'url' => 'https://www.npmjs.com/~example'],
+        ['type' => 'bluesky', 'url' => 'https://bsky.app/profile/example.bsky.social'],
+        ['type' => 'codepen', 'url' => 'https://codepen.io/example'],
+    ];
+
+    $this->actingAs($user)
+        ->patch(route('profile.update'), [
+            'name' => 'Test User',
+            'title' => 'Indie Hacker',
+            'links' => $links,
+        ])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('profile.edit'));
+
+    expect($user->refresh()->links)->toBe($links);
+});
+
 test('profile rejects invalid links and overlong fields', function () {
     $user = User::factory()->create();
 
