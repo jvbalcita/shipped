@@ -12,6 +12,18 @@ return [
         'inertia',
     ],
 
+    // The "Commonly used" suggestion row under the Packages search in
+    // the stack picker; names must exist in the TechnologySeeder
+    // vocabulary or they are silently dropped.
+    'suggested_packages' => [
+        'Filament',
+        'Cashier',
+        'Sanctum',
+        'Pest',
+        'Laravel Debugbar',
+        'Spatie Permission',
+    ],
+
     'username_reservation_days' => 30,
 
     'username_change_cooldown_minutes' => 10080,

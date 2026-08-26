@@ -92,6 +92,22 @@ test('a project may declare several technologies from a multi-choice group', fun
         ->toEqualCanonicalizing(['Alpine.js', 'Livewire', 'Tailwind CSS']);
 });
 
+test('the package group is searchable and carries curated suggestions', function () {
+    Storage::fake();
+
+    $creator = User::factory()->create();
+
+    $this->actingAs($creator)
+        ->get(route('projects.create'))
+        ->assertInertia(fn ($page) => $page
+            ->component('Projects/Create')
+            ->where('technologyOptions.5.group', 'package')
+            ->where('technologyOptions.5.searchable', true)
+            ->where('technologyOptions.0.searchable', false)
+            ->has('technologyOptions.5.suggested', 6)
+            ->where('technologyOptions.5.multiple', true));
+});
+
 test('updating a project syncs its stack and can clear it', function () {
     $creator = User::factory()->create();
     $project = Project::factory()->for($creator, 'creator')->create();

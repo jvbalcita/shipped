@@ -42,17 +42,27 @@ class Technology extends Model
 
     /**
      * The curated vocabulary grouped by stack group, shaped for the
-     * composer picker and the Discover facet UI.
+     * composer picker and the Discover facet UI. The package group is
+     * searchable — its vocabulary grows — and carries curated
+     * suggestion slugs from the suggested_packages config.
      *
-     * @return array<int, array{group: string, label: string, multiple: bool, technologies: array<int, array{id: int, name: string, slug: string}>}>
+     * @return array<int, array{group: string, label: string, multiple: bool, searchable: bool, suggested: array<int, string>, technologies: array<int, array{id: int, name: string, slug: string}>}>
      */
     public static function groupedVocabulary(): array
     {
+        $suggestedPackageSlugs = static::query()
+            ->where('stack_group', TechnologyGroup::Package->value)
+            ->whereIn('name', config('shipped.suggested_packages', []))
+            ->pluck('slug')
+            ->all();
+
         return collect(TechnologyGroup::cases())
             ->map(fn (TechnologyGroup $group): array => [
                 'group' => $group->value,
                 'label' => $group->label(),
                 'multiple' => $group->allowsMultiple(),
+                'searchable' => $group === TechnologyGroup::Package,
+                'suggested' => $group === TechnologyGroup::Package ? $suggestedPackageSlugs : [],
                 'technologies' => static::query()
                     ->where('stack_group', $group->value)
                     ->orderBy('name')

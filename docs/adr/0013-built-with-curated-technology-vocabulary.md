@@ -14,6 +14,7 @@ Shipped will let Creators declare the stack behind a Project through a controlle
 - Give each Technology a public page at `/built-with/{technology:slug}` plus a `/built-with` index. Both reuse the shared `DiscoverProjects` card listing; thin pages (zero discoverable Projects) are `noindex` until real projects back them. Used Technologies enter the sitemap.
 - Show provenance on the public Project page ("Declared by the creator") so maker-declared data is never mistaken for system-observed data.
 - Keep the free-form Tags and the single curated Category untouched: Tags stay topical descriptors, Category stays the product classification.
+- Render the Package group as a searchable multi-select with a curated "Commonly used" suggestion row (six entries from the `suggested_packages` config), since the package vocabulary is the one expected to keep growing; chip groups stay chip groups.
 
 ## Considered Options
 

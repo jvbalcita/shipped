@@ -8,6 +8,8 @@ export type TechnologyGroupOption = {
     group: string;
     label: string;
     multiple: boolean;
+    searchable: boolean;
+    suggested: string[];
     technologies: TechnologyOption[];
 };
 

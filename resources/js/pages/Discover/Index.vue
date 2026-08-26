@@ -96,7 +96,9 @@ const resultsLabel = computed(() => {
 
 function applyFilters(page = 1) {
     loading.value = true;
-    stackPopoverOpen.value = false;
+    // The stack popover stays open across selections so a creator can
+    // pick several technologies in one visit; it closes on outside
+    // click or escape like any popover.
     router.get(
         discover().url,
         {
