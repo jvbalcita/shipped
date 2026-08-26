@@ -562,7 +562,7 @@ Provide a simple launch kit generated from a published project or claimed builde
 
 **Delivered:**
 
-- Curated six-group stack vocabulary (Laravel/PHP version, Frontend, Database, Infrastructure, Package; 32 seed entries) governed by an idempotent, production-safe `TechnologySeeder`. No hosting group: verification already implies Laravel Cloud.
+- Curated six-group stack vocabulary (Laravel/PHP version, Frontend, Database, Infrastructure, Package; 61 seed entries covering the commonly used Laravel stack) governed by an idempotent, production-safe `TechnologySeeder`. No hosting group: verification already implies Laravel Cloud.
 - Provenance-ready pivot (`declared` / `observed` / `reviewed`); v1 records are creator-declared and labeled as such on the public project page.
 - Launch Composer and Creator Studio stack picker with single-choice version groups enforced client- and server-side.
 - Discover stack facets (AND across selections), stack chips on project cards, and a shared `DiscoverProjects` card service reused by every discovery surface.

@@ -73,6 +73,25 @@ test('a project may declare only one laravel version and one php version', funct
         ->assertSessionHasErrors('technologies');
 });
 
+test('a project may declare several technologies from a multi-choice group', function () {
+    Storage::fake();
+
+    $creator = User::factory()->create();
+    $category = Category::factory()->create();
+
+    $this->actingAs($creator)
+        ->post(route('projects.store'), validProjectPayload($category, [
+            'technologies' => ['livewire', 'tailwind-css', 'alpinejs'],
+        ]))
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+
+    $project = Project::query()->latest('id')->firstOrFail();
+
+    expect($project->technologies()->orderBy('name')->pluck('name')->all())
+        ->toEqualCanonicalizing(['Alpine.js', 'Livewire', 'Tailwind CSS']);
+});
+
 test('updating a project syncs its stack and can clear it', function () {
     $creator = User::factory()->create();
     $project = Project::factory()->for($creator, 'creator')->create();

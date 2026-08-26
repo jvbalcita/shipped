@@ -21,7 +21,7 @@ Shipped will let Creators declare the stack behind a Project through a controlle
 - Fixed stack columns on `projects`: rejected because Packages and Infrastructure are many-per-project and technology pages need real slugged entities rather than hardcoded enums.
 - A hosting Stack Group: dropped because Verification already implies Laravel Cloud for every discoverable Project — the facet would be constant. Infrastructure (Redis, Meilisearch, S3, Reverb, …) carries the real variance.
 - System-observed GitHub data (stars, last commit) in v1: deferred; it couples the first release to GitHub API limits and the verification trust contract. The provenance column keeps the door open.
-- Admin-managed vocabulary: deferred; the seeder is enough at 32 entries and matches the CategorySeeder operating pattern.
+- Admin-managed vocabulary: deferred; the seeder is enough at 61 entries (grown from an initial 32 as commonly used Laravel stack items were added) and matches the CategorySeeder operating pattern.
 
 ## Consequences
 

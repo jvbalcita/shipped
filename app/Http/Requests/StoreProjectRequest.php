@@ -36,7 +36,7 @@ class StoreProjectRequest extends FormRequest
             'pricing' => ['nullable', Rule::enum(ProjectPricing::class)],
             'launch_date' => ['nullable', 'date'],
             'tags' => ['nullable', 'string', 'max:500'],
-            'technologies' => ['nullable', 'array', 'max:12', new OneTechnologyPerVersionGroup],
+            'technologies' => ['nullable', 'array', 'max:16', new OneTechnologyPerVersionGroup],
             'technologies.*' => ['string', 'distinct', 'exists:technologies,slug'],
             'cover_image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:6144', new SquareImage(256)],

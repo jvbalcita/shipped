@@ -38,7 +38,7 @@ class UpdateProjectRequest extends FormRequest
             'pricing' => ['sometimes', 'nullable', Rule::enum(ProjectPricing::class)],
             'launch_date' => ['sometimes', 'nullable', 'date'],
             'tags' => ['sometimes', 'nullable', 'string', 'max:500'],
-            'technologies' => ['sometimes', 'nullable', 'array', 'max:12', new OneTechnologyPerVersionGroup],
+            'technologies' => ['sometimes', 'nullable', 'array', 'max:16', new OneTechnologyPerVersionGroup],
             'technologies.*' => ['string', 'distinct', 'exists:technologies,slug'],
             'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'cover_removal' => ['sometimes', 'boolean'],

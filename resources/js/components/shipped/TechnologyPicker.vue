@@ -11,11 +11,22 @@ const emit = defineEmits<{
 }>();
 
 function toggle(group: TechnologyGroupOption, slug: string): void {
-    const groupSlugs = group.technologies.map((technology) => technology.slug);
     const isSelected = props.modelValue.includes(slug);
 
-    // Version groups hold one choice; every other group member is
-    // cleared first either way, so re-tapping the active pick deselects.
+    if (group.multiple) {
+        emit(
+            'update:modelValue',
+            isSelected
+                ? props.modelValue.filter((value) => value !== slug)
+                : [...props.modelValue, slug],
+        );
+
+        return;
+    }
+
+    // Version groups hold one choice: clearing the group first means
+    // picking a sibling replaces it and re-tapping the pick deselects.
+    const groupSlugs = group.technologies.map((technology) => technology.slug);
     const next = props.modelValue.filter(
         (value) => !groupSlugs.includes(value),
     );
