@@ -17,6 +17,7 @@ import GitHubRepoPicker from '@/components/shipped/GitHubRepoPicker.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
 import RichTextEditor from '@/components/shipped/RichTextEditor.vue';
 import SectionHeader from '@/components/shipped/SectionHeader.vue';
+import TechnologyPicker from '@/components/shipped/TechnologyPicker.vue';
 import VerificationPanel from '@/components/shipped/VerificationPanel.vue';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
@@ -48,6 +49,7 @@ import { update } from '@/routes/projects';
 import { store as releaseStore } from '@/routes/projects/releases';
 import shipStoryRoutes from '@/routes/projects/ship-story';
 import visibility from '@/routes/projects/visibility';
+import type { TechnologyGroupOption } from '@/types/technology';
 
 type ShipStoryData = {
     id: number;
@@ -69,6 +71,7 @@ const props = defineProps<{
     categories: { id: number; name: string }[];
     pricingOptions: { value: string; label: string }[];
     suggestedTags: string[];
+    technologyOptions: TechnologyGroupOption[];
     badgeMarkdown: string | null;
     githubLinked?: boolean;
     githubRepos?: { name: string; url: string }[] | null;
@@ -87,6 +90,9 @@ const projectForm = useForm({
     tags: (props.project.tags ?? [])
         .map((tag: { name: string }) => tag.name)
         .join(', '),
+    technologies: (props.project.technologies ?? []).map(
+        (technology: { slug: string }) => technology.slug,
+    ),
     cover_image: null as File | null,
     cover_removal: false as boolean,
     logo: null as File | null,
@@ -710,6 +716,22 @@ onUnmounted(() => {
                             <FieldError v-if="projectForm.errors.tags">{{
                                 projectForm.errors.tags
                             }}</FieldError></Field
+                        ><Field>
+                            <FieldLabel>Built with</FieldLabel>
+                            <p class="text-xs text-muted-foreground">
+                                Declare the stack behind the project. Every
+                                choice becomes a filter visitors can browse.
+                            </p>
+                            <TechnologyPicker
+                                v-model="projectForm.technologies"
+                                :groups="technologyOptions"
+                            />
+                            <FieldError
+                                v-if="projectForm.errors.technologies"
+                                >{{
+                                    projectForm.errors.technologies
+                                }}</FieldError
+                            ></Field
                         ><Button
                             type="submit"
                             :disabled="projectForm.processing"

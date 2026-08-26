@@ -1,3 +1,5 @@
+import type { CardTechnology } from './technology';
+
 export type CreatorLink = {
     type: string;
     url: string;
@@ -55,6 +57,7 @@ export type CreatorProject = {
         name: string;
         slug: string;
     }>;
+    technologies?: CardTechnology[];
 };
 
 export type ProjectCardData = CreatorProject & {

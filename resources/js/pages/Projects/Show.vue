@@ -16,8 +16,8 @@ import {
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import { toast } from 'vue-sonner';
-import CheerWall from '@/components/shipped/CheerWall.vue';
 import Breadcrumbs from '@/components/shipped/Breadcrumbs.vue';
+import CheerWall from '@/components/shipped/CheerWall.vue';
 import FollowButton from '@/components/shipped/FollowButton.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
 import ScreenshotLightbox from '@/components/shipped/ScreenshotLightbox.vue';
@@ -54,6 +54,7 @@ import {
     update as updateReview,
 } from '@/routes/projects/reviews';
 import { show as releaseShow } from '@/routes/releases';
+import { show as technologyShow } from '@/routes/technologies';
 
 const props = defineProps<{
     project: any;
@@ -315,6 +316,33 @@ async function copyManifestLink(): Promise<void> {
                             {{ tag.name }}
                         </li>
                     </ul>
+                    <div
+                        v-if="project.built_with?.length"
+                        class="mt-6 border-l-2 border-primary pl-4"
+                        data-test="project-built-with"
+                    >
+                        <p class="technical-label text-primary">Built with</p>
+                        <ul class="mt-2 flex flex-wrap gap-2">
+                            <li
+                                v-for="technology in project.built_with"
+                                :key="technology.slug"
+                            >
+                                <Link
+                                    :href="technologyShow(technology)"
+                                    class="technical-label inline-flex items-center gap-1.5 border border-foreground px-2 py-0.5 transition-colors hover:bg-primary hover:text-primary-foreground"
+                                    :data-test="`built-with-${technology.slug}`"
+                                >
+                                    {{ technology.name }}
+                                    <span class="text-muted-foreground">{{
+                                        technology.group_label
+                                    }}</span>
+                                </Link>
+                            </li>
+                        </ul>
+                        <p class="technical-label mt-2 text-muted-foreground">
+                            {{ project.built_with[0]?.provenance_label }}
+                        </p>
+                    </div>
                     <div
                         class="rich-text mt-8 max-w-2xl whitespace-pre-line"
                         v-html="project.description"

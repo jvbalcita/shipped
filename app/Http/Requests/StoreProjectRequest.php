@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\ProjectPricing;
+use App\Rules\OneTechnologyPerVersionGroup;
 use App\Rules\SquareImage;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -35,6 +36,8 @@ class StoreProjectRequest extends FormRequest
             'pricing' => ['nullable', Rule::enum(ProjectPricing::class)],
             'launch_date' => ['nullable', 'date'],
             'tags' => ['nullable', 'string', 'max:500'],
+            'technologies' => ['nullable', 'array', 'max:12', new OneTechnologyPerVersionGroup],
+            'technologies.*' => ['string', 'distinct', 'exists:technologies,slug'],
             'cover_image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:6144', new SquareImage(256)],
             'screenshots' => ['required', 'array', 'min:1', 'max:5'],
@@ -54,6 +57,7 @@ class StoreProjectRequest extends FormRequest
             'screenshots.required' => 'Add at least one screenshot as evidence.',
             'live_url.required_without' => 'Add a live URL or a source URL so people can find the project.',
             'github_url.required_without' => 'Add a live URL or a source URL so people can find the project.',
+            'technologies.*.exists' => 'Choose stack items from the Built With list.',
         ];
     }
 }

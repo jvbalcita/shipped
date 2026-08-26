@@ -8,6 +8,7 @@ import { defaultCoverUrl } from '@/lib/cover';
 import { show as creatorShow } from '@/routes/creators';
 import { show as projectShow } from '@/routes/projects';
 import { store as storeCheer } from '@/routes/projects/cheers';
+import { show as technologyShow } from '@/routes/technologies';
 import type { ProjectCardData } from '@/types/creator';
 
 const props = defineProps<{ project: ProjectCardData }>();
@@ -193,6 +194,20 @@ function toggleCheer(): void {
                     </ul>
                 </div>
             </Link>
+            <div
+                v-if="project.technologies?.length"
+                class="flex flex-wrap gap-2 bg-background px-4 py-3"
+            >
+                <Link
+                    v-for="technology in project.technologies"
+                    :key="technology.slug"
+                    :href="technologyShow(technology)"
+                    class="technical-label border border-foreground px-2 py-0.5 text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+                    :data-test="`project-technology-${technology.slug}`"
+                >
+                    {{ technology.name }}
+                </Link>
+            </div>
             <div
                 class="technical-label flex items-center justify-between bg-background px-4 py-3"
             >

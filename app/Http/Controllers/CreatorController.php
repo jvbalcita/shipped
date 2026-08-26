@@ -22,6 +22,7 @@ class CreatorController extends Controller
                 'creator:id,name,username',
                 'category:id,name,slug',
                 'tags:id,name,slug',
+                'technologies:id,name,slug',
                 'shipStory',
                 'releases' => fn ($query) => $query->published()->latest('published_at'),
             ])
@@ -134,6 +135,7 @@ class CreatorController extends Controller
             'creator' => $project->creator?->only('id', 'name', 'username'),
             'category' => $project->category?->only('id', 'name', 'slug'),
             'tags' => $project->tags->map->only('id', 'name', 'slug')->values(),
+            'technologies' => $project->technologies->map->only('id', 'name', 'slug')->take(4)->values(),
         ];
     }
 
