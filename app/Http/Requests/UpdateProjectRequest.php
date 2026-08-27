@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Enums\ProjectPricing;
 use App\Models\Project;
+use App\Rules\OneTechnologyPerVersionGroup;
 use App\Rules\SquareImage;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
@@ -37,6 +38,8 @@ class UpdateProjectRequest extends FormRequest
             'pricing' => ['sometimes', 'nullable', Rule::enum(ProjectPricing::class)],
             'launch_date' => ['sometimes', 'nullable', 'date'],
             'tags' => ['sometimes', 'nullable', 'string', 'max:500'],
+            'technologies' => ['sometimes', 'nullable', 'array', 'max:16', new OneTechnologyPerVersionGroup],
+            'technologies.*' => ['string', 'distinct', 'exists:technologies,slug'],
             'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'cover_removal' => ['sometimes', 'boolean'],
             'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:6144', new SquareImage(256)],

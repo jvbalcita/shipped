@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Project;
+use App\Models\ProjectTechnology;
 use App\Models\Release;
+use App\Models\Technology;
 use App\Models\User;
 use Illuminate\Http\Response;
 
@@ -14,6 +16,7 @@ class SitemapController extends Controller
         $urls = [
             route('home'),
             route('discover'),
+            route('technologies.index'),
         ];
 
         $creators = User::query()
@@ -51,6 +54,17 @@ class SitemapController extends Controller
                 'project' => $release->project,
                 'release' => $release,
             ]);
+        }
+
+        $technologies = Technology::query()
+            ->whereIn('id', ProjectTechnology::query()
+                ->select('technology_id')
+                ->whereIn('project_id', Project::query()->discoverable()->select('id')))
+            ->orderBy('id')
+            ->get(['id', 'slug']);
+
+        foreach ($technologies as $technology) {
+            $urls[] = route('technologies.show', $technology);
         }
 
         return response()

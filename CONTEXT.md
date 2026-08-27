@@ -97,8 +97,20 @@ A single curated product classification assigned to a project for community disc
 _Avoid_: Tag, label, type
 
 **Tags**:
-A free-form set of descriptors a creator adds to a project at creation/edit time, entered comma-separated and slug-normalized. Many per project, distinct from the single curated Category.
+A free-form set of descriptors a creator adds to a project at creation/edit time, entered comma-separated and slug-normalized. Many per project, distinct from the single curated Category and from the curated Built With vocabulary.
 _Avoid_: Keywords, topics, labels
+
+**Technology**:
+A curated stack component from a controlled vocabulary, classified into a Stack Group. Maintained by seeder, never free-form entry; version groups hold at most one selection per project.
+_Avoid_: Tag, label, framework
+
+**Stack Group**:
+The classification of a Technology in the controlled vocabulary: Laravel version, PHP version, Frontend, Database, Infrastructure, or Package. Version groups are single-choice per project; the others allow multiple selections. There is deliberately no hosting group — Verification already implies Laravel Cloud for every discoverable project.
+_Avoid_: Category, facet, type
+
+**Built With**:
+A creator's declared selection of Technologies on a Project. Each record carries a provenance — declared, observed, or reviewed; current records are creator-declared only — shown publicly with its provenance label, filterable on Discover, and browsable per Technology.
+_Avoid_: Tech stack, skills, badge
 
 **Pricing**:
 A project's commercial model enumerated as one of Free, Freemium, Paid, Open Source, Subscription, or One-Time; default Free. Filterable on Discover.

@@ -558,6 +558,20 @@ Provide a simple launch kit generated from a published project or claimed builde
 
 #### Milestone 2.2: Built With metadata and discovery
 
+**Status:** Implementation complete — evidence gate open (2026-08-26)
+
+**Delivered:**
+
+- Curated six-group stack vocabulary (Laravel/PHP version, Frontend, Database, Infrastructure, Package; 61 seed entries covering the commonly used Laravel stack) governed by an idempotent, production-safe `TechnologySeeder`. No hosting group: verification already implies Laravel Cloud.
+- Provenance-ready pivot (`declared` / `observed` / `reviewed`); v1 records are creator-declared and labeled as such on the public project page.
+- Launch Composer and Creator Studio stack picker with single-choice version groups enforced client- and server-side.
+- Discover stack facets (AND across selections), stack chips on project cards, and a shared `DiscoverProjects` card service reused by every discovery surface.
+- `/built-with` vocabulary index and per-technology pages with breadcrumb JSON-LD, thin-page `noindex`, sitemap inclusion, and stack-decorated Demo Launches for local development.
+
+**Implementation evidence:** Built With tests pass (12 tests, 95 assertions); PHPStan, Pint, ESLint (changed files), Prettier, and the Vite build pass; the full suite passes 426/427 with the pre-existing Inertia SSR/Vite harness failure unchanged. Documented in ADR 0013.
+
+**Next evidence gate:** Measure builder metadata completion, visitor use of stack filters and technology pages, and `/built-with` referral traffic before adding system-observed provenance (GitHub enrichment) or expanding the vocabulary.
+
 **Build / change:**
 
 - Let builders declare a controlled set of technologies used by a project.

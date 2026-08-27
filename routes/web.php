@@ -24,12 +24,15 @@ use App\Http\Controllers\ProjectVerificationController;
 use App\Http\Controllers\ProjectVisibilityController;
 use App\Http\Controllers\ReleaseController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\TechnologyController;
 use App\Http\Controllers\UserFollowController;
 use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', WelcomeController::class)->name('home');
 Route::get('/discover', DiscoverController::class)->name('discover');
+Route::get('/built-with', [TechnologyController::class, 'index'])->name('technologies.index');
+Route::get('/built-with/{technology:slug}', [TechnologyController::class, 'show'])->name('technologies.show');
 Route::get('/sitemap.xml', [SitemapController::class, 'sitemap'])->name('sitemap');
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
 

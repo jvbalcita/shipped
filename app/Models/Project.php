@@ -125,6 +125,15 @@ class Project extends Model
         return $this->belongsToMany(Tag::class);
     }
 
+    /** @return BelongsToMany<Technology, $this, ProjectTechnology, 'pivot'> */
+    public function technologies(): BelongsToMany
+    {
+        return $this->belongsToMany(Technology::class)
+            ->using(ProjectTechnology::class)
+            ->withPivot('provenance')
+            ->withTimestamps();
+    }
+
     /** @return HasMany<ProjectScreenshot, $this> */
     public function screenshots(): HasMany
     {

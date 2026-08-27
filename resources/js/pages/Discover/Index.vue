@@ -2,11 +2,13 @@
 import { Link, router } from '@inertiajs/vue3';
 import { Search } from '@lucide/vue';
 import { X } from '@lucide/vue';
+import { Layers } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import ProjectCard from '@/components/shipped/ProjectCard.vue';
 import ProjectCardSkeleton from '@/components/shipped/ProjectCardSkeleton.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
 import SectionHeader from '@/components/shipped/SectionHeader.vue';
+import TechnologyPicker from '@/components/shipped/TechnologyPicker.vue';
 import { Button } from '@/components/ui/button';
 import {
     Empty,
@@ -27,6 +29,11 @@ import {
     PaginationPrevious,
 } from '@/components/ui/pagination';
 import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+import {
     Select,
     SelectContent,
     SelectItem,
@@ -34,6 +41,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { discover } from '@/routes';
+import type { TechnologyGroupOption } from '@/types/technology';
 
 const props = defineProps<{
     projects: {
@@ -47,10 +55,13 @@ const props = defineProps<{
     categories: any[];
     pricingOptions: { value: string; label: string }[];
     activeCategory: { id: number; name: string; slug: string } | null;
+    technologyOptions: TechnologyGroupOption[];
+    activeTechnologies: { id: number; name: string; slug: string }[];
     filters: {
         q?: string;
         category?: string;
         pricing?: string;
+        technologies?: string[];
         sort?: string;
     };
 }>();
@@ -58,6 +69,8 @@ const search = ref(props.filters.q ?? '');
 const category = ref(props.filters.category ?? 'all');
 const pricing = ref(props.filters.pricing ?? 'all');
 const sort = ref(props.filters.sort ?? 'latest');
+const selectedTechnologies = ref<string[]>(props.filters.technologies ?? []);
+const stackPopoverOpen = ref(false);
 const loading = ref(false);
 const totalPages = computed(() => props.projects.last_page);
 const projectGridClass = computed(() => {
@@ -71,24 +84,30 @@ const resultsLabel = computed(() => {
     const { total, from, to } = props.projects;
 
     if (total === 0) {
-return 'No records';
-}
+        return 'No records';
+    }
 
     if (total === 1) {
-return '1 record';
-}
+        return '1 record';
+    }
 
     return `${from}–${to} of ${total} records`;
 });
 
 function applyFilters(page = 1) {
     loading.value = true;
+    // The stack popover stays open across selections so a creator can
+    // pick several technologies in one visit; it closes on outside
+    // click or escape like any popover.
     router.get(
         discover().url,
         {
             q: search.value || undefined,
             category: category.value === 'all' ? undefined : category.value,
             pricing: pricing.value === 'all' ? undefined : pricing.value,
+            technologies: selectedTechnologies.value.length
+                ? selectedTechnologies.value
+                : undefined,
             sort: sort.value === 'latest' ? undefined : sort.value,
             page,
         },
@@ -101,6 +120,18 @@ function applyFilters(page = 1) {
             },
         },
     );
+}
+
+function onTechnologiesChange(value: string[]) {
+    selectedTechnologies.value = value;
+    applyFilters();
+}
+
+function clearTechnology(slug: string) {
+    selectedTechnologies.value = selectedTechnologies.value.filter(
+        (value) => value !== slug,
+    );
+    applyFilters();
 }
 
 function clearSearch() {
@@ -133,12 +164,12 @@ function clearPricing() {
                 <p
                     class="mt-6 max-w-xl text-sm leading-6 text-muted-foreground"
                 >
-                    Public records from Laravel builders, searchable by name
-                    and category.
+                    Public records from Laravel builders, searchable by name and
+                    category.
                 </p>
             </SectionHeader>
             <div
-                class="grid border-b border-foreground bg-transparent md:grid-cols-[1fr_12rem_12rem_auto]"
+                class="grid border-b border-foreground bg-transparent md:grid-cols-[1fr_12rem_12rem_12rem_auto]"
             >
                 <InputGroup class="h-10 bg-background"
                     ><InputGroupAddon
@@ -183,6 +214,45 @@ function clearPricing() {
                         ></SelectContent
                     ></Select
                 >
+                <Popover v-model:open="stackPopoverOpen">
+                    <PopoverTrigger
+                        class="flex h-10 w-full items-center justify-between gap-2 rounded-none border border-foreground bg-background px-3 text-left text-foreground"
+                        data-test="discover-stack-filter"
+                    >
+                        <span class="flex items-center gap-2 text-sm">
+                            <Layers class="size-4" aria-hidden="true" />
+                            Stack
+                        </span>
+                        <span
+                            v-if="selectedTechnologies.length"
+                            class="technical-label text-primary tabular-nums"
+                        >
+                            {{ selectedTechnologies.length }}
+                        </span>
+                    </PopoverTrigger>
+                    <PopoverContent
+                        align="end"
+                        class="w-80 rounded-none border-foreground"
+                    >
+                        <div class="grid max-h-96 gap-4 overflow-y-auto p-1">
+                            <TechnologyPicker
+                                :groups="technologyOptions"
+                                :model-value="selectedTechnologies"
+                                @update:model-value="onTechnologiesChange"
+                            />
+                            <Button
+                                v-if="selectedTechnologies.length"
+                                variant="outline"
+                                size="sm"
+                                class="w-full"
+                                data-test="clear-stack-filters"
+                                @click="onTechnologiesChange([])"
+                            >
+                                Clear stack filters
+                            </Button>
+                        </div>
+                    </PopoverContent>
+                </Popover>
                 <Button class="h-10 bg-primary" @click="applyFilters()"
                     >Search</Button
                 >
@@ -196,7 +266,7 @@ function clearPricing() {
                     }}</span>
                     <span
                         v-if="search"
-                        class="inline-flex items-center gap-1.5 border border-foreground bg-background px-2 py-1 font-mono text-[10px] uppercase tracking-[.08em]"
+                        class="inline-flex items-center gap-1.5 border border-foreground bg-background px-2 py-1 font-mono text-[10px] tracking-[.08em] uppercase"
                     >
                         <span class="max-w-[12rem] truncate"
                             >"{{ search }}"</span
@@ -212,7 +282,7 @@ function clearPricing() {
                     </span>
                     <span
                         v-if="activeCategory"
-                        class="inline-flex items-center gap-1.5 border border-foreground bg-background px-2 py-1 font-mono text-[10px] uppercase tracking-[.08em]"
+                        class="inline-flex items-center gap-1.5 border border-foreground bg-background px-2 py-1 font-mono text-[10px] tracking-[.08em] uppercase"
                     >
                         {{ activeCategory.name }}
                         <button
@@ -226,7 +296,7 @@ function clearPricing() {
                     </span>
                     <span
                         v-if="pricing !== 'all'"
-                        class="inline-flex items-center gap-1.5 border border-foreground bg-background px-2 py-1 font-mono text-[10px] uppercase tracking-[.08em]"
+                        class="inline-flex items-center gap-1.5 border border-foreground bg-background px-2 py-1 font-mono text-[10px] tracking-[.08em] uppercase"
                     >
                         {{
                             pricingOptions.find(
@@ -242,10 +312,25 @@ function clearPricing() {
                             <X class="size-3" aria-hidden="true" />
                         </button>
                     </span>
+                    <span
+                        v-for="technology in activeTechnologies"
+                        :key="technology.slug"
+                        class="inline-flex items-center gap-1.5 border border-foreground bg-background px-2 py-1 font-mono text-[10px] tracking-[.08em] uppercase"
+                    >
+                        {{ technology.name }}
+                        <button
+                            type="button"
+                            :aria-label="`Clear ${technology.name} stack filter`"
+                            class="text-primary"
+                            @click="clearTechnology(technology.slug)"
+                        >
+                            <X class="size-3" aria-hidden="true" />
+                        </button>
+                    </span>
                 </div>
                 <Select v-model="sort" @update:model-value="applyFilters()"
                     ><SelectTrigger
-                        class="h-8 w-[12rem] rounded-none border-foreground bg-background font-mono text-[10px] uppercase tracking-[.08em]"
+                        class="h-8 w-[12rem] rounded-none border-foreground bg-background font-mono text-[10px] tracking-[.08em] uppercase"
                         ><span class="text-muted-foreground">Sort /</span>
                         <SelectValue /> </SelectTrigger
                     ><SelectContent>
@@ -278,8 +363,8 @@ function clearPricing() {
                 ><EmptyHeader
                     ><EmptyTitle>No launches match this search.</EmptyTitle
                     ><EmptyDescription
-                        >Try another name or clear the category
-                        filter.</EmptyDescription
+                        >Try another name or clear the category and stack
+                        filters.</EmptyDescription
                     ></EmptyHeader
                 ><Button as-child variant="outline"
                     ><Link :href="discover()">Clear filters</Link></Button

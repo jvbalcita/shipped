@@ -8,6 +8,7 @@ import GitHubRepoPicker from '@/components/shipped/GitHubRepoPicker.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
 import RichTextEditor from '@/components/shipped/RichTextEditor.vue';
 import SectionHeader from '@/components/shipped/SectionHeader.vue';
+import TechnologyPicker from '@/components/shipped/TechnologyPicker.vue';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
@@ -28,11 +29,13 @@ import {
     StepperTrigger,
 } from '@/components/ui/stepper';
 import { index, store } from '@/routes/projects';
+import type { TechnologyGroupOption } from '@/types/technology';
 
 const props = defineProps<{
     categories: { id: number; name: string }[];
     pricingOptions: { value: string; label: string }[];
     suggestedTags: string[];
+    technologyOptions: TechnologyGroupOption[];
     githubLinked?: boolean;
     githubRepos?: { name: string; url: string }[] | null;
 }>();
@@ -47,6 +50,7 @@ const form = useForm({
     pricing: props.pricingOptions[0]?.value ?? 'free',
     launch_date: '',
     tags: '',
+    technologies: [] as string[],
     cover_image: null as File | null,
     logo: null as File | null,
     screenshots: [] as File[],
@@ -54,6 +58,23 @@ const form = useForm({
 });
 
 const MAX_SCREENSHOTS = 5;
+
+const technologyNameBySlug = computed(() =>
+    Object.fromEntries(
+        props.technologyOptions.flatMap((group) =>
+            group.technologies.map((technology) => [
+                technology.slug,
+                technology.name,
+            ]),
+        ),
+    ),
+);
+
+const selectedTechnologyNames = computed(() =>
+    form.technologies
+        .map((slug) => technologyNameBySlug.value[slug] ?? slug)
+        .join(', '),
+);
 
 const newScreenshots = ref<{ file: File; caption: string }[]>([]);
 const screenshotInput = ref<HTMLInputElement | null>(null);
@@ -469,6 +490,23 @@ function continueComposer(): void {
                                     <FieldError v-if="form.errors.tags">{{
                                         form.errors.tags
                                     }}</FieldError></Field
+                                ><Field>
+                                    <FieldLabel>Built with</FieldLabel>
+                                    <p class="text-xs text-muted-foreground">
+                                        Declare the stack behind the project.
+                                        Every choice becomes a filter visitors
+                                        can browse.
+                                    </p>
+                                    <TechnologyPicker
+                                        v-model="form.technologies"
+                                        :groups="technologyOptions"
+                                    />
+                                    <FieldError
+                                        v-if="form.errors.technologies"
+                                        >{{
+                                            form.errors.technologies
+                                        }}</FieldError
+                                    ></Field
                                 ><Field
                                     ><FieldLabel for="live_url"
                                         >Live URL</FieldLabel
@@ -542,6 +580,19 @@ function continueComposer(): void {
                                         Launch state
                                     </dt>
                                     <dd class="mt-2">Private draft</dd>
+                                </div>
+                                <div
+                                    v-if="form.technologies.length"
+                                    class="bg-background p-4 sm:col-span-2"
+                                >
+                                    <dt
+                                        class="technical-label text-muted-foreground"
+                                    >
+                                        Built with
+                                    </dt>
+                                    <dd class="mt-2">
+                                        {{ selectedTechnologyNames }}
+                                    </dd>
                                 </div>
                             </dl>
                             <Alert class="mt-8 border-foreground"

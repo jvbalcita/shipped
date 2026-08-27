@@ -13,6 +13,7 @@ use App\Models\ProjectScreenshot;
 use App\Models\Review;
 use App\Models\ShipStory;
 use App\Models\Tag;
+use App\Models\Technology;
 use App\Models\User;
 use App\Services\GitHub\Exceptions\GitHubApiUnavailable;
 use App\Services\GitHub\GitHubClient;
@@ -80,6 +81,7 @@ class ProjectController extends Controller
                 'label' => $pricing->label(),
             ])->values(),
             'suggestedTags' => config('shipped.suggested_tags', []),
+            'technologyOptions' => Technology::groupedVocabulary(),
             ...$this->githubRepositoryProps($this->currentUser()),
         ]);
     }
@@ -90,7 +92,7 @@ class ProjectController extends Controller
     public function store(StoreProjectRequest $request): RedirectResponse
     {
         $project = DB::transaction(function () use ($request): Project {
-            $data = $request->safe()->except(['cover_image', 'logo', 'tags', 'screenshots', 'screenshots_captions']);
+            $data = $request->safe()->except(['cover_image', 'logo', 'tags', 'technologies', 'screenshots', 'screenshots_captions']);
             if ($request->hasFile('cover_image')) {
                 $data['cover_image_path'] = $request->file('cover_image')->store('project-covers');
             }
@@ -102,6 +104,7 @@ class ProjectController extends Controller
             $project = $request->user()->projects()->create($data);
             $project->shipStory()->create();
             $this->syncTags($project, $request->string('tags')->toString());
+            $this->syncTechnologies($project, $request->input('technologies', []));
             $this->storeScreenshots($project, $request);
 
             return $project;
@@ -123,6 +126,7 @@ class ProjectController extends Controller
             'creator:id,name,username',
             'category:id,name,slug',
             'tags:id,name,slug',
+            'technologies:id,name,slug,stack_group',
             'screenshots:id,project_id,path,caption,sort_order',
             'reviews.user:id,name,username',
             'releases' => fn ($query) => $query->published()->latest('published_at'),
@@ -226,6 +230,7 @@ class ProjectController extends Controller
                 'creator' => $project->creator->only('id', 'name', 'username'),
                 'category' => $project->category?->only('id', 'name', 'slug'),
                 'tags' => $project->tags->map->only('id', 'name', 'slug')->values(),
+                'built_with' => $this->builtWithProps($project),
                 'screenshots' => $project->screenshots->map(fn (ProjectScreenshot $screenshot) => [
                     'id' => $screenshot->id,
                     'url' => $screenshot->url,
@@ -307,7 +312,7 @@ class ProjectController extends Controller
     {
         $this->authorize('update', $project);
 
-        $project->load(['releases', 'tags', 'screenshots', 'creator']);
+        $project->load(['releases', 'tags', 'technologies', 'screenshots', 'creator']);
 
         return Inertia::render('Projects/Edit', [
             'project' => $project,
@@ -318,6 +323,7 @@ class ProjectController extends Controller
                 'label' => $pricing->label(),
             ])->values(),
             'suggestedTags' => config('shipped.suggested_tags', []),
+            'technologyOptions' => Technology::groupedVocabulary(),
             ...$this->githubRepositoryProps($this->currentUser()),
             'badgeMarkdown' => $project->isPubliclyDiscoverable()
                 ? sprintf(
@@ -342,6 +348,7 @@ class ProjectController extends Controller
                 'logo',
                 'logo_removal',
                 'tags',
+                'technologies',
                 'cover_removal',
                 'laravel_cloud_url',
             ]);
@@ -378,6 +385,10 @@ class ProjectController extends Controller
 
             if ($request->exists('tags')) {
                 $this->syncTags($project, $request->string('tags')->toString());
+            }
+
+            if ($request->exists('technologies')) {
+                $this->syncTechnologies($project, $request->input('technologies', []));
             }
 
             $this->updateScreenshots($project, $request);
@@ -514,6 +525,47 @@ class ProjectController extends Controller
         })->all();
 
         $project->tags()->sync($tagIds);
+    }
+
+    /**
+     * Replace the project's declared Built With selection. The pivot's
+     * provenance default records every v1 row as creator-declared.
+     *
+     * @param  array<int, string>  $slugs
+     */
+    private function syncTechnologies(Project $project, array $slugs): void
+    {
+        $technologyIds = Technology::query()
+            ->whereIn('slug', $slugs)
+            ->pluck('id')
+            ->all();
+
+        $project->technologies()->sync($technologyIds);
+    }
+
+    /**
+     * The project's Built With selection with its stack group and the
+     * provenance of each record, shaped for the public project page.
+     *
+     * @return array<int, array{name: string, slug: string, group: string, group_label: string, provenance: string, provenance_label: string}>
+     */
+    private function builtWithProps(Project $project): array
+    {
+        return $project->technologies
+            ->map(function (Technology $technology): array {
+                $provenance = $technology->pivot->provenance;
+
+                return [
+                    'name' => $technology->name,
+                    'slug' => $technology->slug,
+                    'group' => $technology->stack_group->value,
+                    'group_label' => $technology->stack_group->label(),
+                    'provenance' => $provenance->value,
+                    'provenance_label' => $provenance->label(),
+                ];
+            })
+            ->values()
+            ->all();
     }
 
     /** @return array<string, mixed>|null */
