@@ -6,6 +6,7 @@ import {
     CornerUpLeft,
     Download,
     ExternalLink,
+    Eye,
     GitFork,
     Heart,
     Link2,
@@ -115,6 +116,24 @@ const topLevelComments = computed(() =>
 );
 const repliesFor = (id: number) =>
     (props.project.comments ?? []).filter((c: any) => c.parent_id === id);
+
+const provenanceSummary = computed<string>(() => {
+    const builtWith = props.project.built_with ?? [];
+    const observed = builtWith.filter(
+        (technology: { observed_at: string | null }) =>
+            technology.observed_at !== null,
+    ).length;
+
+    if (observed > 0 && observed < builtWith.length) {
+        return 'Includes technologies observed by Shipped in the public repository.';
+    }
+
+    if (observed === builtWith.length && builtWith.length > 0) {
+        return 'Observed by Shipped in the public repository.';
+    }
+
+    return builtWith[0]?.provenance_label ?? '';
+});
 
 function submitReview(): void {
     const { project } = props;
@@ -336,11 +355,22 @@ async function copyManifestLink(): Promise<void> {
                                     <span class="text-muted-foreground">{{
                                         technology.group_label
                                     }}</span>
+                                    <span
+                                        v-if="technology.observed_at"
+                                        class="inline-flex items-center gap-1"
+                                        title="Observed by Shipped in the project's public repository"
+                                        :data-test="`observed-${technology.slug}`"
+                                    >
+                                        <Eye class="size-3" />
+                                        <span class="sr-only"
+                                            >Observed by Shipped</span
+                                        >
+                                    </span>
                                 </Link>
                             </li>
                         </ul>
                         <p class="technical-label mt-2 text-muted-foreground">
-                            {{ project.built_with[0]?.provenance_label }}
+                            {{ provenanceSummary }}
                         </p>
                     </div>
                     <div

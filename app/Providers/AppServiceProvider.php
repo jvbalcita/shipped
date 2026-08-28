@@ -48,8 +48,17 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('project-verification', function (Request $request): Limit {
             $project = $request->route('project');
 
+            // Null-safe by user: the framework may resolve the limiter
+            // before authentication middleware rejects a guest.
             return Limit::perMinute(5)
-                ->by($request->user()->getAuthIdentifier().':'.($project instanceof Project ? $project->getKey() : 'unknown'));
+                ->by(($request->user()?->getAuthIdentifier() ?? 'guest').':'.($project instanceof Project ? $project->getKey() : 'unknown'));
+        });
+
+        RateLimiter::for('project-observation', function (Request $request): Limit {
+            $project = $request->route('project');
+
+            return Limit::perMinute(5)
+                ->by(($request->user()?->getAuthIdentifier() ?? 'guest').':'.($project instanceof Project ? $project->getKey() : 'unknown'));
         });
 
         $this->configureDefaults();

@@ -30,3 +30,19 @@ test('technology seeder is idempotent when run twice', function () {
 
     expect(Technology::query()->count())->toBe(61);
 });
+
+test('version technologies observe through range keys on their dependency name', function () {
+    $this->seed(TechnologySeeder::class);
+
+    expect(Technology::query()->where('name', 'Laravel 12')->firstOrFail()->observation_keys)
+        ->toBe(['laravel/framework:>=12.0,<13.0'])
+        ->and(Technology::query()->where('name', 'PHP 8.4')->firstOrFail()->observation_keys)
+        ->toBe(['php:>=8.4,<8.5']);
+});
+
+test('technologies without observable dependencies stay key-less', function () {
+    $this->seed(TechnologySeeder::class);
+
+    expect(Technology::query()->where('name', 'Blade')->firstOrFail()->observation_keys)->toBeNull()
+        ->and(Technology::query()->where('name', 'PostgreSQL')->firstOrFail()->observation_keys)->toBeNull();
+});
