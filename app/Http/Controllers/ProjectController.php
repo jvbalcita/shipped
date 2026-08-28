@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\ProductEventName;
 use App\Enums\ProjectPricing;
+use App\Enums\TechnologyProvenance;
 use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\UpdateProjectRequest;
 use App\Models\Category;
@@ -23,6 +24,7 @@ use App\Services\LaravelCloud\ProjectVerificationService;
 use App\Services\LaunchKitAssets;
 use App\Services\ProductEventRecorder;
 use App\Services\Seo\SeoMetadata;
+use Carbon\CarbonInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -333,6 +335,23 @@ class ProjectController extends Controller
             ])->values(),
             'suggestedTags' => config('shipped.suggested_tags', []),
             'technologyOptions' => Technology::groupedVocabulary(),
+            'declaredTechnologies' => $project->technologies
+                ->filter(fn (Technology $technology): bool => $technology->pivot->is_declared)
+                ->map(fn (Technology $technology): string => $technology->slug)
+                ->values()
+                ->all(),
+            'stackObservation' => [
+                'github_url' => $project->github_url,
+                'observed_at' => $project->technologies
+                    ->map(fn (Technology $technology): ?CarbonInterface => $technology->pivot->observed_at)
+                    ->filter()
+                    ->max()?->toISOString(),
+                'observed_slugs' => $project->technologies
+                    ->filter(fn (Technology $technology): bool => $technology->pivot->observed_at !== null)
+                    ->map(fn (Technology $technology): string => $technology->slug)
+                    ->values()
+                    ->all(),
+            ],
             ...$this->githubRepositoryProps($this->currentUser()),
             'badgeMarkdown' => $this->launchKitAssets->badgeMarkdown($project),
         ]);
@@ -531,8 +550,10 @@ class ProjectController extends Controller
     }
 
     /**
-     * Replace the project's declared Built With selection. The pivot's
-     * provenance default records every v1 row as creator-declared.
+     * Replace the project's declared Built With selection. Declared rows
+     * and observed rows are independent assertions on one pivot row: a
+     * declaration withdrawal releases the row unless the repository
+     * still evidences it, and an existing observation survives the sync.
      *
      * @param  array<int, string>  $slugs
      */
@@ -543,14 +564,42 @@ class ProjectController extends Controller
             ->pluck('id')
             ->all();
 
-        $project->technologies()->sync($technologyIds);
+        DB::transaction(function () use ($project, $technologyIds): void {
+            foreach ($project->technologies as $technology) {
+                if (in_array($technology->getKey(), $technologyIds, true)) {
+                    continue;
+                }
+
+                if (! $technology->pivot->is_declared) {
+                    continue;
+                }
+
+                $observed = $technology->pivot->provenance === TechnologyProvenance::Observed;
+
+                if ($observed) {
+                    $project->technologies()->updateExistingPivot($technology->getKey(), [
+                        'is_declared' => false,
+                    ]);
+
+                    continue;
+                }
+
+                $project->technologies()->detach($technology->getKey());
+            }
+
+            foreach ($technologyIds as $id) {
+                $project->technologies()->syncWithoutDetaching([$id => [
+                    'is_declared' => true,
+                ]]);
+            }
+        });
     }
 
     /**
      * The project's Built With selection with its stack group and the
      * provenance of each record, shaped for the public project page.
      *
-     * @return array<int, array{name: string, slug: string, group: string, group_label: string, provenance: string, provenance_label: string}>
+     * @return array<int, array{name: string, slug: string, group: string, group_label: string, provenance: string, provenance_label: string, observed_at: string|null}>
      */
     private function builtWithProps(Project $project): array
     {
@@ -565,6 +614,7 @@ class ProjectController extends Controller
                     'group_label' => $technology->stack_group->label(),
                     'provenance' => $provenance->value,
                     'provenance_label' => $provenance->label(),
+                    'observed_at' => $technology->pivot->observed_at?->toISOString(),
                 ];
             })
             ->values()

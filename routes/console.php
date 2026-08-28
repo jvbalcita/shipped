@@ -15,5 +15,9 @@ Schedule::command('shipped:refresh-cloud-verifications')
     ->daily()
     ->withoutOverlapping()
     ->onOneServer();
+Schedule::command('shipped:observe-project-stacks')
+    ->dailyAt('02:30')
+    ->withoutOverlapping()
+    ->onOneServer();
 Schedule::command('shipped:publish-scheduled-releases')->everyMinute();
 Schedule::command('shipped:purge-reserved-usernames')->daily();

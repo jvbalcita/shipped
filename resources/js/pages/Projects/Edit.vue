@@ -18,6 +18,7 @@ import GitHubRepoPicker from '@/components/shipped/GitHubRepoPicker.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
 import RichTextEditor from '@/components/shipped/RichTextEditor.vue';
 import SectionHeader from '@/components/shipped/SectionHeader.vue';
+import StackObservationPanel from '@/components/shipped/StackObservationPanel.vue';
 import TechnologyPicker from '@/components/shipped/TechnologyPicker.vue';
 import VerificationPanel from '@/components/shipped/VerificationPanel.vue';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -74,6 +75,12 @@ const props = defineProps<{
     pricingOptions: { value: string; label: string }[];
     suggestedTags: string[];
     technologyOptions: TechnologyGroupOption[];
+    declaredTechnologies: string[];
+    stackObservation: {
+        github_url: string | null;
+        observed_at: string | null;
+        observed_slugs: string[];
+    };
     badgeMarkdown: string | null;
     githubLinked?: boolean;
     githubRepos?: { name: string; url: string }[] | null;
@@ -92,9 +99,7 @@ const projectForm = useForm({
     tags: (props.project.tags ?? [])
         .map((tag: { name: string }) => tag.name)
         .join(', '),
-    technologies: (props.project.technologies ?? []).map(
-        (technology: { slug: string }) => technology.slug,
-    ),
+    technologies: props.declaredTechnologies ?? [],
     cover_image: null as File | null,
     cover_removal: false as boolean,
     logo: null as File | null,
@@ -1085,6 +1090,12 @@ onUnmounted(() => {
                 </div>
             </section>
             <VerificationPanel :project="project" />
+            <StackObservationPanel
+                :project-slug="project.slug"
+                :github-url="stackObservation.github_url"
+                :observed-at="stackObservation.observed_at"
+                :observed-slugs="stackObservation.observed_slugs"
+            />
             <BadgeSnippet v-if="badgeMarkdown" :markdown="badgeMarkdown" />
             <section class="border-t border-foreground">
                 <div class="grid p-5 sm:grid-cols-[.45fr_1.55fr] sm:p-8">

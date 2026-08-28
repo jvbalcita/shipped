@@ -20,6 +20,7 @@ export type ProjectTechnology = {
     group_label: string;
     provenance: string;
     provenance_label: string;
+    observed_at: string | null;
 };
 
 export type CardTechnology = {

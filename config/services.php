@@ -22,6 +22,11 @@ return [
         'client_id' => env('GITHUB_CLIENT_ID'),
         'client_secret' => env('GITHUB_CLIENT_SECRET'),
         'redirect' => env('GITHUB_REDIRECT_URI', 'http://shipped.test:8087/oauth/github/callback'),
+
+        // Optional app-level token for public repository reads (stack
+        // observation). Anonymous reads work; the token adds rate-limit
+        // headroom. Never a creator OAuth token.
+        'app_token' => env('GITHUB_APP_TOKEN'),
     ],
 
     'google' => [

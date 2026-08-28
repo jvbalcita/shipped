@@ -584,7 +584,9 @@ Provide a simple launch kit generated from a published project or claimed builde
 
 **Implementation evidence:** Built With tests pass (12 tests, 95 assertions); PHPStan, Pint, ESLint (changed files), Prettier, and the Vite build pass; the full suite passes 426/427 with the pre-existing Inertia SSR/Vite harness failure unchanged. Documented in ADR 0013.
 
-**Next evidence gate:** Measure builder metadata completion, visitor use of stack filters and technology pages, and `/built-with` referral traffic before adding system-observed provenance (GitHub enrichment) or expanding the vocabulary.
+**Status update (2026-08-28):** System-observed provenance shipped ahead of gate (ADR 0016, experiment `2026-08-28-observed-stack-provenance.md`): Shipped reads each project's public repository manifests and marks confirmed Technologies "Observed by Shipped" on the public page, with a Creator Studio trigger and a daily freshness pass. `stack_observation_started` / `stack_observed` / `stack_observation_failed` events recorded creator-side only. The gate now governs *measuring* observed provenance alongside declared; deeper enrichment (stars, commits, webhooks) stays excluded.
+
+**Next evidence gate:** Measure builder metadata completion, visitor use of stack filters and technology pages, observed coverage of discoverable projects, and `/built-with` referral traffic — comparing observed-marked against declared-only projects — before adding further GitHub enrichment or expanding the vocabulary.
 
 **Build / change:**
 
@@ -906,7 +908,7 @@ The report should include methodology, limitations, and a clear distinction betw
 - Make Laravel/Laravel Cloud verification trustworthy and understandable.
 - Make Ship Stories first-class.
 - Create builder profiles with shipping history.
-- Add a small, controlled Built With metadata system and discovery.
+- Add a small, controlled Built With metadata system and discovery. *(System-observed provenance shipped 2026-08-28 — see ADR 0016 and the decision log.)*
 - Generate shareable project/profile cards and a simple launch kit.
 - Keep cheers bounded and secondary.
 - Manually seed projects and recruit the first 20 external builders.
@@ -1198,6 +1200,7 @@ Do not update the roadmap merely because an idea feels exciting. Add the evidenc
 | 2026-08-22 | Treat profiles, stories, verification, and share assets as the initial wedge. | They provide immediate value even while the audience is small. | First 20-builder experiment measures completion, sharing, and repeat use. | After cohort evidence. |
 | 2026-08-28 | Ship the Measured Launch Kit (M2.1 remainder) and first-party product-event recording before any further feature work. | The launch kit was ~80% built but nothing was measurable; every evidence gate (M0.1 funnel, M2.1 asset use, M2.4 cohort classification) was unmeasurable without instrumentation. | Funnel and sharing events now exist for the 20-builder experiment; GitHub-observed provenance stays gated on M2.2 measurement. | When the first cohort's kit/copy/share events can be reviewed. |
 | 2026-08-28 | Pull curated collections forward from Next to Build Now as the visitor-side discovery bet. | A code audit found the Phase 3 retention mechanics (Releases, Follows, Notifications) already implemented, so strict gate sequencing was overtaken by the code; collections are the roadmap's sanctioned manual step before algorithmic ranking, need zero community density, and convert the verified corpus into visitor-facing narratives no competitor can copy. | Curator-only collections ship with `collection_viewed` / `collection_project_clicked` events; experiment record opened at `docs/roadmap/experiments/2026-08-28-curated-collections.md`. Creator-made lists, rules engines, and votes stay excluded. | First cohort check-in reviews collection sessions and click-through against the provisional thresholds. |
+| 2026-08-28 | Ship GitHub-observed Built With provenance ahead of the M2.2 measurement gate. | Every Build Now trust surface is implemented and instrumented, but the M2.2 gate's own metrics (metadata completion, filter/technology-page use) cannot produce signal until the M2.4 cohort exists; observation improves exactly those metrics and gives outreach an evidence claim no competitor can copy. Same gate rationale as the collections pull-forward: gates govern measuring, not idleness. | Public project pages mark observed Technologies; `stack_observation_*` events extend the vocabulary; experiment record opened at `docs/roadmap/experiments/2026-08-28-observed-stack-provenance.md` (ADR 0016). Stars/commits enrichment, webhooks, private-repo reads, and creator-token use stay excluded; observation never touches verification or visibility. | First cohort check-in reviews observed coverage and observed-vs-declared discovery behavior. |
 
 ### Experiment record template
 

@@ -23,6 +23,7 @@ use App\Http\Controllers\ProjectFollowController;
 use App\Http\Controllers\ProjectReleaseController;
 use App\Http\Controllers\ProjectReviewController;
 use App\Http\Controllers\ProjectShipStoryController;
+use App\Http\Controllers\ProjectStackObservationController;
 use App\Http\Controllers\ProjectVerificationController;
 use App\Http\Controllers\ProjectVisibilityController;
 use App\Http\Controllers\ReleaseController;
@@ -84,6 +85,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('projects/{project}/verification', [ProjectVerificationController::class, 'store'])
         ->middleware('throttle:project-verification')
         ->name('projects.verification.store');
+    Route::post('projects/{project}/stack-observation', [ProjectStackObservationController::class, 'store'])
+        ->middleware('throttle:project-observation')
+        ->name('projects.stack-observation.store');
     Route::post('projects/{project}/cheers', [ProjectCheerController::class, 'store'])->name('projects.cheers.store');
     Route::resource('projects.reviews', ProjectReviewController::class)
         ->only(['store', 'update', 'destroy'])
