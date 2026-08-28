@@ -112,6 +112,10 @@ _Avoid_: Production app, Cloud project, current verification evidence
 A single curated product classification assigned to a project for community discovery.
 _Avoid_: Tag, label, type
 
+**Collection**:
+A curator-selected, ordered set of discoverable Projects presented as one editorial page at /collections/{slug}. Membership is hand-picked by the curator; a member is suppressed from public display while its Project is non-discoverable and keeps its stored order for when it returns. Distinct from a Category, which classifies a single Project, and from a Featured Project, which a Creator selects on their own profile.
+_Avoid_: List, showcase, roundup, featured picks
+
 **Tags**:
 A free-form set of descriptors a creator adds to a project at creation/edit time, entered comma-separated and slug-normalized. Many per project, distinct from the single curated Category and from the curated Built With vocabulary.
 _Avoid_: Keywords, topics, labels

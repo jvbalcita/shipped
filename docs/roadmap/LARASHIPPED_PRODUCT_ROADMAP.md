@@ -493,6 +493,8 @@ The story should be more than an optional paragraph hidden below a listing. It s
 
 #### Milestone 1.3: Builder profiles and shipping history
 
+**Status:** Implementation complete — evidence gate open (2026-08-28; Creators are the primary records)
+
 **Build / change:**
 
 - Create or attach a builder identity when a project is published.
@@ -681,7 +683,11 @@ Provide a simple launch kit generated from a published project or claimed builde
 **Priority:** Next  
 **Entry gate:** The first 20-builder experiment shows that builders value the initial presence, and there is evidence of continuing project activity or explicit demand for updates.
 
+> **Status note (2026-08-28):** Both milestones below are already implemented in the product (Releases with per-project and public pages; Following and in-product Notifications). The gate now governs *measuring* their use, not building them. Documented so the roadmap matches the code.
+
 #### Milestone 3.1: Project updates and changelog
+
+**Status:** Implemented ahead of gate (Releases) — evidence measurement open (2026-08-28)
 
 **Build / change:**
 
@@ -709,6 +715,8 @@ Provide a simple launch kit generated from a published project or claimed builde
 - The team sees repeat usage before adding a broader social feed.
 
 #### Milestone 3.2: Following and notifications
+
+**Status:** Implemented ahead of gate (project/creator follows + in-product notifications) — evidence measurement open (2026-08-28)
 
 **Build / change:**
 
@@ -905,12 +913,12 @@ The report should include methodology, limitations, and a clear distinction betw
 
 ### Next
 
-- Project updates and changelog.
-- A lightweight project timeline.
-- Following and notifications, only after updates and repeat visits exist.
+- Project updates and changelog. *(Implemented ahead of gate as Releases — 2026-08-28.)*
+- A lightweight project timeline. *(Shipping History ships on creator profiles.)*
+- Following and notifications, only after updates and repeat visits exist. *(Implemented ahead of gate — 2026-08-28.)*
 - Profile/project claim and correction improvements if the initial cohort exposes friction.
 - Embeddable verified or shipped badges if builders ask for them and share assets successfully.
-- Curated collections or editorial discovery operated manually before algorithmic ranking.
+- Curated collections or editorial discovery operated manually before algorithmic ranking. *(Pulled forward to Build Now on 2026-08-28 — see decision log and `docs/roadmap/experiments/2026-08-28-curated-collections.md`.)*
 
 ### Later
 
@@ -1189,6 +1197,7 @@ Do not update the roadmap merely because an idea feels exciting. Add the evidenc
 | 2026-08-22 | Keep cheers bounded and secondary. | Popularity mechanics do not create LaraShipped's strongest differentiation. | No leaderboard or complex gamification in the initial roadmap. | If users show a specific, non-gameable need for social proof. |
 | 2026-08-22 | Treat profiles, stories, verification, and share assets as the initial wedge. | They provide immediate value even while the audience is small. | First 20-builder experiment measures completion, sharing, and repeat use. | After cohort evidence. |
 | 2026-08-28 | Ship the Measured Launch Kit (M2.1 remainder) and first-party product-event recording before any further feature work. | The launch kit was ~80% built but nothing was measurable; every evidence gate (M0.1 funnel, M2.1 asset use, M2.4 cohort classification) was unmeasurable without instrumentation. | Funnel and sharing events now exist for the 20-builder experiment; GitHub-observed provenance stays gated on M2.2 measurement. | When the first cohort's kit/copy/share events can be reviewed. |
+| 2026-08-28 | Pull curated collections forward from Next to Build Now as the visitor-side discovery bet. | A code audit found the Phase 3 retention mechanics (Releases, Follows, Notifications) already implemented, so strict gate sequencing was overtaken by the code; collections are the roadmap's sanctioned manual step before algorithmic ranking, need zero community density, and convert the verified corpus into visitor-facing narratives no competitor can copy. | Curator-only collections ship with `collection_viewed` / `collection_project_clicked` events; experiment record opened at `docs/roadmap/experiments/2026-08-28-curated-collections.md`. Creator-made lists, rules engines, and votes stay excluded. | First cohort check-in reviews collection sessions and click-through against the provisional thresholds. |
 
 ### Experiment record template
 

@@ -11,8 +11,8 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
  * Paginates the project-card listing shared by every public discovery
- * surface — Discover and the per-technology Built With pages — so all
- * of them present identical cards.
+ * surface — Discover, the per-technology Built With pages, and curated
+ * Collections — so all of them present identical cards.
  */
 class DiscoverProjects
 {
@@ -57,9 +57,13 @@ class DiscoverProjects
             ->when(
                 $sort === 'cheered',
                 fn ($query) => $query->orderByDesc('cheers_count')->latest(),
-                fn ($query) => $sort === 'launch_date'
-                    ? $query->orderByDesc('launch_date')->latest()
-                    : $query->latest(),
+                fn ($query) => match (true) {
+                    $sort === 'launch_date' => $query->orderByDesc('launch_date')->latest(),
+                    // The scope owns the order (e.g. a collection's
+                    // hand-picked positions); applying nothing preserves it.
+                    $sort === 'curated' => $query,
+                    default => $query->latest(),
+                },
             )
             ->paginate(9)
             ->through(fn (Project $project): array => [

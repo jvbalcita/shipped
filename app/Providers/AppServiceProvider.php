@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Cheer;
+use App\Models\Collection;
 use App\Models\Comment;
 use App\Models\Follow;
 use App\Models\Project;
@@ -84,9 +85,12 @@ class AppServiceProvider extends ServiceProvider
             'user' => User::class,
             'release' => Release::class,
             'review' => Review::class,
+            'collection' => Collection::class,
         ]);
 
         Gate::define('follow', fn (User $user, User|Project $followable): bool => (new FollowPolicy)->follow($user, $followable));
+
+        Gate::define('curate', fn (User $user): bool => in_array((int) $user->getKey(), config('shipped.curators', []), true));
 
         DB::prohibitDestructiveCommands(
             app()->isProduction() && ! config('shipped.allow_destructive_commands'),
