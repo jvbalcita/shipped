@@ -24,6 +24,7 @@ use App\Services\LaunchKitAssets;
 use App\Services\ProductEventRecorder;
 use App\Services\Seo\SeoMetadata;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -456,6 +457,14 @@ class ProjectController extends Controller
             'githubLinked' => $account !== null,
             'githubRepos' => Inertia::defer(function () use ($user, $account): ?array {
                 if ($account?->provider_token === null) {
+                    return null;
+                }
+
+                // An expired provider token (GitHub App user tokens live
+                // 8 hours) cannot list repositories. Return the fallback
+                // state immediately so the picker offers a reconnect
+                // instead of waiting on a guaranteed 401.
+                if ($account->token_expires_at !== null && Carbon::parse($account->token_expires_at)->isPast()) {
                     return null;
                 }
 

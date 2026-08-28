@@ -96,6 +96,87 @@ test('existing provider link logs the user in without creating a duplicate', fun
     expect(User::where('email', 'linked@example.com')->count())->toBe(1);
 });
 
+test('logging in with the provider rotates an expired stored token', function () {
+    $user = User::factory()->create(['email' => 'linked@example.com']);
+    $account = $user->oauthAccounts()->create([
+        'provider' => 'github',
+        'provider_id' => 'existing-id',
+        'provider_token' => 'expired-token',
+        'token_expires_at' => now()->subHours(2),
+        'linked_at' => now()->subDays(2),
+    ]);
+
+    Socialite::fake('github', oauthFakeUser([
+        'id' => 'existing-id',
+        'email' => 'linked@example.com',
+        'token' => 'fresh-token',
+        'refreshToken' => 'fresh-refresh',
+        'expiresIn' => 3600,
+    ]));
+
+    $this->get(route('oauth.callback', ['provider' => 'github']))
+        ->assertRedirect(route('dashboard'));
+
+    $account->refresh();
+
+    expect($account->provider_token)->toBe('fresh-token')
+        ->and($account->provider_refresh_token)->toBe('fresh-refresh')
+        ->and($account->token_expires_at->getTimestamp())->toBeGreaterThan(now()->getTimestamp());
+});
+
+test('a provider response without expiry clears a stale expiry timestamp', function () {
+    $user = User::factory()->create(['email' => 'linked@example.com']);
+    $account = $user->oauthAccounts()->create([
+        'provider' => 'github',
+        'provider_id' => 'existing-id',
+        'provider_token' => 'old-token',
+        'token_expires_at' => now()->subHours(2),
+        'linked_at' => now()->subDays(2),
+    ]);
+
+    Socialite::fake('github', oauthFakeUser([
+        'id' => 'existing-id',
+        'email' => 'linked@example.com',
+        'token' => 'fresh-token',
+        'refreshToken' => null,
+        'expiresIn' => null,
+    ]));
+
+    $this->get(route('oauth.callback', ['provider' => 'github']))
+        ->assertRedirect(route('dashboard'));
+
+    $account->refresh();
+
+    expect($account->provider_token)->toBe('fresh-token')
+        ->and($account->token_expires_at)->toBeNull();
+});
+
+test('re-linking an already linked provider refreshes its credentials instead of skipping', function () {
+    $user = User::factory()->create();
+    $account = $user->oauthAccounts()->create([
+        'provider' => 'github',
+        'provider_id' => 'provider-id-123',
+        'provider_token' => 'stale-token',
+        'token_expires_at' => now()->subHours(8),
+        'linked_at' => now()->subDays(9),
+    ]);
+
+    $this->actingAs($user)
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->post(route('oauth.link', ['provider' => 'github']))
+        ->assertRedirect();
+
+    Socialite::fake('github', oauthFakeUser(['token' => 'fresh-token', 'expiresIn' => 3600]));
+
+    $this->get(route('oauth.callback', ['provider' => 'github']))
+        ->assertRedirect(route('security.edit'));
+
+    $account->refresh();
+
+    expect($account->provider_token)->toBe('fresh-token')
+        ->and(OAuthAccount::query()->where('user_id', $user->id)->count())->toBe(1);
+});
+
 test('email collision without a provider link refuses auto-merge', function () {
     User::factory()->create(['email' => 'taken@example.com']);
 

@@ -7,6 +7,7 @@ import {
     Eye,
     EyeOff,
     ImagePlus,
+    RefreshCw,
     Send,
 } from '@lucide/vue';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
@@ -46,6 +47,7 @@ import {
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
+import { link as linkOauth } from '@/routes/oauth';
 import { update } from '@/routes/projects';
 import { show as launchKit } from '@/routes/projects/launch-kit';
 import { store as releaseStore } from '@/routes/projects/releases';
@@ -123,6 +125,9 @@ const releaseForm = useForm({
     timing: 'now',
     published_at: '',
 });
+// The repository picker falls back to a URL input when GitHub cannot be
+// read; reconnecting runs the OAuth flow again to rotate the token.
+const reconnectForm = useForm({});
 const shipStoryForm = useForm({
     problem: props.shipStory?.problem ?? '',
     audience: props.shipStory?.audience ?? '',
@@ -502,10 +507,36 @@ onUnmounted(() => {
                                 <p class="text-xs text-muted-foreground">
                                     {{
                                         githubLinked
-                                            ? 'We could not load your repositories — paste the URL instead.'
+                                            ? 'We could not load your repositories — paste the URL instead, or reconnect GitHub.'
                                             : 'Link GitHub in Settings → Security to pick from your repositories.'
                                     }}
                                 </p>
+                                <Button
+                                    v-if="githubLinked"
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    class="self-start"
+                                    :disabled="reconnectForm.processing"
+                                    data-test="reconnect-github"
+                                    @click="
+                                        reconnectForm.post(
+                                            linkOauth.url({
+                                                provider: 'github',
+                                            }),
+                                            { preserveScroll: true },
+                                        )
+                                    "
+                                >
+                                    <RefreshCw
+                                        class="size-4"
+                                        :class="{
+                                            'animate-spin':
+                                                reconnectForm.processing,
+                                        }"
+                                    />
+                                    Reconnect GitHub
+                                </Button>
                             </template>
                             <FieldError v-if="projectForm.errors.github_url">{{
                                 projectForm.errors.github_url

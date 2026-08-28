@@ -16,6 +16,7 @@ use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\InvalidStateException;
+use Laravel\Socialite\Two\User as SocialiteUser;
 use Symfony\Component\HttpFoundation\RedirectResponse as SymfonyRedirectResponse;
 
 class OAuthController extends Controller
@@ -40,7 +41,7 @@ class OAuthController extends Controller
         }
 
         try {
-            /** @var \Laravel\Socialite\Two\User $socialiteUser */
+            /** @var SocialiteUser $socialiteUser */
             $socialiteUser = Socialite::driver($providerEnum->value)->user();
         } catch (InvalidStateException) {
             return redirect()->route('login')
@@ -61,7 +62,11 @@ class OAuthController extends Controller
                 return redirect()->route('security.edit');
             }
 
-            if (! $user->oauthAccounts()->where('provider', $providerEnum->value)->exists()) {
+            $existing = $user->oauthAccounts()
+                ->where('provider', $providerEnum->value)
+                ->first();
+
+            if ($existing === null) {
                 $user->oauthAccounts()->create([
                     'provider' => $providerEnum->value,
                     'provider_id' => $socialiteUser->getId(),
@@ -73,6 +78,8 @@ class OAuthController extends Controller
                 ]);
 
                 $this->importAvatarIfMissing($user, $socialiteUser->getAvatar());
+            } else {
+                $this->refreshStoredCredentials($existing, $socialiteUser);
             }
 
             Inertia::flash('toast', ['type' => 'success', 'message' => __('Provider linked.')]);
@@ -85,6 +92,8 @@ class OAuthController extends Controller
             ->first();
 
         if ($account !== null) {
+            $this->refreshStoredCredentials($account, $socialiteUser);
+
             Auth::login($account->user);
             $request->session()->put('auth.password_confirmed_at', time());
 
@@ -129,6 +138,29 @@ class OAuthController extends Controller
         $request->session()->put('auth.password_confirmed_at', time());
 
         return redirect()->route('username.welcome');
+    }
+
+    /**
+     * Rotate the stored credentials of an existing provider account.
+     * Provider user access tokens can expire long before the link does
+     * (GitHub App tokens live 8 hours), and every successful callback
+     * for that provider account issues fresh ones — so store them. The
+     * repository picker depends on a current token.
+     */
+    private function refreshStoredCredentials(OAuthAccount $account, SocialiteUser $socialiteUser): void
+    {
+        $account->fill([
+            'provider_nickname' => $socialiteUser->getNickname() ?? $account->provider_nickname,
+            'provider_token' => $socialiteUser->token,
+            'provider_refresh_token' => $socialiteUser->refreshToken,
+            'token_expires_at' => $socialiteUser->expiresIn !== null
+                ? now()->addSeconds($socialiteUser->expiresIn)
+                : null,
+        ]);
+
+        if ($account->isDirty()) {
+            $account->save();
+        }
     }
 
     private function importAvatarIfMissing(User $user, ?string $avatarUrl): void
