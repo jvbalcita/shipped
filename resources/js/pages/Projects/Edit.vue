@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { router, useForm } from '@inertiajs/vue3';
+import { Link, router, useForm } from '@inertiajs/vue3';
 import {
+    ArrowUpRight,
     CalendarClock,
     Check,
     Eye,
@@ -46,6 +47,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { update } from '@/routes/projects';
+import { show as launchKit } from '@/routes/projects/launch-kit';
 import { store as releaseStore } from '@/routes/projects/releases';
 import shipStoryRoutes from '@/routes/projects/ship-story';
 import visibility from '@/routes/projects/visibility';
@@ -1084,6 +1086,32 @@ onUnmounted(() => {
             </section>
             <VerificationPanel :project="project" />
             <BadgeSnippet v-if="badgeMarkdown" :markdown="badgeMarkdown" />
+            <section class="border-t border-foreground">
+                <div class="grid p-5 sm:grid-cols-[.45fr_1.55fr] sm:p-8">
+                    <p class="technical-label text-primary">Launch Kit</p>
+                    <div class="mt-8 flex flex-col gap-3 sm:mt-0">
+                        <p class="text-sm leading-6 text-muted-foreground">
+                            The share text, launch card, Ship Manifest, and
+                            README badge for this launch — every shareable asset
+                            in one place.
+                        </p>
+                        <div>
+                            <Button
+                                as-child
+                                variant="outline"
+                                data-test="open-launch-kit"
+                            >
+                                <Link
+                                    :href="launchKit({ project: project.slug })"
+                                >
+                                    Open Launch Kit
+                                    <ArrowUpRight class="size-4" />
+                                </Link>
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </section>
             <section class="border-t border-foreground">
                 <div class="grid p-5 sm:grid-cols-[.45fr_1.55fr] sm:p-8">
                     <p class="technical-label text-primary">Release archive</p>

@@ -2,14 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ProductEventName;
 use App\Http\Requests\UpdateProjectVisibilityRequest;
 use App\Models\Project;
+use App\Services\ProductEventRecorder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class ProjectVisibilityController extends Controller
 {
+    public function __construct(private readonly ProductEventRecorder $productEvents) {}
+
     public function update(UpdateProjectVisibilityRequest $request, Project $project): RedirectResponse
     {
         if ($request->boolean('is_public') && ! $project->releases()->published()->exists()) {
@@ -34,6 +38,8 @@ class ProjectVisibilityController extends Controller
         if ($makingPublic && ! $wasPublic) {
             $project->assignFiledNumber();
             $project->refresh();
+
+            $this->productEvents->record(ProductEventName::SubmissionPublished, $request->user(), $project);
 
             Inertia::flash('filed', ['filed_serial' => $project->filed_serial]);
             Inertia::flash('toast', ['type' => 'success', 'message' => 'Project filed to the public registry.']);

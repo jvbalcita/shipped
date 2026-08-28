@@ -1,8 +1,12 @@
 # Shipped
 
-Shipped is a community showcase for projects launched on Laravel Cloud. It gives creators a public place to present the applications they have shipped and the releases that evolve them.
+Shipped is the public record of what Laravel builders ship. It gives creators a public place to present the applications they have shipped and the releases that evolve them.
 
 ## Language
+
+**Builder**:
+The person Shipped exists for — someone who has shipped a real Laravel product. This is the positioning term used in product language and copy; it is implemented by the Creator record.
+_Avoid_: Maker, founder, author
 
 **Creator**:
 The individual user, identified by a chosen public username, who owns a project and presents it to the community.
@@ -55,6 +59,18 @@ _Avoid_: App, listing, submission
 **Launch Composer**:
 A guided creation flow that creates a Project's private identity. Verification and public launch decisions happen later in Creator Studio.
 _Avoid_: Form, wizard, project editor
+
+**Launch Kit**:
+An owner-only Creator Studio page that gathers one Project's shareable assets and snippets — README badge, launch card, cover plate, Ship Manifest, share text, and Share Intents.
+_Avoid_: Press kit, marketing page, share hub
+
+**Share Intent**:
+An outbound, prefilled share link that hands a Project's canonical URL to an external network such as X, LinkedIn, or Reddit.
+_Avoid_: Social login, OAuth link, share button
+
+**Product Event**:
+A first-party, append-only record of one observed product behavior — a submission started, a verification passed, a kit asset copied — written for roadmap evidence and never shown to users. Distinct from the community-facing activity feed.
+_Avoid_: Analytics, telemetry, activity
 
 **Release**:
 A publishable record of a project being shipped, containing its release notes and publication time. A public Release can be shared as its own record within its public Project; a scheduled Release can publish its Project only while Verification is current.

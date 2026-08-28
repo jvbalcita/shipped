@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ProductEventName;
 use App\Enums\ProjectPricing;
 use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\UpdateProjectRequest;
@@ -19,6 +20,8 @@ use App\Services\GitHub\Exceptions\GitHubApiUnavailable;
 use App\Services\GitHub\GitHubClient;
 use App\Services\HtmlSanitizer;
 use App\Services\LaravelCloud\ProjectVerificationService;
+use App\Services\LaunchKitAssets;
+use App\Services\ProductEventRecorder;
 use App\Services\Seo\SeoMetadata;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
@@ -31,7 +34,11 @@ use Inertia\Response;
 
 class ProjectController extends Controller
 {
-    public function __construct(private readonly GitHubClient $github) {}
+    public function __construct(
+        private readonly GitHubClient $github,
+        private readonly LaunchKitAssets $launchKitAssets,
+        private readonly ProductEventRecorder $productEvents,
+    ) {}
 
     /**
      * Display a listing of the resource.
@@ -109,6 +116,8 @@ class ProjectController extends Controller
 
             return $project;
         });
+
+        $this->productEvents->record(ProductEventName::SubmissionStarted, $request->user(), $project);
 
         return to_route('projects.edit', $project);
     }
@@ -325,13 +334,7 @@ class ProjectController extends Controller
             'suggestedTags' => config('shipped.suggested_tags', []),
             'technologyOptions' => Technology::groupedVocabulary(),
             ...$this->githubRepositoryProps($this->currentUser()),
-            'badgeMarkdown' => $project->isPubliclyDiscoverable()
-                ? sprintf(
-                    '[![Shipped](%s)](%s)',
-                    route('badges.show', $project),
-                    route('projects.show', [$project->creator, $project]),
-                )
-                : null,
+            'badgeMarkdown' => $this->launchKitAssets->badgeMarkdown($project),
         ]);
     }
 
