@@ -21,6 +21,8 @@ enum ProductEventName: string
     case ManifestLinkCopied = 'manifest_link_copied';
     case ShareTextCopied = 'share_text_copied';
     case ShareIntentClicked = 'share_intent_clicked';
+    case CollectionPageViewed = 'collection_viewed';
+    case CollectionProjectClicked = 'collection_project_clicked';
 
     public function canBeRecordedByClient(): bool
     {
@@ -29,7 +31,8 @@ enum ProductEventName: string
             self::CardLinkCopied,
             self::ManifestLinkCopied,
             self::ShareTextCopied,
-            self::ShareIntentClicked => true,
+            self::ShareIntentClicked,
+            self::CollectionProjectClicked => true,
             default => false,
         };
     }

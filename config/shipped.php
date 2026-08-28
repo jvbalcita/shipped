@@ -28,6 +28,13 @@ return [
 
     'username_change_cooldown_minutes' => 10080,
 
+    // User IDs allowed to curate Collections. Editorial curation is a
+    // manual, single-operator role until the roadmap justifies roles.
+    'curators' => array_map(
+        'intval',
+        array_filter(explode(',', (string) env('SHIPPED_CURATORS', ''))),
+    ),
+
     // Emergency-only escape hatch for db:wipe / migrate:fresh-class
     // commands in production. Seeding never needs this: db:seed is not
     // a prohibited command and DatabaseSeeder is production-safe.

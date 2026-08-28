@@ -3,7 +3,9 @@
 namespace App\Http\Requests;
 
 use App\Enums\ProductEventName;
+use App\Models\Collection;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -27,13 +29,15 @@ class StoreProductEventRequest extends FormRequest
         return [
             'name' => ['required', 'string'],
             'project_id' => ['nullable', 'integer'],
+            'collection_id' => ['nullable', 'integer'],
             'network' => ['nullable', 'string', 'in:x,linkedin,reddit'],
         ];
     }
 
     /**
      * Only the client-recordable event vocabulary may arrive from the
-     * browser, and a subject project must belong to the acting creator.
+     * browser, a subject project must belong to the acting creator, and
+     * a collection-context project must actually be a member.
      */
     public function withValidator(Validator $validator): void
     {
@@ -46,8 +50,23 @@ class StoreProductEventRequest extends FormRequest
                 return;
             }
 
+            $projectId = $this->integer('project_id');
+
+            if ($this->filled('collection_id')) {
+                $isMember = Collection::query()
+                    ->whereKey($this->integer('collection_id'))
+                    ->whereHas('projects', fn (Builder $query): Builder => $query->whereKey($projectId))
+                    ->exists();
+
+                if (! $isMember) {
+                    $validator->errors()->add('project_id', 'The project is not a member of this collection.');
+                }
+
+                return;
+            }
+
             if ($this->filled('project_id')
-                && ! $this->user()?->projects()->whereKey($this->integer('project_id'))->exists()) {
+                && ! $this->user()?->projects()->whereKey($projectId)->exists()) {
                 $validator->errors()->add('project_id', 'The project does not belong to you.');
             }
         });

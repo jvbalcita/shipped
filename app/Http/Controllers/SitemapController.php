@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Collection;
 use App\Models\Project;
 use App\Models\ProjectTechnology;
 use App\Models\Release;
@@ -17,7 +18,17 @@ class SitemapController extends Controller
             route('home'),
             route('discover'),
             route('technologies.index'),
+            route('collections.index'),
         ];
+
+        $collections = Collection::query()
+            ->withLiveMembers()
+            ->orderBy('id')
+            ->get(['id', 'slug']);
+
+        foreach ($collections as $collection) {
+            $urls[] = route('collections.show', $collection);
+        }
 
         $creators = User::query()
             ->whereIn('id', Project::query()->discoverable()->select('user_id'))

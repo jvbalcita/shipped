@@ -6,10 +6,12 @@ export type ClientProductEventName =
     | 'card_link_copied'
     | 'manifest_link_copied'
     | 'share_text_copied'
-    | 'share_intent_clicked';
+    | 'share_intent_clicked'
+    | 'collection_project_clicked';
 
 export interface ProductEventPayload {
     projectId?: number;
+    collectionId?: number;
     network?: 'x' | 'linkedin' | 'reddit';
 }
 
@@ -41,6 +43,7 @@ export function recordProductEvent(
         body: JSON.stringify({
             name,
             project_id: payload.projectId,
+            collection_id: payload.collectionId,
             network: payload.network,
         }),
         keepalive: true,

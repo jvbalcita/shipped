@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\OAuthController;
 use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\CloudConnectionController;
+use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\CommentCheerController;
 use App\Http\Controllers\ConnectedEnvironmentController;
 use App\Http\Controllers\CreatorController;
@@ -61,6 +62,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
     Route::delete('cloud-connection', [CloudConnectionController::class, 'destroy'])->name('cloud-connection.destroy');
     Route::get('cloud-connection/environments', [ConnectedEnvironmentController::class, 'index'])->name('cloud-connection.environments');
+
+    // Curator-only collection management. Registered before the public
+    // /collections/{slug} route so create/edit never bind as slugs.
+    Route::middleware('can:curate')->group(function (): void {
+        Route::get('collections/create', [CollectionController::class, 'create'])->name('collections.create');
+        Route::post('collections', [CollectionController::class, 'store'])->name('collections.store');
+        Route::get('collections/{collection}/edit', [CollectionController::class, 'edit'])->name('collections.edit');
+        Route::put('collections/{collection}', [CollectionController::class, 'update'])->name('collections.update');
+        Route::delete('collections/{collection}', [CollectionController::class, 'destroy'])->name('collections.destroy');
+    });
+
     Route::resource('projects', ProjectController::class)->except(['show']);
     Route::get('projects/{project}/launch-kit', [LaunchKitController::class, 'show'])->name('projects.launch-kit.show');
     Route::post('product-events', [ProductEventController::class, 'store'])
@@ -87,6 +99,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 Route::get('/@{creator:username}', [CreatorController::class, 'show'])->name('creators.show');
+
+Route::get('/collections', [CollectionController::class, 'index'])->name('collections.index');
+Route::get('/collections/{collection:slug}', [CollectionController::class, 'show'])->name('collections.show');
 Route::get('/@{creator:username}/{project:slug}/releases/{release}', [ReleaseController::class, 'show'])
     ->scopeBindings()
     ->name('releases.show');
