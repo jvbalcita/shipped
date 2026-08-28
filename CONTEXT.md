@@ -163,3 +163,19 @@ _Avoid_: Grace period, edit lock
 **Demo Launch**:
 A clearly labeled fictional Project and Release included only in local and test environments to demonstrate Shipped before community content exists. It is never Laravel Cloud verified.
 _Avoid_: Real submission, seed example
+
+**Content Report**:
+A builder-filed notice that a piece of visible registry content (a Project, Comment, or Review) violates the registry's trust contract. One open report per reporter per subject; reports go only to the curator queue, are never shown to the reported creator, and never trigger automatic enforcement.
+_Avoid_: Flag, abuse complaint, ticket
+
+**Report Reason**:
+The controlled vocabulary a reporter chooses from: broken link, not Laravel, misleading, spam, inappropriate, duplicate, ownership dispute, or other (which requires a free-text note). Curated so the queue stays triageable and report evidence stays comparable.
+_Avoid_: Free-form reason, category, label
+
+**Report Resolution**:
+The explicit outcome a curator records when closing a report: No Action (dismissed) or Action Taken (the underlying content was removed or corrected using existing tools). Resolution is always a human decision; it never removes content by itself.
+_Avoid_: Status, verdict, auto-takedown
+
+**Reports Queue**:
+The curator-only list of open content reports, oldest first, each showing the reported subject, its reason, the reporter, and where the content lives publicly. Resolved reports leave the queue but keep their recorded outcome.
+_Avoid_: Moderation dashboard, admin panel, inbox

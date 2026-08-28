@@ -20,6 +20,7 @@ import Breadcrumbs from '@/components/shipped/Breadcrumbs.vue';
 import CheerWall from '@/components/shipped/CheerWall.vue';
 import FollowButton from '@/components/shipped/FollowButton.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
+import ReportContentDialog from '@/components/shipped/ReportContentDialog.vue';
 import ScreenshotLightbox from '@/components/shipped/ScreenshotLightbox.vue';
 import SectionHeader from '@/components/shipped/SectionHeader.vue';
 import {
@@ -573,6 +574,14 @@ async function copyManifestLink(): Promise<void> {
                                     : 'followers'
                             }}
                         </span>
+                        <ReportContentDialog
+                            reportable-type="project"
+                            :reportable-id="project.id"
+                            subject-label="this project"
+                            aria-label="Report this project"
+                            data-test="report-project"
+                            >Report</ReportContentDialog
+                        >
                     </div>
                 </div>
             </div>
@@ -759,6 +768,12 @@ async function copyManifestLink(): Promise<void> {
                                         @click="startReply(comment)"
                                         ><CornerUpLeft class="size-4"
                                     /></Button>
+                                    <ReportContentDialog
+                                        reportable-type="comment"
+                                        :reportable-id="comment.id"
+                                        subject-label="this comment"
+                                        :aria-label="`Report comment by ${comment.user?.username}`"
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -869,6 +884,12 @@ async function copyManifestLink(): Promise<void> {
                                                 @click="requestDelete(reply)"
                                                 ><Trash2 class="size-4"
                                             /></Button>
+                                            <ReportContentDialog
+                                                reportable-type="comment"
+                                                :reportable-id="reply.id"
+                                                subject-label="this reply"
+                                                :aria-label="`Report reply by ${reply.user?.username}`"
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -1022,19 +1043,27 @@ async function copyManifestLink(): Promise<void> {
                                     }}</time
                                 >
                             </div>
-                            <span
-                                class="flex items-center gap-0.5 text-primary"
-                                :aria-label="`${review.rating} out of 5`"
-                            >
-                                <Star
-                                    v-for="value in 5"
-                                    :key="value"
-                                    class="size-5"
-                                    :class="
-                                        value <= review.rating
-                                            ? 'fill-current'
-                                            : 'text-muted-foreground'
-                                    "
+                            <span class="flex items-center gap-2">
+                                <span
+                                    class="flex items-center gap-0.5 text-primary"
+                                    :aria-label="`${review.rating} out of 5`"
+                                >
+                                    <Star
+                                        v-for="value in 5"
+                                        :key="value"
+                                        class="size-5"
+                                        :class="
+                                            value <= review.rating
+                                                ? 'fill-current'
+                                                : 'text-muted-foreground'
+                                        "
+                                    />
+                                </span>
+                                <ReportContentDialog
+                                    reportable-type="review"
+                                    :reportable-id="review.id"
+                                    subject-label="this review"
+                                    :aria-label="`Report review by ${review.user?.username}`"
                                 />
                             </span>
                         </div>

@@ -23,6 +23,8 @@ enum ProductEventName: string
     case ShareIntentClicked = 'share_intent_clicked';
     case CollectionPageViewed = 'collection_viewed';
     case CollectionProjectClicked = 'collection_project_clicked';
+    case ContentReportSubmitted = 'content_report_submitted';
+    case ContentReportResolved = 'content_report_resolved';
 
     public function canBeRecordedByClient(): bool
     {
