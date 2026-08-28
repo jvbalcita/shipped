@@ -25,6 +25,9 @@ enum ProductEventName: string
     case CollectionProjectClicked = 'collection_project_clicked';
     case ContentReportSubmitted = 'content_report_submitted';
     case ContentReportResolved = 'content_report_resolved';
+    case StackObservationStarted = 'stack_observation_started';
+    case StackObserved = 'stack_observed';
+    case StackObservationFailed = 'stack_observation_failed';
 
     public function canBeRecordedByClient(): bool
     {

@@ -130,7 +130,7 @@ class Project extends Model
     {
         return $this->belongsToMany(Technology::class)
             ->using(ProjectTechnology::class)
-            ->withPivot('provenance')
+            ->withPivot('provenance', 'is_declared', 'observed_at')
             ->withTimestamps();
     }
 

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * @property TechnologyGroup $stack_group
+ * @property array<int, string>|null $observation_keys
  * @property-read ProjectTechnology $pivot
  */
 class Technology extends Model
@@ -17,7 +18,7 @@ class Technology extends Model
     /** @use HasFactory<TechnologyFactory> */
     use HasFactory;
 
-    protected $fillable = ['name', 'slug', 'stack_group'];
+    protected $fillable = ['name', 'slug', 'stack_group', 'observation_keys'];
 
     public function getRouteKeyName(): string
     {
@@ -28,6 +29,7 @@ class Technology extends Model
     {
         return [
             'stack_group' => TechnologyGroup::class,
+            'observation_keys' => 'array',
         ];
     }
 
@@ -36,7 +38,7 @@ class Technology extends Model
     {
         return $this->belongsToMany(Project::class)
             ->using(ProjectTechnology::class)
-            ->withPivot('provenance')
+            ->withPivot('provenance', 'is_declared', 'observed_at')
             ->withTimestamps();
     }
 

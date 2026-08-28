@@ -129,8 +129,12 @@ The classification of a Technology in the controlled vocabulary: Laravel version
 _Avoid_: Category, facet, type
 
 **Built With**:
-A creator's declared selection of Technologies on a Project. Each record carries a provenance — declared, observed, or reviewed; current records are creator-declared only — shown publicly with its provenance label, filterable on Discover, and browsable per Technology.
+A Project's selection of Technologies, held as independent assertions on one record: the creator's declaration and the system's observation from the public repository. Each record carries a provenance — declared, observed, or reviewed — shown publicly with its provenance label and an observed marker, filterable on Discover, and browsable per Technology. A declaration the repository stops supporting stays declared; an observation that loses evidence disappears.
 _Avoid_: Tech stack, skills, badge
+
+**Stack Observation**:
+A system read of composer.json and package.json from the repository root of a Project's public GitHub URL, matching the declared dependencies against the vocabulary's observation keys to evidence Technologies. It is stack evidence, never deployment evidence: it never changes Verification, visibility, or the creator's declarations. Triggered by the creator in Creator Studio and refreshed daily while the Project is discoverable.
+_Avoid_: Repo scan, GitHub sync, auto-verify
 
 **Pricing**:
 A project's commercial model enumerated as one of Free, Freemium, Paid, Open Source, Subscription, or One-Time; default Free. Filterable on Discover.

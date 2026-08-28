@@ -7,6 +7,7 @@ import {
     Eye,
     EyeOff,
     ImagePlus,
+    RefreshCw,
     Send,
 } from '@lucide/vue';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
@@ -18,6 +19,7 @@ import GitHubRepoPicker from '@/components/shipped/GitHubRepoPicker.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
 import RichTextEditor from '@/components/shipped/RichTextEditor.vue';
 import SectionHeader from '@/components/shipped/SectionHeader.vue';
+import StackObservationPanel from '@/components/shipped/StackObservationPanel.vue';
 import TechnologyPicker from '@/components/shipped/TechnologyPicker.vue';
 import VerificationPanel from '@/components/shipped/VerificationPanel.vue';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -46,6 +48,7 @@ import {
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
+import { link as linkOauth } from '@/routes/oauth';
 import { update } from '@/routes/projects';
 import { show as launchKit } from '@/routes/projects/launch-kit';
 import { store as releaseStore } from '@/routes/projects/releases';
@@ -74,6 +77,12 @@ const props = defineProps<{
     pricingOptions: { value: string; label: string }[];
     suggestedTags: string[];
     technologyOptions: TechnologyGroupOption[];
+    declaredTechnologies: string[];
+    stackObservation: {
+        github_url: string | null;
+        observed_at: string | null;
+        observed_slugs: string[];
+    };
     badgeMarkdown: string | null;
     githubLinked?: boolean;
     githubRepos?: { name: string; url: string }[] | null;
@@ -92,9 +101,7 @@ const projectForm = useForm({
     tags: (props.project.tags ?? [])
         .map((tag: { name: string }) => tag.name)
         .join(', '),
-    technologies: (props.project.technologies ?? []).map(
-        (technology: { slug: string }) => technology.slug,
-    ),
+    technologies: props.declaredTechnologies ?? [],
     cover_image: null as File | null,
     cover_removal: false as boolean,
     logo: null as File | null,
@@ -123,6 +130,9 @@ const releaseForm = useForm({
     timing: 'now',
     published_at: '',
 });
+// The repository picker falls back to a URL input when GitHub cannot be
+// read; reconnecting runs the OAuth flow again to rotate the token.
+const reconnectForm = useForm({});
 const shipStoryForm = useForm({
     problem: props.shipStory?.problem ?? '',
     audience: props.shipStory?.audience ?? '',
@@ -502,10 +512,36 @@ onUnmounted(() => {
                                 <p class="text-xs text-muted-foreground">
                                     {{
                                         githubLinked
-                                            ? 'We could not load your repositories — paste the URL instead.'
+                                            ? 'We could not load your repositories — paste the URL instead, or reconnect GitHub.'
                                             : 'Link GitHub in Settings → Security to pick from your repositories.'
                                     }}
                                 </p>
+                                <Button
+                                    v-if="githubLinked"
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    class="self-start"
+                                    :disabled="reconnectForm.processing"
+                                    data-test="reconnect-github"
+                                    @click="
+                                        reconnectForm.post(
+                                            linkOauth.url({
+                                                provider: 'github',
+                                            }),
+                                            { preserveScroll: true },
+                                        )
+                                    "
+                                >
+                                    <RefreshCw
+                                        class="size-4"
+                                        :class="{
+                                            'animate-spin':
+                                                reconnectForm.processing,
+                                        }"
+                                    />
+                                    Reconnect GitHub
+                                </Button>
                             </template>
                             <FieldError v-if="projectForm.errors.github_url">{{
                                 projectForm.errors.github_url
@@ -1085,6 +1121,12 @@ onUnmounted(() => {
                 </div>
             </section>
             <VerificationPanel :project="project" />
+            <StackObservationPanel
+                :project-slug="project.slug"
+                :github-url="stackObservation.github_url"
+                :observed-at="stackObservation.observed_at"
+                :observed-slugs="stackObservation.observed_slugs"
+            />
             <BadgeSnippet v-if="badgeMarkdown" :markdown="badgeMarkdown" />
             <section class="border-t border-foreground">
                 <div class="grid p-5 sm:grid-cols-[.45fr_1.55fr] sm:p-8">

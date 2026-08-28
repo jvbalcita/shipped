@@ -141,3 +141,56 @@ test('the launch composer survives an unavailable github api', function () {
         ->assertOk()
         ->assertJsonPath('props.githubRepos', null);
 });
+
+test('an expired provider token falls back to the URL input without calling github', function () {
+    $creator = User::factory()->create();
+    $creator->oauthAccounts()->create([
+        'provider' => 'github',
+        'provider_id' => '123',
+        'provider_token' => 'ghu_expired',
+        // GitHub App user access tokens expire; GitHub returns one on
+        // every login, so the picker skips the guaranteed 401 and the
+        // reconnect action rotates the stored credential.
+        'token_expires_at' => now()->subHour(),
+        'linked_at' => now()->subDay(),
+    ]);
+
+    Http::fake([
+        'https://api.github.com/user/repos*' => Http::response(githubRepoPayload()),
+    ]);
+
+    $this->actingAs($creator)
+        ->get(route('projects.create'), inertiaHeaders())
+        ->assertOk()
+        ->assertJsonPath('props.githubLinked', true);
+
+    $this->actingAs($creator)
+        ->get(route('projects.create'), composerPartialHeaders())
+        ->assertOk()
+        ->assertJsonPath('props.githubRepos', null);
+
+    Http::assertNothingSent();
+});
+
+test('a current provider token still lists repositories', function () {
+    Http::fake([
+        'https://api.github.com/user/repos*' => Http::response(githubRepoPayload()),
+    ]);
+
+    $creator = User::factory()->create();
+    $creator->oauthAccounts()->create([
+        'provider' => 'github',
+        'provider_id' => '123',
+        'provider_token' => 'ghu_current',
+        'token_expires_at' => now()->addHours(4),
+        'linked_at' => now(),
+    ]);
+
+    $this->actingAs($creator)
+        ->get(route('projects.create'), composerPartialHeaders())
+        ->assertOk()
+        ->assertJsonPath('props.githubRepos', [
+            ['name' => 'maker/queue-pilot', 'url' => 'https://github.com/maker/queue-pilot'],
+            ['name' => 'maker/field-notes', 'url' => 'https://github.com/maker/field-notes'],
+        ]);
+});

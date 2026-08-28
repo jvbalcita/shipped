@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { router, useForm } from '@inertiajs/vue3';
-import { ArrowLeft, ArrowRight, Check, ImagePlus, Send } from '@lucide/vue';
+import {
+    ArrowLeft,
+    ArrowRight,
+    Check,
+    ImagePlus,
+    RefreshCw,
+    Send,
+} from '@lucide/vue';
 import { computed, ref } from 'vue';
 import DatePicker from '@/components/shipped/DatePicker.vue';
 import FileUpload from '@/components/shipped/FileUpload.vue';
@@ -28,6 +35,7 @@ import {
     StepperTitle,
     StepperTrigger,
 } from '@/components/ui/stepper';
+import { link as linkOauth } from '@/routes/oauth';
 import { index, store } from '@/routes/projects';
 import type { TechnologyGroupOption } from '@/types/technology';
 
@@ -56,6 +64,10 @@ const form = useForm({
     screenshots: [] as File[],
     screenshots_captions: [] as string[],
 });
+
+// The repository picker falls back to a URL input when GitHub cannot be
+// read; reconnecting runs the OAuth flow again to rotate the token.
+const reconnectForm = useForm({});
 
 const MAX_SCREENSHOTS = 5;
 
@@ -544,10 +556,36 @@ function continueComposer(): void {
                                         >
                                             {{
                                                 githubLinked
-                                                    ? 'We could not load your repositories — paste the URL instead.'
+                                                    ? 'We could not load your repositories — paste the URL instead, or reconnect GitHub.'
                                                     : 'Link GitHub in Settings → Security to pick from your repositories.'
                                             }}
                                         </p>
+                                        <Button
+                                            v-if="githubLinked"
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            class="self-start"
+                                            :disabled="reconnectForm.processing"
+                                            data-test="reconnect-github"
+                                            @click="
+                                                reconnectForm.post(
+                                                    linkOauth.url({
+                                                        provider: 'github',
+                                                    }),
+                                                    { preserveScroll: true },
+                                                )
+                                            "
+                                        >
+                                            <RefreshCw
+                                                class="size-4"
+                                                :class="{
+                                                    'animate-spin':
+                                                        reconnectForm.processing,
+                                                }"
+                                            />
+                                            Reconnect GitHub
+                                        </Button>
                                     </template>
                                     <FieldError v-if="form.errors.github_url">{{
                                         form.errors.github_url
