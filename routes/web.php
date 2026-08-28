@@ -8,10 +8,12 @@ use App\Http\Controllers\ConnectedEnvironmentController;
 use App\Http\Controllers\CreatorController;
 use App\Http\Controllers\DiscoverController;
 use App\Http\Controllers\FeedController;
+use App\Http\Controllers\LaunchKitController;
 use App\Http\Controllers\ManifestController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OgController;
 use App\Http\Controllers\Onboarding\UsernameController as OnboardingUsernameController;
+use App\Http\Controllers\ProductEventController;
 use App\Http\Controllers\ProfileFeaturedProjectsController;
 use App\Http\Controllers\ProjectCheerController;
 use App\Http\Controllers\ProjectCommentController;
@@ -60,6 +62,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('cloud-connection', [CloudConnectionController::class, 'destroy'])->name('cloud-connection.destroy');
     Route::get('cloud-connection/environments', [ConnectedEnvironmentController::class, 'index'])->name('cloud-connection.environments');
     Route::resource('projects', ProjectController::class)->except(['show']);
+    Route::get('projects/{project}/launch-kit', [LaunchKitController::class, 'show'])->name('projects.launch-kit.show');
+    Route::post('product-events', [ProductEventController::class, 'store'])
+        ->middleware('throttle:60,1')
+        ->name('product-events.store');
     Route::post('projects/{project}/releases', [ProjectReleaseController::class, 'store'])->name('projects.releases.store');
     Route::put('projects/{project}/ship-story', [ProjectShipStoryController::class, 'update'])->name('projects.ship-story.update');
     Route::patch('projects/{project}/visibility', [ProjectVisibilityController::class, 'update'])->name('projects.visibility.update');

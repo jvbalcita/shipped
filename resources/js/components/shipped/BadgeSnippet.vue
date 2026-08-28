@@ -6,11 +6,14 @@ import { Button } from '@/components/ui/button';
 
 const props = defineProps<{ markdown: string }>();
 
+const emit = defineEmits<{ copied: [] }>();
+
 const input = ref<HTMLInputElement | null>(null);
 
 async function copyMarkdown(): Promise<void> {
     try {
         await navigator.clipboard.writeText(props.markdown);
+        emit('copied');
         toast.success('Badge markdown copied.');
     } catch {
         // Clipboard API unavailable (permissions, non-secure context):

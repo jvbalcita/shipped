@@ -527,6 +527,18 @@ The story should be more than an optional paragraph hidden below a listing. It s
 
 #### Milestone 2.1: Shareable launch and profile cards
 
+**Status:** Implementation complete — evidence gate open (2026-08-28)
+
+**Delivered:**
+
+- Owner-only Launch Kit page per project (`/@…/{project}` studio route) gathering every shareable asset: README badge snippet, launch card preview, Ship Manifest, copyable share text, and X/LinkedIn/Reddit share intents.
+- First-party product-event recording (`product_events` + `ProductEventRecorder`, ADR 0015): submission started/published, verification started/passed/failed (creator-initiated only), Ship Story published, kit viewed, badge/card/manifest/share-text copies, share-intent clicks with network.
+- Gated assets resolve to explicit locked states with the cover plate as the pre-filing preview; share text and share intents are available before filing.
+
+**Implementation evidence:** ProductEvent (13) and LaunchKit (5) tests pass; full suite 446/447 with only the pre-existing Inertia SSR/Vite harness failure unchanged; PHPStan, Pint, ESLint, Prettier, and the Vite build pass.
+
+**Next evidence gate:** Measure kit views, asset copies, and share-intent clicks during the first outreach cohort before adding HN/PNG assets or expanding share targets.
+
 **Build / change:**
 
 Provide a simple launch kit generated from a published project or claimed builder profile:
@@ -1176,6 +1188,7 @@ Do not update the roadmap merely because an idea feels exciting. Add the evidenc
 | 2026-08-22 | Apply strict YAGNI and validation-first sequencing. | Network and analytics features depend on activity that does not yet exist. | Every phase has entry and exit criteria; later features remain conditional. | At each phase gate. |
 | 2026-08-22 | Keep cheers bounded and secondary. | Popularity mechanics do not create LaraShipped's strongest differentiation. | No leaderboard or complex gamification in the initial roadmap. | If users show a specific, non-gameable need for social proof. |
 | 2026-08-22 | Treat profiles, stories, verification, and share assets as the initial wedge. | They provide immediate value even while the audience is small. | First 20-builder experiment measures completion, sharing, and repeat use. | After cohort evidence. |
+| 2026-08-28 | Ship the Measured Launch Kit (M2.1 remainder) and first-party product-event recording before any further feature work. | The launch kit was ~80% built but nothing was measurable; every evidence gate (M0.1 funnel, M2.1 asset use, M2.4 cohort classification) was unmeasurable without instrumentation. | Funnel and sharing events now exist for the 20-builder experiment; GitHub-observed provenance stays gated on M2.2 measurement. | When the first cohort's kit/copy/share events can be reviewed. |
 
 ### Experiment record template
 

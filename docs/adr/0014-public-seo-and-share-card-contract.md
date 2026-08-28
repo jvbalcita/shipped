@@ -4,6 +4,10 @@ status: accepted
 
 # Make discoverable public records the canonical SEO surface
 
+> Numbering note: originally filed as 0011 alongside the Ship Stories ADR of the
+> same number; renumbered to 0014 when the collision was resolved. Numbering
+> reflects resolution order, not authoring order.
+
 ## Context
 
 Shipped is a community showcase for projects launched on Laravel Cloud. Its public value comes from trustworthy records: a creator, a project, a published release, and current verification evidence. The application already has public routes for the home page, Discover, creators, projects, releases, and project Share Cards.
