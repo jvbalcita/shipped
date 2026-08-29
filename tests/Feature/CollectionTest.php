@@ -288,3 +288,16 @@ test('the sitemap includes live collections but not empty ones', function () {
         ->assertSee(route('collections.show', ['collection' => 'indexed-collection']), false)
         ->assertDontSee('unindexed-collection', false);
 });
+
+test('the curation capability is shared with the shell for curators only', function () {
+    $this->get(route('collections.index'))
+        ->assertInertia(fn (Assert $page) => $page->where('can.curate', false));
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('collections.index'))
+        ->assertInertia(fn (Assert $page) => $page->where('can.curate', false));
+
+    actingAsCurator()
+        ->get(route('collections.index'))
+        ->assertInertia(fn (Assert $page) => $page->where('can.curate', true));
+});

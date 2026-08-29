@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import {
     ArrowUpRight,
@@ -9,6 +8,7 @@ import {
     Settings,
     ShieldCheck,
 } from '@lucide/vue';
+import { computed } from 'vue';
 import CommandPalette from '@/components/shipped/CommandPalette.vue';
 import NotificationBell from '@/components/shipped/NotificationBell.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -26,6 +26,7 @@ import { dashboard, discover, feed, login, logout, register } from '@/routes';
 import { index as collectionsIndex } from '@/routes/collections';
 import { edit as profileEdit } from '@/routes/profile';
 import { create } from '@/routes/projects';
+import { index as reportsIndex } from '@/routes/reports';
 import { edit as securityEdit } from '@/routes/security';
 
 const props = defineProps<{ title?: string }>();
@@ -97,6 +98,14 @@ const handleLogout = (): void => {
                         variant="ghost"
                         class="h-auto border-y-0"
                         ><Link :href="dashboard()">Studio</Link></Button
+                    >
+                    <Button
+                        v-if="page.props.can?.curate"
+                        as-child
+                        variant="ghost"
+                        class="h-auto border-y-0"
+                        data-test="nav-curate"
+                        ><Link :href="reportsIndex()">Curate</Link></Button
                     >
                     <Button
                         v-if="!page.props.auth.user"
@@ -245,6 +254,16 @@ const handleLogout = (): void => {
                                 variant="ghost"
                                 class="justify-start"
                                 ><Link :href="dashboard()">Studio</Link></Button
+                            >
+                            <Button
+                                v-if="page.props.can?.curate"
+                                as-child
+                                variant="ghost"
+                                class="justify-start"
+                                data-test="nav-curate"
+                                ><Link :href="reportsIndex()"
+                                    >Curate</Link
+                                ></Button
                             >
                             <template v-if="page.props.auth.user">
                                 <Button

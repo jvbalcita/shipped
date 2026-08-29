@@ -16,10 +16,11 @@ class CommentPolicy
     }
 
     /**
-     * The author may always delete their comment.
+     * The author may always delete their comment; curators may remove any
+     * comment while acting on a content report.
      */
     public function delete(User $user, Comment $comment): bool
     {
-        return $user->is($comment->user);
+        return $user->is($comment->user) || $user->can('curate');
     }
 }

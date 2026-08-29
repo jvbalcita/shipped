@@ -23,6 +23,8 @@ enum ProductEventName: string
     case ShareIntentClicked = 'share_intent_clicked';
     case CollectionPageViewed = 'collection_viewed';
     case CollectionProjectClicked = 'collection_project_clicked';
+    case ContentReportSubmitted = 'content_report_submitted';
+    case ContentReportResolved = 'content_report_resolved';
     case StackObservationStarted = 'stack_observation_started';
     case StackObserved = 'stack_observed';
     case StackObservationFailed = 'stack_observation_failed';
