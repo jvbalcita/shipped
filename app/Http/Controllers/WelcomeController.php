@@ -30,6 +30,48 @@ class WelcomeController extends Controller
             ];
         });
 
+        $recentLaunches = Cache::remember('shipped:registry:recent', now()->addMinute(), function () {
+            return Project::query()
+                ->discoverable()
+                ->with([
+                    'creator:id,name,username',
+                    'category:id,name,slug',
+                    'tags:id,name,slug',
+                    'technologies:id,name,slug',
+                    'shipStory',
+                ])
+                ->withCount('cheers')
+                ->withAvg('reviews', 'rating')
+                ->latest('filed_at')
+                ->latest('id')
+                ->take(6)
+                ->get()
+                ->map(fn (Project $project): array => [
+                    'id' => $project->id,
+                    'name' => $project->name,
+                    'slug' => $project->slug,
+                    'tagline' => $project->tagline,
+                    'cover_image_url' => $project->cover_image_url,
+                    'logo_url' => $project->logo_url,
+                    'pricing' => $project->pricing?->value,
+                    'pricing_label' => $project->pricing?->label(),
+                    'launch_date' => $project->launch_date?->toDateString(),
+                    'verification_status' => $project->verification_status,
+                    'filed_serial' => $project->filed_serial,
+                    'cheers_count' => $project->cheers_count,
+                    'rating_average' => $project->reviews_avg_rating !== null
+                        ? round((float) $project->reviews_avg_rating, 1)
+                        : null,
+                    'ship_story_excerpt' => $project->shipStory?->excerpt(),
+                    'creator' => $project->creator?->only('id', 'name', 'username'),
+                    'category' => $project->category?->only('id', 'name', 'slug'),
+                    'tags' => $project->tags->map->only('id', 'name', 'slug')->values(),
+                    'technologies' => $project->technologies->map->only('id', 'name', 'slug')->take(4)->values(),
+                ])
+                ->values()
+                ->all();
+        });
+
         $seo = new SeoMetadata(
             title: 'Shipped — The verified launch registry for Laravel projects',
             description: 'Discover verified Laravel projects and the people who ship them.',
@@ -47,6 +89,7 @@ class WelcomeController extends Controller
 
         return Inertia::render('Welcome', [
             ...$stats,
+            'recentLaunches' => $recentLaunches,
             'seo' => $seo->toArray(),
             ...$seo->legacyProps(),
         ]);

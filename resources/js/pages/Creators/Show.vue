@@ -48,6 +48,8 @@ const initials = computed(() =>
         .toUpperCase(),
 );
 
+// Never advertise zeros: a stat only earns a cell once it exists, and an
+// all-zero record shows an invite line instead of four empty numbers.
 const statItems = computed(() => [
     { label: 'Public projects', value: props.creator.stats.public_projects },
     {
@@ -57,6 +59,9 @@ const statItems = computed(() => [
     { label: 'Ship Stories', value: props.creator.stats.ship_stories },
     { label: 'Published releases', value: props.creator.stats.releases },
 ]);
+const visibleStats = computed(() =>
+    statItems.value.filter((stat) => stat.value > 0),
+);
 
 function projectHref(project: ProjectCardData) {
     return projectShow({
@@ -161,6 +166,7 @@ async function copyProfileLink(): Promise<void> {
                     </div>
                 </div>
                 <div
+                    v-if="creator.followers_count > 0"
                     class="technical-label mt-6 text-muted-foreground sm:mt-8"
                     data-test="creator-followers-count"
                 >
@@ -170,7 +176,7 @@ async function copyProfileLink(): Promise<void> {
                     }}
                 </div>
                 <h1
-                    class="display-type mt-6 max-w-5xl text-[clamp(3rem,7vw,7rem)] break-words sm:mt-3"
+                    class="display-type mt-6 max-w-5xl text-[clamp(2.25rem,4.5vw,4.5rem)] break-words sm:mt-3"
                 >
                     {{ creator.name }}
                 </h1>
@@ -218,20 +224,14 @@ async function copyProfileLink(): Promise<void> {
             </SectionHeader>
 
             <div
-                class="grid grid-cols-2 border-b border-foreground bg-background sm:grid-cols-4"
+                v-if="visibleStats.length"
+                class="grid grid-cols-2 gap-px border-b border-foreground bg-foreground sm:grid-cols-4"
                 data-test="creator-profile-stats"
             >
                 <div
-                    v-for="(stat, statIndex) in statItems"
+                    v-for="stat in visibleStats"
                     :key="stat.label"
-                    :class="[
-                        'bg-background p-5 sm:p-6',
-                        statIndex % 2 === 0 ? 'border-r border-foreground' : '',
-                        statIndex < 2
-                            ? 'border-b border-foreground sm:border-b-0'
-                            : '',
-                        statIndex < 3 ? 'sm:border-r' : 'sm:border-r-0',
-                    ]"
+                    class="bg-background p-5 sm:p-6"
                 >
                     <p class="display-type text-4xl tabular-nums">
                         {{ stat.value }}
@@ -241,6 +241,14 @@ async function copyProfileLink(): Promise<void> {
                     </p>
                 </div>
             </div>
+            <p
+                v-else
+                class="technical-label border-b border-foreground bg-secondary p-5 text-muted-foreground sm:p-6"
+                data-test="creator-profile-stats-empty"
+            >
+                Shipping record just getting started — no public proof filed
+                yet.
+            </p>
 
             <SectionHeader label="Public proof / curated">
                 <div class="space-y-5">

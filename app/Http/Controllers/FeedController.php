@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Activity;
 use App\Models\Follow;
 use App\Models\Project;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -52,7 +53,43 @@ class FeedController extends Controller
             'followedCreators' => $user->followedCreators()->count(),
             'followedProjects' => $user->followedProjects()->count(),
             'empty' => $activities->isEmpty(),
+            // An empty feed is the one moment the page can redirect
+            // attention; suggest who to follow instead of a dead end.
+            'suggestedCreators' => $activities->isEmpty()
+                ? $this->suggestedCreators($user)
+                : [],
         ]);
+    }
+
+    /**
+     * Members worth following on an empty feed: creators with public,
+     * discoverable work that the viewer does not follow yet.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function suggestedCreators(User $viewer): array
+    {
+        $followedCreatorIds = Follow::query()
+            ->where('user_id', $viewer->id)
+            ->where('followable_type', 'user')
+            ->pluck('followable_id');
+
+        return User::query()
+            ->whereKeyNot($viewer->id)
+            ->whereNotIn('id', $followedCreatorIds)
+            ->whereHas('projects', fn (Builder $query) => $query->discoverable())
+            ->withCount('followers')
+            ->orderByDesc('followers_count')
+            ->orderBy('name')
+            ->limit(3)
+            ->get()
+            ->map(fn (User $creator): array => [
+                'name' => $creator->name,
+                'username' => $creator->username,
+                'followers_count' => $creator->followers_count,
+            ])
+            ->values()
+            ->all();
     }
 
     /**

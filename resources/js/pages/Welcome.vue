@@ -2,10 +2,12 @@
 import { Link, usePage } from '@inertiajs/vue3';
 import { ArrowUpRight } from '@lucide/vue';
 import { computed } from 'vue';
+import ProjectCard from '@/components/shipped/ProjectCard.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
 import { Button } from '@/components/ui/button';
 import { discover, register } from '@/routes';
 import { create } from '@/routes/projects';
+import type { ProjectCardData } from '@/types/creator';
 
 const page = usePage();
 
@@ -13,6 +15,7 @@ defineProps<{
     launchCount: number;
     creatorCount: number;
     latestDispatchAt: string | null;
+    recentLaunches: ProjectCardData[];
 }>();
 
 const latestDispatchLabel = computed((): string => {
@@ -43,6 +46,22 @@ return `Filed ${rtf.format(-hours, 'hour')}`;
     const days = Math.round(hours / 24);
 
     return `Filed ${rtf.format(-days, 'day')}`;
+});
+
+// Sparse registries would leave black gap-px backdrop showing through
+// empty grid cells, so the grid follows the card count like Discover.
+const launchesGridClass = computed(() => {
+    const props = (page.props as { recentLaunches?: ProjectCardData[] }).recentLaunches ?? [];
+
+    if (props.length === 1) {
+        return 'max-w-2xl grid-cols-1';
+    }
+
+    if (props.length === 2) {
+        return 'md:grid-cols-2';
+    }
+
+    return 'md:grid-cols-2 xl:grid-cols-3';
 });
 </script>
 
@@ -138,20 +157,36 @@ return `Filed ${rtf.format(-hours, 'hour')}`;
                 class="mx-auto grid w-full max-w-[90rem] gap-px border-x border-b border-foreground bg-foreground sm:grid-cols-3"
                 aria-label="Registry status"
             >
-                <div class="flex items-baseline gap-2 bg-background px-5 py-4 sm:px-8">
-                    <span class="font-display text-2xl tabular-nums sm:text-3xl">{{
-                        launchCount
-                    }}</span>
-                    <span class="technical-label text-muted-foreground"
-                        >Launches filed</span
+                <div
+                    class="flex items-baseline gap-2 bg-background px-5 py-4 sm:px-8"
+                    data-test="stat-launch-count"
+                >
+                    <template v-if="launchCount > 0">
+                        <span class="font-display text-2xl tabular-nums sm:text-3xl">{{
+                            launchCount
+                        }}</span>
+                        <span class="technical-label text-muted-foreground"
+                            >Launches filed</span
+                        >
+                    </template>
+                    <span v-else class="technical-label text-muted-foreground"
+                        >First records are being filed</span
                     >
                 </div>
-                <div class="flex items-baseline gap-2 bg-background px-5 py-4 sm:px-8">
-                    <span class="font-display text-2xl tabular-nums sm:text-3xl">{{
-                        creatorCount
-                    }}</span>
-                    <span class="technical-label text-muted-foreground"
-                        >Creators on record</span
+                <div
+                    class="flex items-baseline gap-2 bg-background px-5 py-4 sm:px-8"
+                    data-test="stat-creator-count"
+                >
+                    <template v-if="creatorCount > 0">
+                        <span class="font-display text-2xl tabular-nums sm:text-3xl">{{
+                            creatorCount
+                        }}</span>
+                        <span class="technical-label text-muted-foreground"
+                            >Creators on record</span
+                        >
+                    </template>
+                    <span v-else class="technical-label text-muted-foreground"
+                        >Builders are claiming their records</span
                     >
                 </div>
                 <div
@@ -251,6 +286,37 @@ return `Filed ${rtf.format(-hours, 'hour')}`;
                     </Link>
                 </li>
             </ol>
+        </section>
+        <section
+            v-if="recentLaunches.length"
+            class="mx-auto w-full max-w-[90rem] border-x border-b border-foreground"
+            data-test="fresh-launches"
+        >
+            <div
+                class="flex flex-wrap items-end justify-between gap-4 border-b border-foreground p-6 sm:p-10"
+            >
+                <div>
+                    <p class="technical-label text-primary">
+                        Live registry / Latest dispatches
+                    </p>
+                    <h2 class="display-type mt-4 text-4xl sm:text-5xl">
+                        Freshly filed.
+                    </h2>
+                </div>
+                <Link
+                    :href="discover()"
+                    class="technical-label inline-flex min-h-11 items-center gap-1 text-primary underline underline-offset-4"
+                    >Browse all launches
+                    <ArrowUpRight class="size-3" aria-hidden="true" /></Link
+                >
+            </div>
+            <div class="grid gap-px bg-foreground" :class="launchesGridClass">
+                <ProjectCard
+                    v-for="project in recentLaunches"
+                    :key="project.id"
+                    :project="project"
+                />
+            </div>
         </section>
         <section
             class="landing-final-cta mx-auto flex w-full max-w-[90rem] flex-col items-start gap-6 border-x border-b border-foreground p-6 sm:flex-row sm:items-center sm:justify-between sm:p-10"
