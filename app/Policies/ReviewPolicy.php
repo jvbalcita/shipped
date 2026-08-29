@@ -16,10 +16,11 @@ class ReviewPolicy
     }
 
     /**
-     * Only the author may delete their review.
+     * The author may delete their review; curators may remove any review
+     * while acting on a content report.
      */
     public function delete(User $user, Review $review): bool
     {
-        return $user->is($review->user);
+        return $user->is($review->user) || $user->can('curate');
     }
 }

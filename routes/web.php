@@ -6,6 +6,7 @@ use App\Http\Controllers\CloudConnectionController;
 use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\CommentCheerController;
 use App\Http\Controllers\ConnectedEnvironmentController;
+use App\Http\Controllers\ContentReportController;
 use App\Http\Controllers\CreatorController;
 use App\Http\Controllers\DiscoverController;
 use App\Http\Controllers\FeedController;
@@ -72,7 +73,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('collections/{collection}/edit', [CollectionController::class, 'edit'])->name('collections.edit');
         Route::put('collections/{collection}', [CollectionController::class, 'update'])->name('collections.update');
         Route::delete('collections/{collection}', [CollectionController::class, 'destroy'])->name('collections.destroy');
+
+        // Curator moderation queue for builder-filed content reports.
+        Route::get('reports', [ContentReportController::class, 'index'])->name('reports.index');
+        Route::patch('reports/{report}', [ContentReportController::class, 'update'])
+            ->scopeBindings()
+            ->name('reports.update');
     });
+
+    // Any signed-in builder can report registry content they believe
+    // violates the trust contract; resolution stays curator-only.
+    Route::post('reports', [ContentReportController::class, 'store'])
+        ->middleware('throttle:content-reports')
+        ->name('reports.store');
 
     Route::resource('projects', ProjectController::class)->except(['show']);
     Route::get('projects/{project}/launch-kit', [LaunchKitController::class, 'show'])->name('projects.launch-kit.show');

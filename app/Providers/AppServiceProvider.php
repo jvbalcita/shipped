@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Cheer;
 use App\Models\Collection;
 use App\Models\Comment;
+use App\Models\ContentReport;
 use App\Models\Follow;
 use App\Models\Project;
 use App\Models\Release;
@@ -61,6 +62,9 @@ class AppServiceProvider extends ServiceProvider
                 ->by(($request->user()?->getAuthIdentifier() ?? 'guest').':'.($project instanceof Project ? $project->getKey() : 'unknown'));
         });
 
+        RateLimiter::for('content-reports', fn (Request $request): Limit => Limit::perMinute(5)
+            ->by($request->user()?->getAuthIdentifier() ?? $request->ip()));
+
         $this->configureDefaults();
         $this->registerObservers();
     }
@@ -87,7 +91,7 @@ class AppServiceProvider extends ServiceProvider
         Date::use(CarbonImmutable::class);
 
         // Stable, short morph keys for polymorphic relationships
-        // (cheers, follows, activities).
+        // (cheers, follows, activities, product events, reports).
         Relation::enforceMorphMap([
             'project' => Project::class,
             'comment' => Comment::class,
@@ -95,6 +99,7 @@ class AppServiceProvider extends ServiceProvider
             'release' => Release::class,
             'review' => Review::class,
             'collection' => Collection::class,
+            'content_report' => ContentReport::class,
         ]);
 
         Gate::define('follow', fn (User $user, User|Project $followable): bool => (new FollowPolicy)->follow($user, $followable));

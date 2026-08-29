@@ -1,6 +1,7 @@
 export * from './auth';
 export * from './creator';
 export * from './navigation';
+export * from './report';
 export * from './technology';
 export * from './ui';
 

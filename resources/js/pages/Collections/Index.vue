@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
-import { ArrowUpRight } from '@lucide/vue';
+import { Link, usePage } from '@inertiajs/vue3';
+import { ArrowUpRight, Plus } from '@lucide/vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
 import SectionHeader from '@/components/shipped/SectionHeader.vue';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,10 @@ import {
     EmptyTitle,
 } from '@/components/ui/empty';
 import { discover } from '@/routes';
-import { show as collectionShow } from '@/routes/collections';
+import {
+    create as collectionCreate,
+    show as collectionShow,
+} from '@/routes/collections';
 
 defineProps<{
     collections: {
@@ -23,6 +26,8 @@ defineProps<{
         projects_count: number;
     }[];
 }>();
+
+const page = usePage();
 </script>
 
 <template>
@@ -43,6 +48,16 @@ defineProps<{
                     is a real, discoverable launch — picked for what was
                     actually shipped, not for votes.
                 </p>
+                <Button
+                    v-if="page.props.can?.curate"
+                    as-child
+                    class="mt-6"
+                    variant="outline"
+                    data-test="new-collection"
+                    ><Link :href="collectionCreate()"
+                        ><Plus class="size-4" />New collection</Link
+                    ></Button
+                >
             </SectionHeader>
             <div v-if="collections.length" class="grid gap-px bg-foreground">
                 <Link

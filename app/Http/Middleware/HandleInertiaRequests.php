@@ -60,6 +60,12 @@ class HandleInertiaRequests extends Middleware
                     'avatar_path' => $user->avatar_path,
                 ],
             ],
+            // Capability flags the shell needs to reveal curator-only
+            // surfaces (reports queue, collection management). The gate
+            // itself is always re-checked server-side on every route.
+            'can' => [
+                'curate' => $user !== null && $user->can('curate'),
+            ],
             // Re-evaluated on every Inertia request, so the bell badge
             // refreshes on navigation without polling.
             'unreadNotificationsCount' => $user === null

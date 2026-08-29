@@ -30,6 +30,11 @@ pest()->extend(TestCase::class)
                 return ['93.184.216.34'];
             }
         });
+
+        // Tests load the real .env, so a developer's SHIPPED_CURATORS would
+        // silently make low-ID users curators (own-content 403s become
+        // redirects). Tests that need a curator set config() explicitly.
+        config()->set('shipped.curators', []);
     })
     ->in('Feature');
 

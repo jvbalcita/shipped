@@ -40,15 +40,19 @@ test('a discoverable project serves its manifest as a self-contained SVG', funct
         ->toContain('max-age=300');
 
     $svg = $response->getContent();
+    // Blade {{ }} escapes interpolated values, so a faker name like
+    // O'Kon-Mueller renders as O&#039;KON-MUELLER — compare against the
+    // escaped form or the assertion flakes whenever faker inserts an
+    // apostrophe.
     expect($svg)
         ->toContain('SHIPPED')
-        ->toContain(strtoupper(mb_substr($project->name, 0, 30)))
-        ->toContain(mb_substr($project->tagline, 0, 110))
-        ->toContain('@'.strtoupper($project->creator->username))
+        ->toContain(e(strtoupper(mb_substr($project->name, 0, 30))))
+        ->toContain(e(mb_substr($project->tagline, 0, 110)))
+        ->toContain('@'.e(strtoupper($project->creator->username)))
         ->toContain('LIVE ON CLOUD')
         ->not->toContain('VERIFIED LIVE')
         ->toContain('LAUNCHED')
-        ->toContain('FIRST CHEER FROM @'.strtoupper($cheerer->username));
+        ->toContain('FIRST CHEER FROM @'.e(strtoupper($cheerer->username)));
 });
 
 test('the manifest shows the docket serial and at most three stack tags', function () {
