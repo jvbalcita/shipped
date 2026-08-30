@@ -29,16 +29,13 @@ class StoreContentReportRequest extends FormRequest
     }
 
     /**
-     * Anyone signed in may report registry content except their own —
-     * self-reports carry no moderation signal. A missing subject defers to
-     * validation so stale UI gets a field error instead of a 403.
+     * Route middleware already guarantees a signed-in, verified reporter.
+     * Every rule below — including the self-report denial — surfaces as a
+     * validation error so stale UI gets a field error instead of a 403.
      */
     public function authorize(): bool
     {
-        $reportable = $this->reportable();
-
-        return $reportable === null
-            || (new ContentReportPolicy)->create($this->user(), $reportable);
+        return true;
     }
 
     /**
@@ -60,8 +57,9 @@ class StoreContentReportRequest extends FormRequest
     }
 
     /**
-     * The subject must exist and be publicly visible, and a reporter gets
-     * one open report per subject — resolved reports may be filed again.
+     * The subject must exist, be publicly visible, and not be the reporter's
+     * own content; a reporter gets one open report per subject — resolved
+     * reports may be filed again.
      *
      * @return array<int, callable>
      */
@@ -83,6 +81,10 @@ class StoreContentReportRequest extends FormRequest
 
                 if ($reportable instanceof Project && ! $reportable->is_public) {
                     $validator->errors()->add('reportable_id', __('The content you are reporting is no longer visible.'));
+                }
+
+                if (! (new ContentReportPolicy)->create($this->user(), $reportable)) {
+                    $validator->errors()->add('reportable_id', __('You cannot report your own content.'));
                 }
 
                 $alreadyOpen = ContentReport::query()

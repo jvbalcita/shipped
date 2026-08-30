@@ -45,69 +45,58 @@ function observe(): void {
 </script>
 
 <template>
-    <section class="border-t border-foreground p-5 sm:p-8">
-        <div class="grid gap-8 lg:grid-cols-[.45fr_1.55fr]">
-            <div>
-                <p class="technical-label text-primary">Stack observation</p>
-                <h2 class="display-type mt-4 text-4xl">Show the receipts.</h2>
-            </div>
+    <div class="max-w-2xl">
+        <Alert
+            v-if="observedSlugs.length"
+            class="rounded-none border-foreground bg-secondary"
+            data-test="stack-observation-state"
+        >
+            <CheckCircle2 class="size-4" />
+            <AlertTitle
+                >{{ observedSlugs.length }} technology(s) observed in the
+                repository</AlertTitle
+            >
+            <AlertDescription>
+                Last read
+                {{ observedLabel ? ` on ${observedLabel}` : '' }}. Observed
+                technologies are marked publicly as "Observed by Shipped"
+                alongside your declarations. The repository is re-read when you
+                ask, and daily while the project is publicly discoverable.
+            </AlertDescription>
+        </Alert>
 
-            <div class="max-w-2xl">
-                <Alert
-                    v-if="observedSlugs.length"
-                    class="rounded-none border-foreground bg-secondary"
-                    data-test="stack-observation-state"
+        <Field class="mt-6">
+            <FieldDescription>
+                Shipped reads composer.json and package.json from the public
+                repository on the project record and marks the technologies the
+                code confirms. Nothing is written to the repository, and
+                observation never changes verification or visibility.
+            </FieldDescription>
+            <FieldError v-if="form.errors.github">
+                {{ form.errors.github }}
+            </FieldError>
+            <div class="flex flex-wrap gap-3">
+                <Button
+                    type="button"
+                    :disabled="form.processing || !hasGithubUrl"
+                    data-test="observe-stack"
+                    @click="observe"
                 >
-                    <CheckCircle2 class="size-4" />
-                    <AlertTitle
-                        >{{ observedSlugs.length }} technology(s) observed in
-                        the repository</AlertTitle
-                    >
-                    <AlertDescription>
-                        Last read
-                        {{ observedLabel ? ` on ${observedLabel}` : '' }}.
-                        Observed technologies are marked publicly as "Observed
-                        by Shipped" alongside your declarations. The repository
-                        is re-read when you ask, and daily while the project is
-                        publicly discoverable.
-                    </AlertDescription>
-                </Alert>
-
-                <Field class="mt-6">
-                    <FieldDescription>
-                        Shipped reads composer.json and package.json from the
-                        public repository on the project record and marks the
-                        technologies the code confirms. Nothing is written to
-                        the repository, and observation never changes
-                        verification or visibility.
-                    </FieldDescription>
-                    <FieldError v-if="form.errors.github">
-                        {{ form.errors.github }}
-                    </FieldError>
-                    <div class="flex flex-wrap gap-3">
-                        <Button
-                            type="button"
-                            :disabled="form.processing || !hasGithubUrl"
-                            data-test="observe-stack"
-                            @click="observe"
-                        >
-                            <RefreshCw
-                                class="size-4"
-                                :class="{ 'animate-spin': form.processing }"
-                            />
-                            {{
-                                observedSlugs.length
-                                    ? 'Observe again'
-                                    : 'Observe stack from GitHub'
-                            }}
-                        </Button>
-                    </div>
-                    <FieldDescription v-if="!hasGithubUrl">
-                        Add a public GitHub repository URL above, save, then
-                        observe the stack.
-                    </FieldDescription>
-                </Field>
+                    <RefreshCw
+                        class="size-4"
+                        :class="{ 'animate-spin': form.processing }"
+                    />
+                    {{
+                        observedSlugs.length
+                            ? 'Observe again'
+                            : 'Observe stack from GitHub'
+                    }}
+                </Button>
             </div>
-        </div>
-    </section>
+            <FieldDescription v-if="!hasGithubUrl">
+                Add a public GitHub repository URL to the project record, save,
+                then observe the stack.
+            </FieldDescription>
+        </Field>
+    </div>
 </template>
