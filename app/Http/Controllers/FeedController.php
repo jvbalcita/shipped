@@ -74,10 +74,16 @@ class FeedController extends Controller
             ->where('followable_type', 'user')
             ->pluck('followable_id');
 
+        $discoverableCreatorIds = Project::query()
+            ->discoverable()
+            ->distinct()
+            ->select('user_id')
+            ->pluck('user_id');
+
         return User::query()
             ->whereKeyNot($viewer->id)
             ->whereNotIn('id', $followedCreatorIds)
-            ->whereHas('projects', fn (Builder $query) => $query->discoverable())
+            ->whereIn('id', $discoverableCreatorIds)
             ->withCount('followers')
             ->orderByDesc('followers_count')
             ->orderBy('name')
