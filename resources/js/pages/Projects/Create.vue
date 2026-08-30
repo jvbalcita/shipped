@@ -35,6 +35,8 @@ import {
     StepperTitle,
     StepperTrigger,
 } from '@/components/ui/stepper';
+import { useUnsavedChangesGuard } from '@/composables/useUnsavedChangesGuard';
+import { focusFirstError } from '@/lib/focusFirstError';
 import { link as linkOauth } from '@/routes/oauth';
 import { index, store } from '@/routes/projects';
 import type { TechnologyGroupOption } from '@/types/technology';
@@ -47,7 +49,11 @@ const props = defineProps<{
     githubLinked?: boolean;
     githubRepos?: { name: string; url: string }[] | null;
 }>();
+
+const STEPS = ['Identity', 'Media', 'Details', 'Review'] as const;
+const LAST_STEP = STEPS.length;
 const step = ref(1);
+
 const form = useForm({
     name: '',
     tagline: '',
@@ -68,6 +74,8 @@ const form = useForm({
 // The repository picker falls back to a URL input when GitHub cannot be
 // read; reconnecting runs the OAuth flow again to rotate the token.
 const reconnectForm = useForm({});
+
+useUnsavedChangesGuard(computed(() => form.isDirty));
 
 const MAX_SCREENSHOTS = 5;
 
@@ -124,7 +132,22 @@ function appendSuggestedTag(tag: string): void {
         form.tags = current.join(', ');
     }
 }
-const progress = computed(() => (step.value / 3) * 100);
+
+const progress = computed(() => (step.value / LAST_STEP) * 100);
+
+const ERROR_FIELD_IDS: Record<string, string> = {
+    name: 'name',
+    tagline: 'tagline',
+    category_id: 'category',
+    pricing: 'pricing',
+    launch_date: 'launch_date',
+    tags: 'tags',
+    live_url: 'live_url',
+    github_url: 'github_url',
+    cover_image: 'cover-upload',
+    logo: 'logo-upload',
+    screenshots: 'screenshots-field',
+};
 
 function isValidUrl(value: string): boolean {
     try {
@@ -139,9 +162,9 @@ function isValidUrl(value: string): boolean {
 function validateCurrentStep(): boolean {
     form.clearErrors();
 
-    if (step.value === 1) {
-        const errors: Record<string, string> = {};
+    const errors: Record<string, string> = {};
 
+    if (step.value === 1) {
         if (!form.name.trim()) {
             errors.name = 'Give the project a name.';
         }
@@ -153,27 +176,21 @@ function validateCurrentStep(): boolean {
         if (!form.description.trim()) {
             errors.description = 'Write a short project overview.';
         }
-
-        if (Object.keys(errors).length) {
-            form.setError(errors);
-
-            return false;
-        }
     }
 
     if (step.value === 2) {
-        const errors: Record<string, string> = {};
-
-        if (!form.category_id) {
-            errors.category_id = 'Choose a category.';
-        }
-
         if (!form.cover_image) {
             errors.cover_image = 'Add a cover image.';
         }
 
         if (newScreenshots.value.length === 0) {
             errors.screenshots = 'Add at least one screenshot.';
+        }
+    }
+
+    if (step.value === 3) {
+        if (!form.category_id) {
+            errors.category_id = 'Choose a category.';
         }
 
         if (!form.live_url && !form.github_url) {
@@ -187,12 +204,13 @@ function validateCurrentStep(): boolean {
         if (form.github_url && !isValidUrl(form.github_url)) {
             errors.github_url = 'Enter a complete URL, including https://.';
         }
+    }
 
-        if (Object.keys(errors).length) {
-            form.setError(errors);
+    if (Object.keys(errors).length) {
+        form.setError(errors);
+        focusFirstError(errors, ERROR_FIELD_IDS);
 
-            return false;
-        }
+        return false;
     }
 
     return true;
@@ -203,7 +221,7 @@ function continueComposer(): void {
         return;
     }
 
-    if (step.value < 3) {
+    if (step.value < LAST_STEP) {
         step.value += 1;
 
         return;
@@ -223,10 +241,47 @@ function continueComposer(): void {
                 (field) => errors[field],
             )
                 ? 1
-                : 2;
+                : ['cover_image', 'logo', 'screenshots'].some(
+                        (field) => errors[field],
+                    )
+                  ? 2
+                  : 3;
+            focusFirstError(errors, ERROR_FIELD_IDS);
         },
     });
 }
+
+function exitComposer(): void {
+    if (
+        form.isDirty &&
+        !window.confirm(
+            'Leave the composer? Nothing is saved yet and your answers will be lost.',
+        )
+    ) {
+        return;
+    }
+
+    router.visit(index().url);
+}
+
+const fieldNotes = [
+    {
+        text: 'The record stays private until it has a Ship Story, a release, and a deliberate public filing. Start with the words a visitor reads first.',
+        required: 'Name, line, overview',
+    },
+    {
+        text: 'Show the thing. The cover sets the first impression and the screenshots prove the product works.',
+        required: 'Cover, one screenshot',
+    },
+    {
+        text: 'Category and links decide where visitors land and how they find you. The rest is optional polish you can change in the studio later.',
+        required: 'Category, one link',
+    },
+    {
+        text: 'Check the summary, then create the private draft. You will finish the launch inside your project studio.',
+        required: 'Review',
+    },
+];
 </script>
 
 <template>
@@ -235,7 +290,7 @@ function continueComposer(): void {
             class="page-enter mx-auto w-full max-w-[90rem] min-w-0 border-x border-b border-foreground"
         >
             <SectionHeader
-                :label="`Launch composer / ${String(step).padStart(2, '0')} / 03`"
+                :label="`Launch composer / ${String(step).padStart(2, '0')} / ${String(LAST_STEP).padStart(2, '0')}`"
             >
                 <h1
                     class="display-type mt-12 text-[clamp(3rem,7vw,7rem)] sm:mt-0"
@@ -244,19 +299,19 @@ function continueComposer(): void {
                 </h1>
                 <p class="mt-6 max-w-2xl leading-7 text-muted-foreground">
                     Start private. Build a launch record with enough substance
-                    to become public.
+                    to become public — four short steps.
                 </p>
             </SectionHeader>
             <div class="border-b border-foreground p-5 sm:p-8">
                 <Stepper
                     v-model="step"
-                    class="grid grid-cols-3 gap-px bg-foreground"
+                    class="grid grid-cols-4 gap-px bg-foreground"
                 >
                     <StepperItem
-                        v-for="item in 3"
+                        v-for="(item, index) in STEPS"
                         :key="item"
                         v-slot="{ state }"
-                        :step="item"
+                        :step="index + 1"
                         class="bg-background"
                     >
                         <StepperTrigger
@@ -272,13 +327,11 @@ function continueComposer(): void {
                                     v-if="state === 'completed'"
                                     class="size-3"
                                 /><span v-else>{{
-                                    item
+                                    index + 1
                                 }}</span></StepperIndicator
                             ><StepperTitle
                                 class="technical-label hidden sm:block"
-                                >{{
-                                    ['Identity', 'Evidence', 'Review'][item - 1]
-                                }}</StepperTitle
+                                >{{ item }}</StepperTitle
                             ></StepperTrigger
                         >
                     </StepperItem>
@@ -301,7 +354,12 @@ function continueComposer(): void {
                             <div class="mt-8 grid gap-6">
                                 <Field
                                     ><FieldLabel for="name"
-                                        >Project name</FieldLabel
+                                        >Project name
+                                        <span
+                                            class="text-primary"
+                                            aria-hidden="true"
+                                            >*</span
+                                        > </FieldLabel
                                     ><Input
                                         id="name"
                                         v-model="form.name"
@@ -312,17 +370,28 @@ function continueComposer(): void {
                                     }}</FieldError></Field
                                 ><Field
                                     ><FieldLabel for="tagline"
-                                        >One-line description</FieldLabel
+                                        >One-line description
+                                        <span
+                                            class="text-primary"
+                                            aria-hidden="true"
+                                            >*</span
+                                        > </FieldLabel
                                     ><Input
                                         id="tagline"
                                         v-model="form.tagline"
                                         required
+                                        placeholder="The hook a visitor reads in one breath."
                                     /><FieldError v-if="form.errors.tagline">{{
                                         form.errors.tagline
                                     }}</FieldError></Field
                                 ><Field
                                     ><FieldLabel for="description"
-                                        >Short overview</FieldLabel
+                                        >Short overview
+                                        <span
+                                            class="text-primary"
+                                            aria-hidden="true"
+                                            >*</span
+                                        > </FieldLabel
                                     ><RichTextEditor
                                         v-model="form.description"
                                     /><FieldError
@@ -336,51 +405,49 @@ function continueComposer(): void {
                         </template>
                         <template v-else-if="step === 2">
                             <p class="technical-label text-primary">
-                                02 / Evidence
+                                02 / Media
                             </p>
                             <div class="mt-8 grid gap-6">
                                 <Field
-                                    ><FieldLabel for="category"
-                                        >Category</FieldLabel
-                                    ><Select v-model="form.category_id"
-                                        ><SelectTrigger
-                                            id="category"
-                                            class="h-10 w-full rounded-none border-foreground"
-                                            ><SelectValue /></SelectTrigger
-                                        ><SelectContent
-                                            ><SelectItem
-                                                v-for="category in categories"
-                                                :key="category.id"
-                                                :value="String(category.id)"
-                                                >{{ category.name }}</SelectItem
-                                            ></SelectContent
-                                        ></Select
-                                    ><FieldError
-                                        v-if="form.errors.category_id"
-                                        >{{
-                                            form.errors.category_id
-                                        }}</FieldError
-                                    ></Field
+                                    ><FieldLabel
+                                        >Cover image
+                                        <span
+                                            class="text-primary"
+                                            aria-hidden="true"
+                                            >*</span
+                                        >
+                                    </FieldLabel>
+                                    <div id="cover-upload" tabindex="-1">
+                                        <FileUpload
+                                            v-model="form.cover_image"
+                                            :error="form.errors.cover_image"
+                                        /></div></Field
                                 ><Field
-                                    ><FieldLabel>Cover image</FieldLabel
-                                    ><FileUpload
-                                        v-model="form.cover_image"
-                                        :error="
-                                            form.errors.cover_image
-                                        " /></Field
+                                    ><FieldLabel>Logo</FieldLabel>
+                                    <div id="logo-upload" tabindex="-1">
+                                        <FileUpload
+                                            v-model="form.logo"
+                                            kind="logo"
+                                            :error="form.errors.logo"
+                                        /></div></Field
                                 ><Field
-                                    ><FieldLabel>Logo</FieldLabel
-                                    ><FileUpload
-                                        v-model="form.logo"
-                                        kind="logo"
-                                        :error="form.errors.logo" /></Field
-                                ><Field
-                                    ><FieldLabel>Screenshots</FieldLabel>
+                                    ><FieldLabel
+                                        >Screenshots
+                                        <span
+                                            class="text-primary"
+                                            aria-hidden="true"
+                                            >*</span
+                                        >
+                                    </FieldLabel>
                                     <p class="text-xs text-muted-foreground">
                                         Up to {{ MAX_SCREENSHOTS }} images,
                                         JPG/PNG/WebP, up to 5 MB each.
                                     </p>
-                                    <div class="grid gap-3">
+                                    <div
+                                        id="screenshots-field"
+                                        tabindex="-1"
+                                        class="grid gap-3"
+                                    >
                                         <div
                                             v-for="(
                                                 screenshot, index
@@ -436,6 +503,7 @@ function continueComposer(): void {
                                             v-if="canAddScreenshot"
                                             type="button"
                                             variant="outline"
+                                            class="self-start"
                                             @click="screenshotInput?.click()"
                                         >
                                             <ImagePlus class="size-4" />
@@ -446,6 +514,41 @@ function continueComposer(): void {
                                         v-if="form.errors.screenshots"
                                         >{{
                                             form.errors.screenshots
+                                        }}</FieldError
+                                    ></Field
+                                >
+                            </div>
+                        </template>
+                        <template v-else-if="step === 3">
+                            <p class="technical-label text-primary">
+                                03 / Details
+                            </p>
+                            <div class="mt-8 grid gap-6">
+                                <Field
+                                    ><FieldLabel for="category"
+                                        >Category
+                                        <span
+                                            class="text-primary"
+                                            aria-hidden="true"
+                                            >*</span
+                                        > </FieldLabel
+                                    ><Select v-model="form.category_id"
+                                        ><SelectTrigger
+                                            id="category"
+                                            class="h-10 w-full rounded-none border-foreground"
+                                            ><SelectValue /></SelectTrigger
+                                        ><SelectContent
+                                            ><SelectItem
+                                                v-for="category in categories"
+                                                :key="category.id"
+                                                :value="String(category.id)"
+                                                >{{ category.name }}</SelectItem
+                                            ></SelectContent
+                                        ></Select
+                                    ><FieldError
+                                        v-if="form.errors.category_id"
+                                        >{{
+                                            form.errors.category_id
                                         }}</FieldError
                                     ></Field
                                 ><Field
@@ -488,6 +591,10 @@ function continueComposer(): void {
                                         placeholder="laravel, vue, indie"
                                         data-test="project-tags"
                                     />
+                                    <p class="text-xs text-muted-foreground">
+                                        Tags help visitors find you from
+                                        Discover. Tap a suggestion to add it.
+                                    </p>
                                     <div class="mt-2 flex flex-wrap gap-2">
                                         <button
                                             v-for="tag in suggestedTags"
@@ -521,7 +628,12 @@ function continueComposer(): void {
                                     ></Field
                                 ><Field
                                     ><FieldLabel for="live_url"
-                                        >Live URL</FieldLabel
+                                        >Live URL
+                                        <span
+                                            class="text-muted-foreground"
+                                            aria-hidden="true"
+                                            >— or GitHub below</span
+                                        > </FieldLabel
                                     ><Input
                                         id="live_url"
                                         v-model="form.live_url"
@@ -595,7 +707,7 @@ function continueComposer(): void {
                         </template>
                         <template v-else>
                             <p class="technical-label text-primary">
-                                03 / Review
+                                04 / Review
                             </p>
                             <h2 class="display-type mt-8 text-5xl">
                                 Ready to draft.
@@ -646,19 +758,10 @@ function continueComposer(): void {
                     <aside class="bg-secondary p-5 sm:p-8">
                         <p class="technical-label">Field notes</p>
                         <p class="mt-8 max-w-sm text-sm leading-7">
-                            A launch stays private until it has a Ship Story, a
-                            release, and a deliberate public filing. This first
-                            step simply creates the project record.
+                            {{ fieldNotes[step - 1].text }}
                         </p>
                         <p class="technical-label mt-12 text-primary">
-                            Required /
-                            {{
-                                step === 1
-                                    ? 'Name, line, overview'
-                                    : step === 2
-                                      ? 'Category, cover, screenshot, link'
-                                      : 'Review'
-                            }}
+                            Required / {{ fieldNotes[step - 1].required }}
                         </p>
                     </aside>
                 </div>
@@ -678,18 +781,18 @@ function continueComposer(): void {
                             type="button"
                             variant="outline"
                             class="w-full sm:w-auto"
-                            @click="router.visit(index().url)"
-                            >Save for later</Button
+                            @click="exitComposer"
+                            >Cancel</Button
                         ><Button
                             type="submit"
                             class="w-full sm:w-auto"
                             :disabled="form.processing"
                             >{{
-                                step === 3
+                                step === LAST_STEP
                                     ? 'Create private draft'
                                     : 'Continue'
                             }}<Send
-                                v-if="step === 3"
+                                v-if="step === LAST_STEP"
                                 class="size-4" /><ArrowRight
                                 v-else
                                 class="size-4"

@@ -162,7 +162,8 @@ test('builders cannot report their own content', function () {
 
     $this->actingAs($creator)
         ->post(route('reports.store'), reportPayload(['reportable_id' => $project->id]))
-        ->assertForbidden();
+        ->assertRedirect()
+        ->assertSessionHasErrors(['reportable_id' => 'You cannot report your own content.']);
 
     expect(ContentReport::query()->count())->toBe(0);
 });

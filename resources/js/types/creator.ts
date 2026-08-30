@@ -1,4 +1,5 @@
 import type { CardTechnology } from './technology';
+import type { ProjectVerification } from './index';
 
 export type CreatorLink = {
     type: string;
@@ -90,3 +91,49 @@ export type ProfileProject = {
     is_discoverable: boolean;
     published_releases_count: number;
 };
+
+export type ProjectShipStory = {
+    id: number;
+    problem: string | null;
+    audience: string | null;
+    shipped: string | null;
+    build_decisions: string | null;
+    hardest_problem: string | null;
+    lessons_learned: string | null;
+    next: string | null;
+    is_complete: boolean;
+    is_approved: boolean;
+    approved_at: string | null;
+};
+
+export type StudioRelease = {
+    id: number;
+    title: string;
+    notes: string;
+    published_at: string | null;
+};
+
+export type StudioProjectScreenshot = {
+    id: number;
+    url: string;
+    caption: string | null;
+};
+
+export type StudioProject = {
+    id: number;
+    name: string;
+    slug: string;
+    tagline: string | null;
+    description: string | null;
+    category_id: number | null;
+    live_url: string | null;
+    github_url: string | null;
+    pricing: string | null;
+    launch_date: string | null;
+    is_public: boolean;
+    cover_image_url: string | null;
+    logo_url: string | null;
+    tags: Array<{ id: number; name: string }>;
+    screenshots: StudioProjectScreenshot[];
+    releases: StudioRelease[];
+} & ProjectVerification;

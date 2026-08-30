@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useForm, usePage } from '@inertiajs/vue3';
 import { Flag } from '@lucide/vue';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,10 +26,21 @@ const props = defineProps<{
     reportableId: number;
     subjectLabel: string;
     ariaLabel?: string;
+    /** Author username of the subject; the dialog never renders on the viewer's own content. */
+    authorUsername?: string | null;
 }>();
 
 const open = ref(false);
 const page = usePage();
+
+// Self-reports are denied server-side; hiding the trigger keeps the
+// moderation signal meaningful and avoids a dead-end error page.
+const isOwnContent = computed(
+    () =>
+        props.authorUsername !== null &&
+        props.authorUsername !== undefined &&
+        props.authorUsername === page.props.auth.user?.username,
+);
 
 const form = useForm({
     reportable_type: props.reportableType,
@@ -41,6 +52,13 @@ const form = useForm({
 function submit(): void {
     form.post(store().url, {
         preserveScroll: true,
+        // Subject errors (gone/private/own content) have no inline slot;
+        // surface them as a toast instead of failing silently.
+        onError: () => {
+            if (form.errors.reportable_id) {
+                toast.error(form.errors.reportable_id);
+            }
+        },
         onSuccess: () => {
             toast.success('Report sent to the curators. Thank you.');
             form.reset();
@@ -51,7 +69,7 @@ function submit(): void {
 </script>
 
 <template>
-    <Dialog v-if="page.props.auth.user" v-model:open="open">
+    <Dialog v-if="page.props.auth.user && !isOwnContent" v-model:open="open">
         <DialogTrigger as-child>
             <Button
                 variant="ghost"
