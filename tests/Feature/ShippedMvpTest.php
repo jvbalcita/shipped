@@ -393,6 +393,7 @@ test('the homepage surfaces a live snapshot of the registry', function () {
     $project = Project::factory()->filed()->public()->for($creator, 'creator')->create();
     Release::factory()->for($project)->create(['published_at' => now()]);
     Cache::forget('shipped:registry:stats');
+    Cache::forget('shipped:registry:recent');
 
     $this->get(route('home'))
         ->assertSuccessful()
@@ -400,7 +401,23 @@ test('the homepage surfaces a live snapshot of the registry', function () {
             ->component('Welcome')
             ->where('launchCount', 1)
             ->where('creatorCount', 1)
-            ->has('latestDispatchAt'));
+            ->has('latestDispatchAt')
+            ->has('recentLaunches', 1)
+            ->where('recentLaunches.0.slug', (string) $project->slug)
+            ->where('recentLaunches.0.creator.username', 'maker'));
+});
+
+test('the homepage only files discoverable launches as freshly filed', function () {
+    $creator = User::factory()->create(['username' => 'maker']);
+    // Public but never verified, so not discoverable.
+    Project::factory()->filed()->for($creator, 'creator')->create(['is_public' => true]);
+    Cache::forget('shipped:registry:recent');
+
+    $this->get(route('home'))
+        ->assertSuccessful()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Welcome')
+            ->has('recentLaunches', 0));
 });
 
 test('a filed launch renders a branded social preview image', function () {

@@ -10,3 +10,9 @@ export type FeedActivity = {
     } | null;
     meta: Record<string, unknown> | null;
 };
+
+export type SuggestedCreator = {
+    name: string;
+    username: string;
+    followers_count: number;
+};

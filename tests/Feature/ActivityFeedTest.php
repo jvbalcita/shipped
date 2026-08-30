@@ -153,3 +153,53 @@ test('the feed paginates by cursor twenty rows at a time', function () {
 test('a guest visiting the feed is redirected to login', function () {
     $this->get(route('feed'))->assertRedirect(route('login'));
 });
+
+test('an empty feed suggests creators with public work to follow', function () {
+    $creator = User::factory()->create();
+    $project = Project::factory()->filed()->public()->for($creator, 'creator')->create();
+    Release::factory()->for($project)->create(['published_at' => now()]);
+
+    $member = verifiedUser();
+
+    $this->actingAs($member)
+        ->get(route('feed'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('empty', true)
+            ->has('suggestedCreators', 1)
+            ->where('suggestedCreators.0.username', $creator->username)
+            ->where('suggestedCreators.0.followers_count', 0));
+});
+
+test('an empty feed suggests nobody when there is no one left to suggest', function () {
+    $privateCreator = User::factory()->create();
+    Project::factory()->for($privateCreator, 'creator')->create();
+
+    $member = verifiedUser();
+
+    // The viewer's own public work must not suggest themselves.
+    $ownProject = Project::factory()->filed()->public()->for($member, 'creator')->create();
+    Release::factory()->for($ownProject)->create(['published_at' => now()]);
+
+    $this->actingAs($member)
+        ->get(route('feed'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('empty', true)
+            ->has('suggestedCreators', 0));
+});
+
+test('an active feed does not include creator suggestions', function () {
+    $creator = User::factory()->create();
+    $project = Project::factory()->filed()->public()->for($creator, 'creator')->create();
+    Release::factory()->for($project)->create(['published_at' => now()]);
+    $member = verifiedUser();
+    $member->followings()->create([
+        'followable_type' => 'user',
+        'followable_id' => $creator->id,
+    ]);
+
+    $this->actingAs($member)
+        ->get(route('feed'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('empty', false)
+            ->has('suggestedCreators', 0));
+});

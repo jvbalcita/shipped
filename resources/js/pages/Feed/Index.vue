@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link, router } from '@inertiajs/vue3';
 import ActivityItem from '@/components/shipped/ActivityItem.vue';
+import FollowButton from '@/components/shipped/FollowButton.vue';
 import PublicShell from '@/components/shipped/PublicShell.vue';
 import SectionHeader from '@/components/shipped/SectionHeader.vue';
 import { Button } from '@/components/ui/button';
@@ -11,13 +12,15 @@ import {
     EmptyTitle,
 } from '@/components/ui/empty';
 import { discover, feed } from '@/routes';
-import type { FeedActivity } from '@/types/feed';
+import { store as storeCreatorFollow } from '@/routes/users/follow';
+import type { FeedActivity, SuggestedCreator } from '@/types/feed';
 
 const props = defineProps<{
     activities: { items: FeedActivity[]; next_cursor: string | null };
     followedCreators: number;
     followedProjects: number;
     empty: boolean;
+    suggestedCreators: SuggestedCreator[];
 }>();
 
 function loadMore(): void {
@@ -38,7 +41,7 @@ function loadMore(): void {
                 :label="`Activity feed / ${followedCreators} creators · ${followedProjects} projects`"
             >
                 <h1
-                    class="display-type mt-12 text-[clamp(3rem,7vw,7rem)] sm:mt-0"
+                    class="display-type mt-8 text-[clamp(2.25rem,4.5vw,4rem)] sm:mt-0"
                 >
                     What your fleet is shipping.
                 </h1>
@@ -60,7 +63,45 @@ function loadMore(): void {
                         >Follow creators to see their ships. New launches,
                         releases, and cheers land here.</EmptyDescription
                     ></EmptyHeader
-                ><Button as-child
+                >
+                <ul
+                    v-if="suggestedCreators.length"
+                    class="mx-auto mb-8 w-full max-w-md divide-y divide-foreground border border-foreground"
+                    data-test="feed-suggested-creators"
+                >
+                    <li
+                        v-for="creator in suggestedCreators"
+                        :key="creator.username"
+                        class="flex items-center justify-between gap-4 bg-background p-4"
+                    >
+                        <div class="min-w-0">
+                            <p class="technical-label truncate">
+                                {{ creator.name }}
+                            </p>
+                            <p
+                                class="technical-label mt-1 text-muted-foreground"
+                            >
+                                @{{ creator.username
+                                }}<template v-if="creator.followers_count > 0">
+                                    · {{ creator.followers_count }}
+                                    {{
+                                        creator.followers_count === 1
+                                            ? 'follower'
+                                            : 'followers'
+                                    }}</template
+                                >
+                            </p>
+                        </div>
+                        <FollowButton
+                            :key="creator.username"
+                            :count="creator.followers_count"
+                            :following="false"
+                            :action="storeCreatorFollow(creator)"
+                            class="shrink-0"
+                        />
+                    </li>
+                </ul>
+                <Button as-child
                     ><Link :href="discover()">Discover creators</Link></Button
                 ></Empty
             >

@@ -157,7 +157,7 @@ function clearPricing() {
         >
             <SectionHeader label="Public registry / Browse">
                 <h1
-                    class="display-type mt-12 max-w-4xl text-[clamp(3.25rem,6.5vw,6.75rem)] sm:mt-0"
+                    class="display-type mt-8 max-w-4xl text-[clamp(2.5rem,5vw,4.5rem)] sm:mt-0"
                 >
                     Explore launches.
                 </h1>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Link, useForm } from '@inertiajs/vue3';
+import { Link, useForm, usePage } from '@inertiajs/vue3';
 import {
     ArrowUpRight,
     Cloud,
@@ -55,6 +55,7 @@ import {
     store as storeReview,
     update as updateReview,
 } from '@/routes/projects/reviews';
+import { edit as projectEdit } from '@/routes/projects';
 import { show as releaseShow } from '@/routes/releases';
 import { show as technologyShow } from '@/routes/technologies';
 
@@ -83,6 +84,11 @@ const breadcrumbs = [
     },
     { label: props.project.name },
 ];
+
+const page = usePage();
+const isOwner = computed(
+    () => page.props.auth.user?.id === props.project.creator.id,
+);
 
 const reviewForm = useForm({
     rating: props.project.user_review?.rating ?? 5,
@@ -280,7 +286,7 @@ async function copyManifestLink(): Promise<void> {
                             ><Cloud class="size-4" />Live on Laravel Cloud</span
                         >
                     </div>
-                    <div class="mt-12 flex items-center gap-5 sm:gap-8">
+                    <div class="mt-8 flex items-center gap-5 sm:gap-8">
                         <img
                             v-if="project.logo_url"
                             :src="project.logo_url"
@@ -289,7 +295,7 @@ async function copyManifestLink(): Promise<void> {
                             data-test="project-logo"
                         />
                         <h1
-                            class="display-type launch-name text-[clamp(3.5rem,9vw,9rem)]"
+                            class="display-type launch-name text-[clamp(2.5rem,6vw,5.5rem)]"
                         >
                             {{ project.name }}
                         </h1>
@@ -321,6 +327,87 @@ async function copyManifestLink(): Promise<void> {
                                     day: 'numeric',
                                 })
                             }}</span
+                        >
+                    </div>
+                    <div
+                        class="mt-8 flex flex-wrap items-center gap-2"
+                        data-test="project-actions"
+                    >
+                        <Button
+                            v-if="project.live_url"
+                            as-child
+                            size="lg"
+                            data-test="visit-product"
+                            ><a
+                                :href="project.live_url"
+                                target="_blank"
+                                rel="noreferrer"
+                                >Visit product
+                                <ExternalLink class="size-4" /></a
+                        ></Button>
+                        <Button
+                            v-else-if="project.github_url"
+                            as-child
+                            size="lg"
+                            data-test="visit-source"
+                            ><a
+                                :href="project.github_url"
+                                target="_blank"
+                                rel="noreferrer"
+                                ><GitFork class="size-4" />View source</a
+                            ></Button
+                        >
+                        <Button
+                            v-if="project.github_url && project.live_url"
+                            as-child
+                            variant="outline"
+                            ><a
+                                :href="project.github_url"
+                                target="_blank"
+                                rel="noreferrer"
+                                ><GitFork class="size-4" />Source</a
+                            ></Button
+                        >
+                        <Button
+                            v-if="isOwner"
+                            as-child
+                            variant="outline"
+                            data-test="edit-project"
+                            ><Link :href="projectEdit(project)"
+                                ><Pencil class="size-4" />Edit project</Link
+                            ></Button
+                        >
+                        <FollowButton
+                            v-else
+                            :key="`project-follow-${project.id}`"
+                            :count="project.followers_count"
+                            :following="project.followed_by_viewer"
+                            :action="
+                                project.followed_by_viewer
+                                    ? {
+                                          ...destroyFollow(project),
+                                          method: 'delete' as const,
+                                      }
+                                    : {
+                                          ...storeFollow(project),
+                                          method: 'post' as const,
+                                      }
+                            "
+                        />
+                        <Button v-if="manifestUrl" as-child variant="outline">
+                            <a
+                                :href="manifestUrl"
+                                :download="`${project.slug}-manifest.svg`"
+                                data-test="save-manifest"
+                                ><Download class="size-4" />Save manifest</a
+                            >
+                        </Button>
+                        <Button
+                            v-if="manifestUrl"
+                            variant="outline"
+                            data-test="copy-manifest-link"
+                            @click="copyManifestLink"
+                            ><Link2 class="size-4" />Copy link</Button
                         >
                     </div>
                     <ul
@@ -515,58 +602,6 @@ async function copyManifestLink(): Promise<void> {
                         v-model="activeScreenshot"
                         :screenshots="project.screenshots ?? []"
                     />
-                    <div class="mt-10 flex flex-wrap gap-2">
-                        <Button v-if="project.live_url" as-child
-                            ><a
-                                :href="project.live_url"
-                                target="_blank"
-                                rel="noreferrer"
-                                >Visit product
-                                <ExternalLink class="size-4" /></a
-                        ></Button>
-                        <Button
-                            v-if="project.github_url"
-                            as-child
-                            variant="outline"
-                            ><a
-                                :href="project.github_url"
-                                target="_blank"
-                                rel="noreferrer"
-                                ><GitFork class="size-4" />Source</a
-                            ></Button
-                        >
-                        <FollowButton
-                            :key="`project-follow-${project.id}`"
-                            :count="project.followers_count"
-                            :following="project.followed_by_viewer"
-                            :action="
-                                project.followed_by_viewer
-                                    ? {
-                                          ...destroyFollow(project),
-                                          method: 'delete' as const,
-                                      }
-                                    : {
-                                          ...storeFollow(project),
-                                          method: 'post' as const,
-                                      }
-                            "
-                        />
-                        <Button v-if="manifestUrl" as-child variant="outline">
-                            <a
-                                :href="manifestUrl"
-                                :download="`${project.slug}-manifest.svg`"
-                                data-test="save-manifest"
-                                ><Download class="size-4" />Save manifest</a
-                            >
-                        </Button>
-                        <Button
-                            v-if="manifestUrl"
-                            variant="outline"
-                            data-test="copy-manifest-link"
-                            @click="copyManifestLink"
-                            ><Link2 class="size-4" />Copy link</Button
-                        >
-                    </div>
                     <div
                         class="mt-12 flex flex-wrap items-center gap-x-4 gap-y-2"
                     >
@@ -594,6 +629,7 @@ async function copyManifestLink(): Promise<void> {
                             <ArrowUpRight class="size-3" aria-hidden="true" />
                         </Link>
                         <span
+                            v-if="project.followers_count > 0"
                             class="technical-label inline-flex items-center gap-1 text-muted-foreground"
                             data-test="project-followers-count"
                         >
@@ -608,6 +644,7 @@ async function copyManifestLink(): Promise<void> {
                             reportable-type="project"
                             :reportable-id="project.id"
                             subject-label="this project"
+                            :author-username="project.creator.username"
                             aria-label="Report this project"
                             data-test="report-project"
                             >Report</ReportContentDialog
@@ -802,6 +839,7 @@ async function copyManifestLink(): Promise<void> {
                                         reportable-type="comment"
                                         :reportable-id="comment.id"
                                         subject-label="this comment"
+                                        :author-username="comment.user?.username"
                                         :aria-label="`Report comment by ${comment.user?.username}`"
                                     />
                                 </div>
@@ -918,6 +956,7 @@ async function copyManifestLink(): Promise<void> {
                                                 reportable-type="comment"
                                                 :reportable-id="reply.id"
                                                 subject-label="this reply"
+                                                :author-username="reply.user?.username"
                                                 :aria-label="`Report reply by ${reply.user?.username}`"
                                             />
                                         </div>
@@ -1093,6 +1132,7 @@ async function copyManifestLink(): Promise<void> {
                                     reportable-type="review"
                                     :reportable-id="review.id"
                                     subject-label="this review"
+                                    :author-username="review.user?.username"
                                     :aria-label="`Report review by ${review.user?.username}`"
                                 />
                             </span>
